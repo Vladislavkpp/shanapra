@@ -1,0 +1,18 @@
+[11-Aug-2025 02:34:14 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/service.php on line 2
+[11-Aug-2025 02:34:14 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/service.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/service.php on line 2
+[11-Aug-2025 07:02:41 UTC] PHP Warning:  Undefined array key "dtadd" in /home/bicycleb/public_html/gravelist.php on line 88
+[11-Aug-2025 10:16:42 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/strepair.php on line 5
+[11-Aug-2025 10:16:42 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/strepair.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 5
+[11-Aug-2025 14:00:53 UTC] PHP Warning:  Undefined array key "uzver" in /home/bicycleb/public_html/graveadd.php on line 12
+[11-Aug-2025 14:20:31 UTC] PHP Parse error:  Unclosed '{' on line 9 in /home/bicycleb/public_html/index.php on line 86
+[11-Aug-2025 14:21:52 UTC] PHP Warning:  The use statement with non-compound name 'mysqli' has no effect in /home/bicycleb/public_html/function_vra.php on line 115
+[11-Aug-2025 14:21:52 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Dbs_Select() in /home/bicycleb/public_html/searchout.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 27

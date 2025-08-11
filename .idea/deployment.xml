@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" serverName="project1">
+    <serverData>
+      <paths name="project1">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath path="/Temp" />
+            <excludedPath path="/pma" />
+            <excludedPath local="true" path="$PROJECT_DIR$/Temp" />
+            <excludedPath local="true" path="$PROJECT_DIR$/pma" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
