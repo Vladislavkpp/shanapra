@@ -85,7 +85,7 @@ for ($i = 1; $i <= $cnt; $i++) {
     View_Add("<td>" . $a["mname"] . "</td>");
     View_Add("<td>" . $a["dt1"] . "</td>");
     View_Add("<td>" . $a["dt2"] . "</td>");
-    View_Add("<td>" . $a["dtadd"] . "</td>");
+    View_Add("<td>" . $a["idtadd"] . "</td>");
     View_Add("<td>" . $a["idxadd"] . "</td>");
     View_Add("<td>" . $a["idxkladb"] . "</td>");
     View_Add("<td>" . $a["pos1"] . "</td>");

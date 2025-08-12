@@ -4,18 +4,14 @@
  * @var $buf
  */
 //require_once $_SERVER['DOCUMENT_ROOT'] .'/vendor/autoload.php';
-require_once "function.php";
+require_once $_SERVER['DOCUMENT_ROOT'] ."/function.php";
 function Content(): string
 {
-
-
     $dblink = DbConnect();
-
     $res = mysqli_query($dblink, "SELECT idx FROM grave");
-    $count = 0;
     if ($res) {
         $count = mysqli_num_rows($res);
-    }
+    }else{$count = 0;}
     mysqli_close($dblink);
 
     $out = '<div class="content">' .
@@ -36,7 +32,7 @@ function Content(): string
 
         '<div class="input-container">' .
         '<input type="text" name="name" class="login-Input" placeholder=" " autocomplete="off">' .
-        '<label>Ім\'я</label>' .
+        "<label>Ім'я</label>" .
         '</div>' .
 
         '<div class="input-container">' .

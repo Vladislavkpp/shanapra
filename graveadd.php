@@ -124,18 +124,27 @@ function Contentgrave()
     return $out;
 }
 
+function gravezone()
+{
+    $out = '<div class="gravezone"></div>';
+
+    return $out;
+}
 
 View_Clear();
 View_Add(Page_Up());
 View_Add(Menu_Up());
 View_Add('<div class="out">');
 
-//Основной екран
+View_Add('<div class="graveadd-container">');
 
-//View_Add(Menu_Left());
 View_Add(Contentgrave());
+View_Add(gravezone());
 
 View_Add('</div>');
+
+View_Add('</div>');
+
 View_Add(Page_Down());
 View_Out();
 View_Clear();
