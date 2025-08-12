@@ -5,6 +5,14 @@
  */
 //require_once $_SERVER['DOCUMENT_ROOT'] .'/vendor/autoload.php';
 require_once $_SERVER['DOCUMENT_ROOT'] ."/function.php";
+
+if (isset($_GET['exit']) && $_GET['exit'] == 1) {
+    session_destroy();
+    header("Location: /index.php");
+    exit;
+}
+
+
 function Content(): string
 {
     $dblink = DbConnect();

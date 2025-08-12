@@ -26,7 +26,6 @@ img {
 body {
     margin: 0;
     padding: 0;
-    max-width: 99vw;
 }
 
 
@@ -40,8 +39,7 @@ body {
     display: flex;
     flex: 1;
     width: 100%;
-    #border: 1px solid purple;
-    background: #e5e5e5;
+    background: #9f9f9f;
     height: 100vh;
     overflow-x: hidden;
 }
@@ -501,7 +499,7 @@ body {
     margin-top: 30px;
     margin-bottom: 30px;
     border-radius: 16px;
-    border: 1px solid #ddd;
+    #border: 1px solid #ddd;
     background: white;
     box-shadow: 0 4px 20px rgba(0,0,0,0.05);
     font-family: sans-serif;
@@ -944,7 +942,9 @@ body {
     align-items: center;
     justify-content: space-between;
     border-bottom: 1px solid #b0d5dd;
-    background-color: #e8f3fc;
+    /*background-color: #e8f3fc;*/
+
+    background-image: linear-gradient(270deg, #007bff 0px,#e8f3fc);
     padding: 0 20px;
     padding-left: 0px;
     height: 65px;

@@ -44,3 +44,4 @@ Stack trace:
 Stack trace:
 #0 {main}
   thrown in /home/bicycleb/public_html/strepair.php on line 5
+[12-Aug-2025 17:45:30 UTC] PHP Warning:  Undefined array key "logged" in /home/bicycleb/public_html/profile.php on line 63

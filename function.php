@@ -18,6 +18,12 @@ $todaydot = date('d.m.Y', time());
 $yestertodaydot = date('d.m.Y', time() - 86400);
 
 
+/*Для обработки выхода с каждой страницы*/
+if (isset($_GET['exit']) && $_GET['exit'] == 1) {
+    session_destroy();
+    header("Location: /index.php");
+    exit;
+}
 
 function rus2lat($string)
 {
