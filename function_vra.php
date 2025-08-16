@@ -11,11 +11,6 @@ const NO_IMAGE = ASSETS . '/images/no_image.jpg';
 const VENDOR = BASE . '/vendor/';
 
 
-class functions_vra
-{
-
-}
-
 class Paginate
 {
     private static int $countPages = 0;
@@ -112,115 +107,49 @@ class Paginate
     }
 }
 
-use mysqli;
-
-/**
- * Class Dbs
- *
- *  Written 2023-02-21 12:38
- */
-class Dbs
+function DateFormat(string $d = ''): string
 {
-    private static string $dbname = 'shana2k4';
-    private static string $dbuserro = 'root';
-    private static string $dbuserrw = 'root';
-    private static string $dbpaswro = '958189';
-    private static string $dbpaswrw = '958189';
-    private static false|mysqli|null|string $connro = NULL;
-    private static false|mysqli|null|string $connrw = NULL;
-
-    /**
-     * @return int Total records in database
-     */
-    public static function Count($zap = ''): int
-    {
-        self::ConnectReadOnly();
-        $sql = 'SELECT count(idx) as t1 FROM grave';
-        if ($zap != '') {
-            $sql .= $zap;
-        }
-        $res = mysqli_query(self::$connro, $sql);
-        if (!$res) {
-            $out = 0;
-        } else {
-            $out = mysqli_fetch_assoc($res);
-        }
-
-        return $out;
+    $r = explode('.', str_replace('-', '.', $d));
+    $out = $r[0];
+    if (($r[1] == '') || ($r[1] == 0)) {
+        $out = '-' . $out;
+    } else {
+        $out = $r[1] . '.' . $out;
     }
-
-    private static function ConnectReadOnly()
-    {
-        if (is_null(self::$connro)) {
-            self::$connro = @mysqli_connect('localhost', self::$dbuserro, self::$dbpaswro, self::$dbname);
-            if (!self::$connro) {
-                die('Database not connected. Shutdown ...');
-            }
-            mysqli_query(self::$connro, "set character_set_client='utf8'");
-            mysqli_query(self::$connro, "set character_set_results='utf8'");
-            mysqli_query(self::$connro, "set collation_connection='utf8_general_ci'");
-        }
+    if (($r[2] == '') || ($r[2] == 0)) {
+        $out = '-' . $out;
+    } else {
+        $out = $r[2] . '.' . $out;
     }
-
-    /**
-     * @param string $query
-     * @return array|bool
-     */
-    public static function Select(string $query = ''): array|bool
-    {
-        self::ConnectReadOnly();
-        $res = mysqli_query(self::$connro, 'SELECT ' . $query);
-        if ($res != false) {
-            $out = [];
-            while ($r = mysqli_fetch_assoc($res)) {
-                $out[] = $r;
-            }
-            return $out;
-        }
-        return $res;
-    }
-
-    /**
-     * @param string $query
-     * @return bool
-     */
-    public static function Insert(string $query = ''): bool
-    {
-        self::ConnectReadWrite();
-        return mysqli_query(self::$connrw, 'INSERT INTO ' . $query);
-    }
-
-    private static function ConnectReadWrite()
-    {
-        if (is_null(self::$connrw)) {
-            self::$connrw = @mysqli_connect('localhost', self::$dbuserrw, self::$dbpaswrw, self::$dbname);
-            if (!self::$connrw) {
-                die('Database not connected. Shutdown ...');
-            }
-            mysqli_query(self::$connrw, "set character_set_client='utf8'");
-            mysqli_query(self::$connrw, "set character_set_results='utf8'");
-            mysqli_query(self::$connrw, "set collation_connection='utf8_general_ci'");
-        }
-    }
-
-    /**
-     * @param string $query
-     * @return bool
-     */
-    public static function Update(string $query = ''): bool
-    {
-        self::ConnectReadWrite();
-        return mysqli_query(self::$connrw, 'UPDATE ' . $query);
-    }
-
-    /**
-     * @param string $query
-     * @return bool
-     */
-    public static function Delete(string $query = ''): bool
-    {
-        self::ConnectReadWrite();
-        return mysqli_query(self::$connrw, 'DELETE ' . $query);
-    }
+    return $out;
 }
 
+function Cards(int $idx=0, string $f='',string $i='',string $o='', string $d1='', string $d2='', string $img=''):string
+{
+    // прямоугольная форма, серая граница, закругленные края, тень,
+    // фотография на белом фоне, остальное на сером фоне, ФИО, дата1-дата2, детали...
+    $out='<div class="cardx" style="flow: flex;margin-right: 10px;margin-bottom: 10px;">';
+    $out.='<div class="cardx-img">';
+    // no-foto
+    if (!is_file($_SERVER['DOCUMENT_ROOT'].$img))
+    {
+        $img='/Graves/no_image.png';
+    }
+    $out.='<img src="'.$img.'" class="cardx-image" alt="'.$f.' '.$i.' '.$o.'" title="'.$f.' '.$i.' '.$o.'">';
+    $out.='</div>';
+    $out.='<div class="cardx-data">';
+    $out.='<div class="text2center font-bold font-white height50">';
+    $out.=$f.' ';
+    $out.=$i.' ';
+    $out.=$o.'<br>';
+    $out.='</div>';
+    $out.='<div class="text2center font-white">';
+    $out.=DateFormat($d1).' - ';
+    $out.=DateFormat($d2).'<br>';
+    $out.='</div>';
+    $out.='<div class="text2right">';
+    $out.='<a href="/cardout.php?idx='.$idx.'">детали...</a>';
+    $out.='</div>';
+    $out.='</div></div>';
+    return $out;
+}

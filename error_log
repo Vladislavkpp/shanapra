@@ -45,3 +45,132 @@ Stack trace:
 #0 {main}
   thrown in /home/bicycleb/public_html/strepair.php on line 5
 [12-Aug-2025 17:45:30 UTC] PHP Warning:  Undefined array key "logged" in /home/bicycleb/public_html/profile.php on line 63
+[12-Aug-2025 22:13:49 UTC] PHP Warning:  require_once(vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/stlogin.php on line 7
+[12-Aug-2025 22:13:49 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/stlogin.php:7
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/stlogin.php on line 7
+[12-Aug-2025 22:48:36 UTC] PHP Warning:  The use statement with non-compound name 'mysqli' has no effect in /home/bicycleb/public_html/function_vra.php on line 115
+[12-Aug-2025 22:48:36 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Dbs_Select() in /home/bicycleb/public_html/searchout.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 27
+[13-Aug-2025 01:39:41 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/search.php on line 2
+[13-Aug-2025 01:39:41 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/search.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/search.php on line 2
+[13-Aug-2025 03:08:54 UTC] PHP Warning:  The use statement with non-compound name 'mysqli' has no effect in /home/bicycleb/public_html/function_vra.php on line 115
+[13-Aug-2025 03:08:54 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Dbs_Select() in /home/bicycleb/public_html/searchout.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 27
+[13-Aug-2025 04:15:04 UTC] PHP Warning:  The use statement with non-compound name 'mysqli' has no effect in /home/bicycleb/public_html/function_vra.php on line 115
+[13-Aug-2025 04:15:04 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Dbs_Select() in /home/bicycleb/public_html/searchout.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 27
+[13-Aug-2025 20:28:20 UTC] PHP Warning:  The use statement with non-compound name 'mysqli' has no effect in /home/bicycleb/public_html/function_vra.php on line 115
+[13-Aug-2025 20:28:20 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Dbs_Select() in /home/bicycleb/public_html/searchout.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 27
+[14-Aug-2025 04:03:19 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/obituary.php on line 2
+[14-Aug-2025 04:03:19 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/obituary.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/obituary.php on line 2
+[14-Aug-2025 05:05:35 UTC] PHP Warning:  The use statement with non-compound name 'mysqli' has no effect in /home/bicycleb/public_html/function_vra.php on line 115
+[14-Aug-2025 05:05:35 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Dbs_Select() in /home/bicycleb/public_html/searchout.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 27
+[14-Aug-2025 07:15:06 UTC] PHP Warning:  The use statement with non-compound name 'mysqli' has no effect in /home/bicycleb/public_html/function_vra.php on line 115
+[14-Aug-2025 07:15:06 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Dbs_Select() in /home/bicycleb/public_html/searchout.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 27
+[14-Aug-2025 08:22:58 UTC] PHP Warning:  The use statement with non-compound name 'mysqli' has no effect in /home/bicycleb/public_html/function_vra.php on line 115
+[14-Aug-2025 08:22:58 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Dbs_Select() in /home/bicycleb/public_html/searchout.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 27
+[14-Aug-2025 09:53:23 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/strepair.php on line 5
+[14-Aug-2025 09:53:23 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/strepair.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 5
+[14-Aug-2025 17:51:00 UTC] PHP Warning:  The use statement with non-compound name 'mysqli' has no effect in /home/bicycleb/public_html/function_vra.php on line 115
+[14-Aug-2025 17:51:00 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Dbs_Select() in /home/bicycleb/public_html/searchout.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 27
+[14-Aug-2025 20:33:51 UTC] PHP Warning:  require_once(vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/stlogin.php on line 7
+[14-Aug-2025 20:33:51 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/stlogin.php:7
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/stlogin.php on line 7
+[14-Aug-2025 21:49:05 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/search.php on line 2
+[14-Aug-2025 21:49:05 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/search.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/search.php on line 2
+[14-Aug-2025 21:49:39 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/favor.php on line 2
+[14-Aug-2025 21:49:39 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/favor.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/favor.php on line 2
+[15-Aug-2025 00:08:54 UTC] PHP Warning:  The use statement with non-compound name 'mysqli' has no effect in /home/bicycleb/public_html/function_vra.php on line 115
+[15-Aug-2025 00:08:54 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Dbs_Select() in /home/bicycleb/public_html/searchout.php:27
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 27
+[15-Aug-2025 18:39:46 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/cardout.php on line 2
+[15-Aug-2025 18:39:46 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/cardout.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 2
+[16-Aug-2025 08:29:53 UTC] PHP Warning:  The use statement with non-compound name 'mysqli' has no effect in /home/bicycleb/public_html/function_vra.php on line 115
+[16-Aug-2025 08:29:53 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Cards_Card() in /home/bicycleb/public_html/searchout.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 32
+[16-Aug-2025 08:30:58 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Cards_Card() in /home/bicycleb/public_html/searchout.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 32
+[16-Aug-2025 08:32:56 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Cards_Card() in /home/bicycleb/public_html/searchout.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 32
+[16-Aug-2025 10:01:27 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Cards_Card() in /home/bicycleb/public_html/searchout.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 32
+[16-Aug-2025 10:02:54 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Cards_Card() in /home/bicycleb/public_html/searchout.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchout.php on line 32
+[16-Aug-2025 10:05:53 UTC] PHP Fatal error:  Uncaught Error: Class "Utils" not found in /home/bicycleb/public_html/function_vra.php:130
+Stack trace:
+#0 /home/bicycleb/public_html/searchout.php(32): Cards()
+#1 {main}
+  thrown in /home/bicycleb/public_html/function_vra.php on line 130
+[16-Aug-2025 10:05:55 UTC] PHP Fatal error:  Uncaught Error: Class "Utils" not found in /home/bicycleb/public_html/function_vra.php:130
+Stack trace:
+#0 /home/bicycleb/public_html/searchout.php(32): Cards()
+#1 {main}
+  thrown in /home/bicycleb/public_html/function_vra.php on line 130
+[16-Aug-2025 13:11:31 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/strepair.php on line 5
+[16-Aug-2025 13:11:31 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/strepair.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 5
+[16-Aug-2025 16:49:38 UTC] PHP Fatal error:  Uncaught Error: Class "Page" not found in /home/bicycleb/public_html/cardout.php:4
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 4
+[16-Aug-2025 16:54:36 UTC] PHP Fatal error:  Uncaught Error: Class "Page" not found in /home/bicycleb/public_html/cardout.php:4
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 4

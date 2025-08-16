@@ -139,7 +139,7 @@ View_Add('<div class="out">');
 View_Add('<div class="graveadd-container">');
 
 View_Add(Contentgrave());
-View_Add(gravezone());
+//View_Add(gravezone());
 
 View_Add('</div>');
 
