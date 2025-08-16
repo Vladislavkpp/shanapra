@@ -37,6 +37,8 @@ View_Add('* <br/>');
 git commit -m "Краткое описание изменений"
 git push origin master */   // master - рабочая ветка
 
+
+
 //git branch  - список веток , git checkout имя_ветки - переключиться на рабочую ветку.
 
 
