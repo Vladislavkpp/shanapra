@@ -174,3 +174,52 @@ Stack trace:
 Stack trace:
 #0 {main}
   thrown in /home/bicycleb/public_html/cardout.php on line 4
+[17-Aug-2025 02:55:35 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/service.php on line 2
+[17-Aug-2025 02:55:35 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/service.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/service.php on line 2
+[17-Aug-2025 06:17:21 UTC] PHP Fatal error:  Uncaught Error: Class "Page" not found in /home/bicycleb/public_html/cardout.php:4
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 4
+[17-Aug-2025 06:26:34 UTC] PHP Fatal error:  Uncaught Error: Class "Page" not found in /home/bicycleb/public_html/cardout.php:4
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 4
+[17-Aug-2025 06:33:29 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function View_Add() in /home/bicycleb/public_html/cardout.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 5
+[17-Aug-2025 06:42:29 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function View_Add() in /home/bicycleb/public_html/cardout.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 5
+[17-Aug-2025 06:42:31 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function View_Add() in /home/bicycleb/public_html/cardout.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 5
+[17-Aug-2025 07:28:41 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function View_Add() in /home/bicycleb/public_html/cardout.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 5
+[17-Aug-2025 09:49:21 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/function.php:278
+Stack trace:
+#0 /home/bicycleb/public_html/function.php(278): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 278
+[17-Aug-2025 09:50:17 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/function.php:278
+Stack trace:
+#0 /home/bicycleb/public_html/function.php(278): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 278
+[17-Aug-2025 09:50:20 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/function.php:278
+Stack trace:
+#0 /home/bicycleb/public_html/function.php(278): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 278
+[17-Aug-2025 09:50:34 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/function.php:278
+Stack trace:
+#0 /home/bicycleb/public_html/function.php(278): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 278

@@ -1,11 +1,22 @@
 <?php
-require_once "function.php";
+/**
+ * @var $md
+ * @var $bufView_Add(SetTitle('Персональна сторінка'));
+ */
+require_once $_SERVER['DOCUMENT_ROOT'] ."/function.php";
 
-Page::SetTitle('Персональна сторінка');
-View::Add(Page::OutTop());
-//View::Add(''); //
-View::Add('Персональна сторінка');
+View_Clear();
+View_Add(Page_Up());
+
+View_Add(Menu_Up());
+View_Add('<div class="out">');
+View_Add(Menu_Left());
 
 
-View::Add(Page::OutBottom());
-View::Out();
+
+
+
+View_Add('</div>');
+View_Add(Page_Down());
+View_Out();
+View_Clear();

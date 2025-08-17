@@ -21,66 +21,71 @@ if ($md == "grave") {
 }
 
 
-
 function Contentgrave()
 {
     $out =
-        ' <div class="contentgrave-form"> ' .
-        ' <form action="/graveadd.php" method="post"> ' .
-        ' <input type="hidden" name="md" value="grave"> ' .
+        '<div class="contentgrave-form">' .
+        '<form action="/graveadd.php" method="post">' .
+        '<input type="hidden" name="md" value="grave">' .
 
+        '<div class="form-header-wrap">' .
+        '<div class="form-header">' .
+        '<h2><i class="icon-person"></i> Форма реєстрації даних про померлого</h2>' .
+        '<p>Заповніть всі необхідні поля для створення запису</p>' .
+        '</div>' .
+        '</div>' .
 
-        ' <div class="form-header-wrap"> ' .
-        ' <div class="form-header"> ' .
-        ' <h2><i class="icon-person"></i> Форма реєстрації даних про померлого</h2> ' .
-        ' <p>Заповніть всі необхідні поля для створення запису</p> ' .
-        ' </div> ' .
-        ' </div> ' .
+        '<div class="form-content" style="padding: 24px; padding-top: 15px; padding-bottom: 15px;">' .
 
+        '<div class="section-header">' .
+        '<h3><img src="/assets/images/fuser.png" class="section-icon">Особисті дані</h3>' .
+        '</div>' .
 
-        ' <div class="form-content" style="padding: 24px; padding-top: 15px; padding-bottom: 15px; "> ' .
-        ' <div class="section-header"> ' .
-        ' <h3><img src="/assets/images/fuser.png" class="section-icon">Особисті дані</h3> ' .
-        ' </div> ' .
-        '<div class="form-row"> ' .
-        ' <div class="input-container"> ' .
-        ' <input type="text" name="lname" required placeholder=" "> ' .
-        ' <label>Прізвище *</label> ' .
-        ' </div> ' .
-        ' <div class="input-container"> ' .
-        ' <input type="text" name="fname" required placeholder=" "> ' .
-        ' <label>Ім’я *</label> ' .
-        ' </div> ' .
-        ' <div class="input-container"> ' .
-        ' <input type="text" name="mname" placeholder=" "> ' .
-        ' <label>По батькові</label> ' .
-        ' </div> ' .
-        '</div> ' .
-
-        '<div class="form-row"> ' .
-        '<div class="input-container"> ' .
-        '<input type="date" name="birthdate" required placeholder="дд.мм.рррр" style="lang: uk;"> ' .
-        '<label>Дата народження *</label> ' .
-        ' </div> ' .
-        ' <div class="input-container"> ' .
-        ' <input type="date" name="deathdate" required placeholder=" "> ' .
-        '<label>Дата смерті *</label> ' .
-        ' </div>' .
-        ' </div> ' .
-
-
-        '<div class="section-header"> ' .
-        '<h3><img src="/assets/images/flocation.png" class="section-icon">Місце поховання</h3> ' .
-        '</div> ' .
-        '<div class="form-row"> ' .
-        '<div class="input-container"> ' .
-        RegionSelect("city","city-select").
-        ' <label>Місто *</label>' .
-        ' </div>' .
+        '<div class="form-row">' .
         '<div class="input-container">' .
-        ' <input type="text" name="cemetery" required placeholder=" ">' .
+        '<input type="text" name="lname" required placeholder=" ">' .
+        '<label>Прізвище *</label>' .
+        '</div>' .
+        '<div class="input-container">' .
+        '<input type="text" name="fname" required placeholder=" ">' .
+        '<label>Ім’я *</label>' .
+        '</div>' .
+        '<div class="input-container">' .
+        '<input type="text" name="mname" placeholder=" ">' .
+        '<label>По батькові</label>' .
+        '</div>' .
+        '</div>' .
+
+        '<div class="form-row">' .
+        '<div class="input-container">' .
+        '<input type="date" name="birthdate" required placeholder="дд.мм.рррр" style="lang: uk;">' .
+        '<label>Дата народження *</label>' .
+        '</div>' .
+        '<div class="input-container">' .
+        '<input type="date" name="deathdate" required placeholder=" ">' .
+        '<label>Дата смерті *</label>' .
+        '</div>' .
+        '</div>' .
+
+        '<div class="section-header">' .
+        '<h3><img src="/assets/images/flocation.png" class="section-icon">Місце поховання</h3>' .
+        '</div>' .
+
+        '<div class="form-row">' .
+        '<div class="input-container">' .
+        RegionSelect("region","city-select") .
+        '<label>Область *</label>' .
+        '</div>' .
+        '<div class="input-container">' .
+        '<select name="district" id="district" required>' .
+        '<option value="">Спочатку виберіть область</option>' .
+        '</select>' .
+        '<label>Район *</label>' .
+        '</div>' .
+        '<div class="input-container">' .
+        '<input type="text" name="cemetery" required placeholder=" ">' .
         '<label>Кладовище *</label>' .
-        ' </div>' .
+        '</div>' .
         '</div>' .
 
         '<div class="form-row">' .
@@ -88,38 +93,56 @@ function Contentgrave()
         '<input type="text" name="pos1" required placeholder=" ">' .
         '<label>Квартал</label>' .
         '</div>' .
-        ' <div class="input-container">' .
-        ' <input type="text" name="pos2" required placeholder=" ">' .
-        ' <label>Ряд</label>' .
-        ' </div>' .
-        ' <div class="input-container">' .
+        '<div class="input-container">' .
+        '<input type="text" name="pos2" required placeholder=" ">' .
+        '<label>Ряд</label>' .
+        '</div>' .
+        '<div class="input-container">' .
         '<input type="text" name="pos3" required placeholder=" ">' .
         '<label>Місце поховання</label>' .
-        ' </div>' .
+        '</div>' .
         '</div>' .
 
-
         '<div class="section-header">' .
-        ' <h3><img src="/assets/images/fcamera.png" class="section-icon">Фотографії</h3>' .
+        '<h3><img src="/assets/images/fcamera.png" class="section-icon">Фотографії</h3>' .
         '</div>' .
         '<div class="form-vertical-grave">' .
         '<div class="input-container upload">' .
         '<input type="file" name="photo1">' .
         '<label>Фото поховання</label>' .
-        ' </div>' .
-        ' <div class="input-container upload">' .
-        ' <input type="file" name="photo2">' .
-        ' <label>Фото лиця</label>' .
+        '</div>' .
+        '<div class="input-container upload">' .
+        '<input type="file" name="photo2">' .
+        '<label>Фото лиця</label>' .
         '</div>' .
         '</div>' .
-
 
         '<div class="form-row form-actions">' .
         '<button type="submit" class="sub-btn">Зберегти запис</button>' .
-        ' <button type="reset" class="cancel-btn">Скасувати</button>' .
+        '<button type="reset" class="cancel-btn">Скасувати</button>' .
         '</div>' .
 
-        '</form></div></div>';
+        '</form>' .
+        '</div>' .
+        '</div>';
+
+    $out .= '
+<script>
+function loadDistricts(regionId) {
+    if (!regionId) return;
+    var xhr = new XMLHttpRequest();
+   
+    xhr.open("GET", "?ajax_districts=1&region_id=" + regionId, true);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            document.getElementById("district").innerHTML = xhr.responseText;
+        } else {
+            alert("Помилка завантаження районів");
+        }
+    };
+    xhr.send();
+}
+</script>';
 
     return $out;
 }

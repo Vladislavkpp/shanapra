@@ -494,7 +494,7 @@ body {
 /*форма поховання */
 .contentgrave-form {
     max-width: 570px;
-    height: 670px;
+    height: 655px;
     margin: 0 auto;
     margin-top: 30px;
     margin-bottom: 30px;
@@ -671,6 +671,7 @@ body {
 /* Кнопки */
 .form-row.form-actions {
     justify-content: flex-start;
+    margin-top: 25px;
 }
 
 .sub-btn {

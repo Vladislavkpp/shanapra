@@ -13,7 +13,7 @@ class Cards
      // no-foto
      if (!is_file($_SERVER['DOCUMENT_ROOT'].$img))
      {
-         $img='/Graves/no_image.png';
+         $img='/graves/no_image.png';
      }
      $out.='<img src="'.$img.'" class="cardx-image" alt="'.$f.' '.$i.' '.$o.'" title="'.$f.' '.$i.' '.$o.'">';
      $out.='</div>';

@@ -233,7 +233,7 @@ function DbsCount():int
     return $out;
 }
 
-function RegionSelect($n="",$c=""):string
+/*function RegionSelect($n="",$c=""):string
 {
     return
     '<select name="'.$n.'" class="'.$c.'" required> ' .
@@ -265,4 +265,41 @@ function RegionSelect($n="",$c=""):string
     '<option>Чернігів</option>' .
 
     '</select>' ;
+}*/
+
+if (isset($_GET['ajax_districts']) && isset($_GET['region_id'])) {
+    $region_id = intval($_GET['region_id']);
+    $dblink = DbConnect();
+
+    $res = mysqli_query($dblink, "SELECT title FROM district WHERE region = $region_id ORDER BY title");
+    mysqli_close($dblink);
+
+    if ($res && mysqli_num_rows($res) > 0) {
+        echo '<option value="">Виберіть район</option>';
+        while ($row = mysqli_fetch_assoc($res)) {
+            echo '<option value="'.$row['title'].'">'.$row['title'].'</option>';
+        }
+    } else {
+        echo '<option value="">Райони не знайдено</option>';
+    }
+    exit;
 }
+
+
+function RegionSelect($n="region",$c="") {
+    $dblink = DbConnect();
+    $res = mysqli_query($dblink, "SELECT idx, title FROM region ORDER BY title");
+    mysqli_close($dblink);
+
+    $out = '<select name="'.$n.'" id="region" class="'.$c.'" onchange="loadDistricts(this.value)" required>';
+    $out .= '<option value="" disabled selected>Виберіть область</option>';
+
+    while ($row = mysqli_fetch_assoc($res)) {
+        $out .= '<option value="'.$row['idx'].'">'.$row['title'].'</option>';
+    }
+
+    $out .= '</select>';
+    return $out;
+}
+
+

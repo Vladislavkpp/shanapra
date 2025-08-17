@@ -1,12 +1,9 @@
 <?php
-
-
 /**
  * @var $md
  * @var $buf
  */
-//require_once $_SERVER['DOCUMENT_ROOT'] .'/vendor/autoload.php';
-require_once "function.php";
+require_once $_SERVER['DOCUMENT_ROOT'] ."/function.php";
 
 View_Clear();
 View_Add(Page_Up());
