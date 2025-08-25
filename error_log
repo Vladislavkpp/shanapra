@@ -83,3 +83,31 @@ Stack trace:
 [25-Aug-2025 11:48:04 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 9
 [25-Aug-2025 11:48:04 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 9
 [25-Aug-2025 11:48:05 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 9
+[25-Aug-2025 11:51:52 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/favor.php on line 2
+[25-Aug-2025 11:51:52 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/favor.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/favor.php on line 2
+[25-Aug-2025 13:19:47 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/userpage.php on line 5
+[25-Aug-2025 13:19:47 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/userpage.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/userpage.php on line 5
+[25-Aug-2025 19:09:15 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/function.php:381
+Stack trace:
+#0 /home/bicycleb/public_html/function.php(381): mysqli_fetch_assoc()
+#1 /home/bicycleb/public_html/graveadd.php(31): getSettlements()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 381
+[25-Aug-2025 19:22:11 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/function.php:381
+Stack trace:
+#0 /home/bicycleb/public_html/function.php(381): mysqli_fetch_assoc()
+#1 /home/bicycleb/public_html/graveadd.php(32): getSettlements()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 381
+[25-Aug-2025 19:49:38 UTC] PHP Fatal error:  Cannot redeclare RegionSelect() (previously declared in /home/bicycleb/public_html/graveadd.php:50) in /home/bicycleb/public_html/function.php on line 337
+[25-Aug-2025 19:49:40 UTC] PHP Fatal error:  Cannot redeclare RegionSelect() (previously declared in /home/bicycleb/public_html/graveadd.php:50) in /home/bicycleb/public_html/function.php on line 337
+[25-Aug-2025 19:49:40 UTC] PHP Fatal error:  Cannot redeclare RegionSelect() (previously declared in /home/bicycleb/public_html/graveadd.php:50) in /home/bicycleb/public_html/function.php on line 337
+[25-Aug-2025 19:49:41 UTC] PHP Fatal error:  Cannot redeclare RegionSelect() (previously declared in /home/bicycleb/public_html/graveadd.php:50) in /home/bicycleb/public_html/function.php on line 337
+[25-Aug-2025 19:49:41 UTC] PHP Fatal error:  Cannot redeclare RegionSelect() (previously declared in /home/bicycleb/public_html/graveadd.php:50) in /home/bicycleb/public_html/function.php on line 337
+[25-Aug-2025 19:49:42 UTC] PHP Fatal error:  Cannot redeclare RegionSelect() (previously declared in /home/bicycleb/public_html/graveadd.php:50) in /home/bicycleb/public_html/function.php on line 337

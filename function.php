@@ -27,17 +27,6 @@ if ((!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) && isset($_COOKIE[
     $_SESSION['last_activity'] = time();
 }
 
-// Проверка последней активности для сессии
-$inactive = 1800; // 30 минут
-if (isset($_SESSION['last_activity'])) {
-    if (time() - $_SESSION['last_activity'] > $inactive) {
-        session_unset();
-        session_destroy();
-        setcookie($auth_cookie_name, '', time() - 3600, '/');
-    } else {
-        $_SESSION['last_activity'] = time(); // обновляем активность
-    }
-}
 
 
 const xbr = "\n";
@@ -244,20 +233,22 @@ function Page_Up($ttl = ''): string
 
 function Page_Down(): string
 {
-    $out = '<div class="Page_Down"><hr class="page-down-hr">';
+    $out = '<div class="Page_Down">';
     $out .= '<ul class="menu_down">
-<li><a href = "/" >About Us</a></li>
-<li><a href = "/" >FAQ</a></li>
-<li><a href = "/" >Contacts</a></li>
-<li><a href = "/" >NpInfo</a></li>
-<li><a href = "/" >Copyright</a></li>
-<li><a href = "/" >Links</a></li>
+<li><a href="/">About Us</a></li>
+<li><a href="/">FAQ</a></li>
+<li><a href="/">Contacts</a></li>
+<li><a href="/">NpInfo</a></li>
+<li><a href="/">Copyright</a></li>
+<li><a href="/">Links</a></li>
 </ul>';
+    $out .= '<hr class="page-down-hr">';
+    $out .= '<div class="copyright">© 2025 shanapra</div>';
     $out .= '</div>' . xbr;
-    $out .= '</div>';
     $out .= '</body></html>';
     return $out;
 }
+
 
 function Contentx(): string
 {
@@ -328,19 +319,22 @@ if (isset($_GET['ajax_districts']) && isset($_GET['region_id'])) {
     $region_id = intval($_GET['region_id']);
     $dblink = DbConnect();
 
-    $res = mysqli_query($dblink, "SELECT title FROM district WHERE region = $region_id ORDER BY title");
+    // Берём id и название
+    $res = mysqli_query($dblink, "SELECT idx, title FROM district WHERE region = $region_id ORDER BY title");
     mysqli_close($dblink);
 
     if ($res && mysqli_num_rows($res) > 0) {
         echo '<option value="">Виберіть район</option>';
         while ($row = mysqli_fetch_assoc($res)) {
-            echo '<option value="' . $row['title'] . '">' . $row['title'] . '</option>';
+            // value = id, текст = название
+            echo '<option value="' . (int)$row['idx'] . '">' . htmlspecialchars($row['title']) . '</option>';
         }
     } else {
         echo '<option value="">Райони не знайдено</option>';
     }
     exit;
 }
+
 
 
 function RegionSelect($n = "region", $c = "")
@@ -360,4 +354,71 @@ function RegionSelect($n = "region", $c = "")
     return $out;
 }
 
+
+// Районы по области
+function getDistricts($region_id)
+{
+    $dblink = DbConnect();
+    $region_id = (int)$region_id;
+
+    $res = mysqli_query($dblink, "SELECT idx, title FROM district WHERE region = $region_id ORDER BY title");
+
+    $out = '<option value="">Оберіть район</option>';
+    while ($row = mysqli_fetch_assoc($res)) {
+        $out .= '<option value="' . (int)$row['idx'] . '">' . htmlspecialchars($row['title']) . '</option>';
+    }
+
+    mysqli_close($dblink);
+    return $out;
+}
+
+// Населенные пункты по району и области
+function getSettlements($region_id, $district_id)
+{
+    $dblink = DbConnect();
+    $region_id = (int)$region_id;
+    $district_id = (int)$district_id;
+
+    $sql = "SELECT idx, title 
+            FROM misto 
+            WHERE idxregion = $region_id 
+              AND idxdistrict = $district_id 
+            ORDER BY title";
+
+    $res = mysqli_query($dblink, $sql);
+
+    $out = '<option value="">Оберіть населений пункт</option>';
+    while ($row = mysqli_fetch_assoc($res)) {
+        // ВАЖНО: берем именно misto.idx и misto.title
+        $out .= '<option value="' . (int)$row['idx'] . '">' . htmlspecialchars($row['title']) . '</option>';
+    }
+
+    mysqli_close($dblink);
+    return $out;
+}
+
+
+
+// Добавление нового населённого пункта
+function addSettlement($region_id, $district_id, $name)
+{
+    $dblink = DbConnect();
+    $region_id = (int)$region_id;
+    $district_id = (int)$district_id;
+    $name = mysqli_real_escape_string($dblink, trim($name));
+
+    if ($name === "") {
+        return "Помилка: пуста назва";
+    }
+
+    $sql = "INSERT INTO misto (title, idxdistrict, idxregion) VALUES ('$name', $district_id, $region_id)";
+    if (mysqli_query($dblink, $sql)) {
+        $out = "OK: додано";
+    } else {
+        $out = "Помилка: " . mysqli_error($dblink);
+    }
+
+    mysqli_close($dblink);
+    return $out;
+}
 
