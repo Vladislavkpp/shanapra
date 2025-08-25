@@ -1260,30 +1260,52 @@ body {
 }
 
 
+
+/*НИЖНЕЕ МЕН,*/
 .Page_Down {
-    background: #181818;
+    background: #000b27;
+    text-align: center;
+    padding: 20px 0;
     width: 100%;
 }
 
-.menu_down, .menu_down > li {
+.menu_down {
+    list-style: none;
     display: flex;
-    margin-right: 15px;
+    justify-content: center;
+    gap: 20px;
+    padding: 0;
+    margin: 0 0 10px 0;
+}
+
+.menu_down li {
+    display: inline;
 }
 
 .menu_down a {
-    color: white;
+    color: rgba(255, 255, 255, 0.65);
     text-decoration: none;
     transition: color 0.2s;
+    font-size: 14px;
 }
 
 .menu_down a:hover {
-    color: #cbdeff;
+    color: #ffffff;
 }
 
 .page-down-hr {
     border: none;
-    border-top: 1px solid rgba(204, 204, 204, 0.25);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    margin: 10px auto;
+    max-width: 800px;
 }
+
+.copyright {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    margin-top: 10px;
+}
+
 
 
 
@@ -1763,6 +1785,7 @@ body {
 .Menu_Profile {
     background: #001242;
     width: 250px;
+    height: 690px;
     min-width: 250px;
     max-width: 250px;
     color: white;
