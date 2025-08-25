@@ -43,7 +43,7 @@ body {
     height: 100vh;
     overflow-x: hidden;
 }
-/* Основной контейнер */ /* Форма пошуку */
+/* Основной контейнер / Форма поиска */
 .content {
     max-width: 420px;
     max-height: 360px;
@@ -67,29 +67,31 @@ body {
 .form-title {
     font-size: 20px;
     font-weight: bold;
+    color: #004687;
     margin-bottom: 16px;
-    text-align: center;
-    color: #222;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .login-formContainer {
     text-align: center;
 }
 
-/* Сама форма */
+/* Форма */
 .formindex {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-/* Ряды формы */
 .form-row {
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
-    justify-content: center;
-    width: 100%;
+    margin-bottom: 20px;
 }
 
 .form-row.center {
@@ -104,13 +106,17 @@ body {
     width: 100%;
 }
 
+/* Контейнеры полей */
 .input-container {
     position: relative;
-    width: 100%;
-    max-width: 100%;
+    flex: 1 1 30%;
+    min-width: 160px;
 }
 
-/* Инпуты */
+/* Поля ввода и select */
+.input-container input[type="text"],
+.input-container input[type="date"],
+.input-container select,
 .login-Input {
     width: 100%;
     padding: 10px 12px;
@@ -120,24 +126,32 @@ body {
     background: white;
     outline: none;
     transition: border-color 0.2s;
-    box-sizing: border-box;
     color: #000;
+    box-sizing: border-box;
     caret-color: #000;
 }
 
-/* Фокус на инпут */
+.input-container input[type="text"],
+.input-container input[type="date"],
+.input-container select {
+    height: 34px;
+    line-height: 1.2;
+    padding: 0px 8px 0px 14px;
+    appearance: none;
+}
+
+/* Фокус на поля */
+.input-container input:focus,
+.input-container select:focus,
 .login-Input:focus {
     border-color: #007bff;
 }
 
-/* скрытие placeholder */
-.login-Input::placeholder {
-    color: transparent;
-}
-
-.input-container label {
+/* Лейблы */
+.input-container label,
+.login-Input + label {
     position: absolute;
-    top: 10px;
+    top: 8px;
     left: 12px;
     background: white;
     padding: 0 4px;
@@ -147,7 +161,11 @@ body {
     transition: 0.2s ease all;
 }
 
-/* для того чтобы лейбл поднялся при фокусе */
+/* Подъем лейбла при фокусе или заполнении */
+.input-container input:focus + label,
+.input-container input:not(:placeholder-shown) + label,
+.input-container select:focus + label,
+.input-container select:not([value=""]) + label,
 .login-Input:focus + label,
 .login-Input:not(:placeholder-shown) + label {
     top: -8px;
@@ -156,22 +174,38 @@ body {
     color: #007bff;
 }
 
-.login-Binput {
+/* Кнопки */
+.login-Binput,
+.sub-btn {
     padding: 10px 24px;
     font-size: 15px;
-    background-color: #004687;
-    color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.2s;
     width: 100%;
     max-width: 100%;
+}
+
+.login-Binput {
+    background-color: #004687;
+    color: white;
     align-self: stretch;
 }
 
 .login-Binput:hover {
     background-color: #002147;
+}
+
+.sub-btn {
+    background-color: #007bff;
+    color: white;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.sub-btn:hover {
+    background-color: #0060d0;
 }
 
 /* Деталізований пошук */
@@ -195,6 +229,56 @@ body {
     width: 100%;
     height: 0;
     background: none;
+}
+
+/* Скрытие placeholder для login-Input */
+.login-Input::placeholder {
+    color: transparent;
+}
+
+/* Адаптация для экранов до 480px */
+@media (max-width: 480px) {
+    .content {
+        width: 290px;
+        max-height: max-content;
+        padding: 16px;
+        margin: 20px auto;
+    }
+
+    .form-title {
+        font-size: 18px;
+        gap: 4px;
+    }
+
+    .form-row {
+        #flex-direction: column;
+        gap: 12px;
+    }
+
+    .input-container {
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+
+    .input-container input[type="text"],
+    .input-container input[type="date"],
+    .input-container select,
+    .login-Input {
+        font-size: 14px;
+        height: 36px;
+        padding: 8px 10px;
+    }
+
+    .login-Binput,
+    .sub-btn {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .advanced-link {
+        font-size: 14px;
+        text-align: center;
+    }
 }
 
 
@@ -487,14 +571,119 @@ body {
     width: 100%;
 }
 
+/* Группы полей */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+
+/*index*/
+/* Заголовок формы */
+.form-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #004687;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Группы полей */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+/* Контейнер поля */
+.input-container {
+    position: relative;
+    flex: 1 1 30%;
+    min-width: 160px;
+}
+
+/* Поля ввода */
+.input-container input[type="text"],
+.input-container input[type="date"],
+.input-container select {
+    height: 34px;
+    line-height: 1.2;
+    appearance: none;
+    width: 100%;
+    padding: 0px 8px 0px 14px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+    color: #000;
+    box-sizing: border-box;
+}
+
+/* Фокус поля */
+.input-container input:focus,
+.input-container select:focus {
+    border-color: #007bff;
+}
+
+/* Лейблы */
+.input-container label {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    background: white;
+    padding: 0 4px;
+    color: #888;
+    font-size: 14px;
+    pointer-events: none;
+    transition: 0.2s ease all;
+}
+
+/* Подъём лейбла */
+.input-container input:focus + label,
+.input-container input:not(:placeholder-shown) + label,
+.input-container select:focus + label,
+.input-container select:not([value=""]) + label {
+    top: -8px;
+    left: 10px;
+    font-size: 12px;
+    color: #007bff;
+}
+
+/* Кнопка отправки */
+.sub-btn {
+    padding: 10px 24px;
+    font-size: 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.sub-btn:hover {
+    background-color: #0060d0;
+}
 
 
 
 
-/*форма поховання */
+
+/* форма поховання */
 .contentgrave-form {
     max-width: 570px;
-    height: 655px;
+    height: 660px;
     margin: 0 auto;
     margin-top: 30px;
     margin-bottom: 30px;
@@ -506,7 +695,6 @@ body {
     box-sizing: border-box;
     padding: 0;
 }
-
 
 /* Заголовок формы */
 .form-title {
@@ -530,14 +718,11 @@ body {
     box-sizing: border-box;
 }
 
-
-
 .form-header h2 {
     display: flex;
     text-align: left;
     margin: 0 0 3px 0;
 }
-
 
 .form-header p {
     margin: 0;
@@ -574,7 +759,7 @@ body {
 }
 
 /* Группы полей */
-.form-row {
+.form-row-grave {
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
@@ -589,18 +774,68 @@ body {
     width: 100%;
 }
 
+.input-container-grave input[type="file"]::file-selector-button {
+    margin-right: 10px;
+    padding: 8px 12px;
+    border: 1px solid #007bff;
+    background: #007bff;
+    color: #fff;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color .2s, border-color .2s, box-shadow .2s;
+}
+
+.input-container-grave input[type="file"]::file-selector-button:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+.input-container-grave input[type="file"]::file-selector-button:active {
+    background: #004892;
+}
+
+.input-container-grave input[type="file"]:focus-visible::file-selector-button {
+    box-shadow: 0 0 0 3px rgba(0,123,255,.25);
+}
+
+.input-container-grave input[type="file"]::-webkit-file-upload-button {
+    margin-right: 10px;
+    padding: 8px 12px;
+    border: 1px solid #007bff;
+    background: #007bff;
+    color: #fff;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color .2s, border-color .2s, box-shadow .2s;
+}
+.input-container-grave input[type="file"]::-webkit-file-upload-button:hover { background: #0056b3; border-color: #0056b3; }
+.input-container-grave input[type="file"]::-webkit-file-upload-button:active { background: #004892; }
+
+.input-container-md {
+    position: relative;
+    flex: 1 1 15%;
+    min-width: 100px;
+}
+
 /* Контейнер поля */
-.input-container {
+.input-container-grave {
     position: relative;
     flex: 1 1 30%;
     min-width: 160px;
 }
 
 /* Поля ввода */
-.input-container input[type="text"],
-.input-container input[type="date"],
-.input-container input[type="file"],
-.input-container select {
+.input-container-grave input[type="text"],
+.input-container-grave input[type="date"],
+.input-container-grave input[type="file"],
+.input-container-grave select,
+.input-container-md input[type="text"],
+.input-container-md input[type="date"],
+.input-container-md select {
     height: 34px;
     line-height: 1.2;
     appearance: none;
@@ -617,13 +852,16 @@ body {
 }
 
 /* Фокус поля */
-.input-container input:focus,
-.input-container select:focus {
+.input-container-grave input:focus,
+.input-container-grave select:focus,
+.input-container-md input:focus,
+.input-container-md select:focus {
     border-color: #007bff;
 }
 
 /* Лейблы */
-.input-container label {
+.input-container-grave label,
+.input-container-md label {
     position: absolute;
     top: 8px;
     left: 12px;
@@ -635,11 +873,15 @@ body {
     transition: 0.2s ease all;
 }
 
-/* Подъём лейбла при вводе */
-.input-container input:focus + label,
-.input-container input:not(:placeholder-shown) + label,
-.input-container select:focus + label,
-.input-container select:not([value=""]) + label {
+/* Подъём лейбла */
+.input-container-grave input:focus + label,
+.input-container-grave input:not(:placeholder-shown) + label,
+.input-container-grave select:focus + label,
+.input-container-grave select:not([value=""]) + label,
+.input-container-md input:focus + label,
+.input-container-md input:not(:placeholder-shown) + label,
+.input-container-md select:focus + label,
+.input-container-md select:not([value=""]) + label {
     top: -8px;
     left: 10px;
     font-size: 12px;
@@ -647,34 +889,32 @@ body {
 }
 
 /* select: пустое значение */
-.input-container select:invalid {
+.input-container-grave select:invalid {
     color: #888;
     appearance: none;
 }
 
-
-
 /* select: скрыть пустой option */
-.input-container select option[value=""] {
+.input-container-grave select option[value=""] {
     display: none;
 }
 
 /* Файлы */
-.input-container input[type="file"] {
-    height: 45px;
+.input-container-grave input[type="file"] {
+    height: 50px;
     border: 2px dashed #007bff;
-    padding: 10px 12px;
+    padding: 8px 12px;
     font-size: 14px;
     background-color: #f9f9f9;
 }
 
 /* Кнопки */
-.form-row.form-actions {
+.form-row-grave.form-actions-grave {
     justify-content: flex-start;
     margin-top: 25px;
 }
 
-.sub-btn {
+.sub-btngrave {
     padding: 10px 24px;
     font-size: 15px;
     background-color: #007bff;
@@ -690,7 +930,6 @@ body {
 .sub-btn:hover {
     background-color: #0060d0;
 }
-
 
 .cancel-btn {
     background-color: transparent;
@@ -710,6 +949,119 @@ body {
     border: 1px solid #0060d0;
     color: #0060d0;
 }
+
+/* Кнопка внутри инпута */
+.input-container-grave .add-region-btn {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    width: 20px;
+    height: 20px;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+.input-container-grave .add-region-btn:hover {
+    background-color: #0060d0;
+}
+
+/* Попап */
+.popup {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.popup-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    min-width: 320px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    font-family: sans-serif;
+}
+
+.popup-content h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #004687;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 6px;
+}
+
+.popup-content input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+}
+
+.popup-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* Лейбл с подъемом */
+.popup .input-container-grave input:focus + label,
+.popup .input-container-grave input:not(:placeholder-shown) + label {
+    top: -8px;
+    left: 10px;
+    font-size: 12px;
+    color: #007bff;
+}
+
+.popup .input-container-grave {
+    position: relative;
+    margin-bottom: 12px;
+}
+.popup .input-container-grave label {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    background: #fff;
+    padding: 0 4px;
+    color: #888;
+    font-size: 14px;
+    pointer-events: none;
+    transition: 0.2s ease all;
+}
+.popup .input-container-grave input {
+    height: 34px;
+    line-height: 1.2;
+    width: 100%;
+    padding: 0 8px 0 14px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+.popup .input-container-grave input:focus {
+    border-color: #007bff;
+}
+
+
 
 
 .graveadd-container {
@@ -935,15 +1287,12 @@ body {
 
 
 
-
-/*ВЕРХНЕЕ МЕНЮ*/
+/* ВЕРХНЕЕ МЕНЮ */
 .Menu_Up {
     display: flex;
     align-items: center;
     justify-content: space-between;
     border-bottom: 1px solid #b0d5dd;
-    /*background-color: #e8f3fc;*/
-
     background-image: linear-gradient(270deg, #007bff 0px,#e8f3fc);
     padding: 0 20px;
     padding-left: 0px;
@@ -1006,7 +1355,7 @@ body {
     font-size: 15px;
     font-weight: 600;
     text-decoration: none;
-    color: #004687;
+    color: black;
     padding: 5px 0;
     transition: color 0.3s ease;
 }
@@ -1018,13 +1367,9 @@ body {
     bottom: -2px;
     width: 0;
     height: 2px;
-    background-color: #007bff;
+    background-color: black;
     transition: 0.3s ease;
     transform: translateX(-50%);
-}
-
-.menu_ups li a:hover {
-    color: #007bff;
 }
 
 .menu_ups li a:hover::after {
@@ -1068,22 +1413,22 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 65px;
 }
 
 .login-link {
     padding: 6px 14px;
     font-size: 14px;
     color: #007bff;
+    background-color: #e8f3fc;
     border: 1.5px solid #007bff;
-    border-radius: 4px;
+    border-radius: 15px;
     text-decoration: none;
     transition: all 0.3s ease;
 }
 
 .login-link:hover {
-    background-color: #007bff;
-    color: #fff;
+    background-color: #ffffff;
+    color: #000000;
 }
 
 .menu-avatar {
@@ -1093,6 +1438,7 @@ body {
     object-fit: cover;
     cursor: pointer;
 }
+
 /* скрытый чекбокс */
 .dropdown-checkbox {
     display: none;
@@ -1133,10 +1479,11 @@ body {
     width: 100%;
 }
 
-
-
 .dropdown {
     position: relative;
+    background-color: #e8f3fc;
+    padding: 5px;
+    border-radius: 10px;
 }
 
 .dropdown-menu {
@@ -1204,6 +1551,107 @@ body {
     background: transparent;
     z-index: 998;
 }
+
+/* --- Бургер --- */
+.burger {
+    display: none;
+    width: 30px;
+    height: 24px;
+    position: relative;
+    cursor: pointer;
+}
+.burger span {
+    display: block;
+    height: 3px;
+    width: 100%;
+    background: #004687;
+    border-radius: 2px;
+    position: absolute;
+    left: 0;
+    transition: 0.3s ease;
+}
+.burger span:nth-child(1) { top: 0; }
+.burger span:nth-child(2) { top: 10px; }
+.burger span:nth-child(3) { bottom: 0; }
+
+.burger.active span:nth-child(1) {
+    transform: rotate(45deg);
+    top: 10px;
+}
+.burger.active span:nth-child(2) {
+    opacity: 0;
+}
+.burger.active span:nth-child(3) {
+    transform: rotate(-45deg);
+    bottom: 10px;
+}
+
+/* --- Мобильная версия верхнего меню --- */
+@media (max-width: 768px) {
+    .Menu_Up {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 10px 15px;
+    }
+
+    .logo {
+        display: none;
+    }
+
+    .burger {
+        display: block;
+    }
+
+    .title {
+        flex-grow: 1;
+        text-align: center;
+    }
+
+    .menu-center {
+        width: 100%;
+        order: 3;
+        flex-direction: column;
+        background: #ffffff;
+        border-radius: 8px;
+        margin-top: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+
+
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.25s ease;
+        padding: 0;
+    }
+
+    .menu-center.active {
+        max-height: 500px;
+        opacity: 1;
+        padding: 10px 0;
+    }
+
+    .menu_ups {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .menu-divider {
+        display: none;
+    }
+
+    .login-btn {
+        order: 2;
+    }
+}
+
+
+
+
+
+
+
+
 
 
 

@@ -1,7 +1,7 @@
 <?php
 session_start();
 const xbr = "\n";
-const no_grave_photo='/graves/no_image_0.png';
+const no_grave_photo = '/graves/no_image_0.png';
 $buf = '';
 $dblink = null;
 //$start = getmicrotime();
@@ -39,9 +39,9 @@ function getmicrotime()
     return ((float)$usec + (float)$sec);
 }
 
-function warn($x=''): string
+function warn($x = ''): string
 {
-    return '<div class="warn">'.$x.'</div>';
+    return '<div class="warn">' . $x . '</div>';
 }
 
 /**Створює підключення до бази даних
@@ -88,33 +88,35 @@ function View_Add(null|string $a = '')
 
 function Menu_Up(): string {
     $out = '<div class="Menu_Up">';
+
+    // Левая часть (бургер + логотип + название)
     $out .= '<div class="menu-left">';
+    $out .= '<div class="burger"><span></span><span></span><span></span></div>';
     $out .= '<div class="logo"><img src="/assets/images/logobrand2.png" alt="Логотип"></div>';
     $out .= '<div class="title">ІПС Шана</div>';
     $out .= '</div>';
 
     $out .= '<div class="menu-divider"></div>'; // вертикальная линия
 
+    // Центральное меню
     $out .= '<div class="menu-center">';
     $out .= '<ul class="menu_ups"> 
-    <li><a href="/index.php">Головна</a></li>
-    <li><a href="#">Робота</a> 
-        <ul class="submenu"> 
-            <li><a href="#">Прибирання</a></li>
-            <li><a href="#">Виготовлення</a></li>
-            <li><a href="#">Платний пошук</a></li>
-        </ul>
-    </li>
-    <li><a href="/">Церкви</a></li>
-    <li><a href="/">Наші клієнти</a></li>
-    
-   
-    
-    <li><a href="/graveadd.php">Додати поховання (Тест)</a></li>
-    <li><a href="/docs/zadaniya.php">Завдання</a></li>
+        <li><a href="/index.php">Головна</a></li>
+        <li><a href="#">Робота</a> 
+            <ul class="submenu"> 
+                <li><a href="#">Прибирання</a></li>
+                <li><a href="#">Виготовлення</a></li>
+                <li><a href="#">Платний пошук</a></li>
+            </ul>
+        </li>
+        <li><a href="/">Церкви</a></li>
+        <li><a href="/">Наші клієнти</a></li>
+        <li><a href="/graveadd.php">Додати поховання (Тест)</a></li>
+        <li><a href="/docs/zadaniya.php">Завдання</a></li>
     </ul>';
     $out .= '</div>';
 
+    // Правая часть — вход / аватар
     if (isset($_SESSION['logged']) && $_SESSION['logged'] == 1) {
         $dblink = DbConnect();
         $sql = 'SELECT avatar, cash, fname, lname FROM users WHERE idx = ' . intval($_SESSION['uzver']);
@@ -130,12 +132,10 @@ function Menu_Up(): string {
 
         $out .= '<div class="login-btn dropdown">';
         $out .= '<input type="checkbox" id="dropdown-toggle" class="dropdown-checkbox" />';
-        // label с аватаром и именем
         $out .= '<label for="dropdown-toggle" class="avatar-wrapper">';
         $out .= '<img class="menu-avatar" alt="profile" src="' . $avatar . '">';
         $out .= '<span>' . $fullname . '</span>';
         $out .= '</label>';
-        // меню
         $out .= '<div class="dropdown-menu">';
         $out .= '<a href="/profile.php"><img src="/assets/images/profileicon.png" class="menu-icon"> Профіль</a>';
         $out .= '<a href="#"><img src="/assets/images/notification.png" class="menu-icon"> Сповіщення</a>';
@@ -147,12 +147,29 @@ function Menu_Up(): string {
         $out .= '</div>';
         $out .= '<label for="dropdown-toggle" class="page-overlay"></label>';
         $out .= '</div>';
-
     } else {
         $out .= '<div class="login-btn"><a class="login-link" href="/auth.php">Увійти</a></div>';
     }
 
     $out .= '</div>';
+
+
+    $out .= '
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const burger = document.querySelector(".burger");
+        const menu = document.querySelector(".menu-center");
+
+        if (burger && menu) {
+            burger.addEventListener("click", function () {
+                burger.classList.toggle("active");
+                menu.classList.toggle("active");
+            });
+        }
+    });
+    </script>
+    ';
+
     return $out;
 }
 
@@ -168,12 +185,12 @@ function Menu_Left(): string
 }
 
 
-function Page_Up($ttl=''): string
+function Page_Up($ttl = ''): string
 {
     $out = '<!DOCTYPE html>' . xbr .
         '<html lang="uk">' . xbr .
         '<head>' . xbr .
-        '<title>ІПС Shana | '.$ttl.'</title>' . xbr .
+        '<title>ІПС Shana | ' . $ttl . '</title>' . xbr .
         '<meta charset="utf-8">' . xbr .
         '<meta http-equiv="Content-Type" content="text/html">' . xbr .
         '<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1, shrink-to-fit=yes">' . xbr .
@@ -210,25 +227,25 @@ function Contentx(): string
     return $out;
 }
 
-function View_Add_Warn($mes=''): string
+function View_Add_Warn($mes = ''): string
 {
     global $md;
-    $out = '<div class="warn">md='.$md.'** '.$mes.'</div>';
+    $out = '<div class="warn">md=' . $md . '** ' . $mes . '</div>';
 
     return $out;
 }
 
-function DbsCount():int
+function DbsCount(): int
 {
     global $dblink;
-    $dblink=DbConnect();
+    $dblink = DbConnect();
     $sql = 'SELECT count(idx) as t1 FROM grave';
     $res = mysqli_query($dblink, $sql);
     if (!$res) {
         $out = 0;
     } else {
         $ou = mysqli_fetch_assoc($res);
-        $out=$ou['t1'];
+        $out = $ou['t1'];
     }
     return $out;
 }
@@ -277,7 +294,7 @@ if (isset($_GET['ajax_districts']) && isset($_GET['region_id'])) {
     if ($res && mysqli_num_rows($res) > 0) {
         echo '<option value="">Виберіть район</option>';
         while ($row = mysqli_fetch_assoc($res)) {
-            echo '<option value="'.$row['title'].'">'.$row['title'].'</option>';
+            echo '<option value="' . $row['title'] . '">' . $row['title'] . '</option>';
         }
     } else {
         echo '<option value="">Райони не знайдено</option>';
@@ -286,16 +303,17 @@ if (isset($_GET['ajax_districts']) && isset($_GET['region_id'])) {
 }
 
 
-function RegionSelect($n="region",$c="") {
+function RegionSelect($n = "region", $c = "")
+{
     $dblink = DbConnect();
     $res = mysqli_query($dblink, "SELECT idx, title FROM region ORDER BY title");
     mysqli_close($dblink);
 
-    $out = '<select name="'.$n.'" id="region" class="'.$c.'" onchange="loadDistricts(this.value)" required>';
+    $out = '<select name="' . $n . '" id="region" class="' . $c . '" onchange="loadDistricts(this.value)" required>';
     $out .= '<option value="" disabled selected>Виберіть область</option>';
 
     while ($row = mysqli_fetch_assoc($res)) {
-        $out .= '<option value="'.$row['idx'].'">'.$row['title'].'</option>';
+        $out .= '<option value="' . $row['idx'] . '">' . $row['title'] . '</option>';
     }
 
     $out .= '</select>';

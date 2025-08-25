@@ -19,8 +19,6 @@ if ($md == "grave") {
     echo $sql;
     $res = mysqli_query($dblink, $sql);
 }
-
-
 function Contentgrave()
 {
     $out =
@@ -41,27 +39,27 @@ function Contentgrave()
         '<h3><img src="/assets/images/fuser.png" class="section-icon">Особисті дані</h3>' .
         '</div>' .
 
-        '<div class="form-row">' .
-        '<div class="input-container">' .
+        '<div class="form-row-grave">' .
+        '<div class="input-container-grave">' .
         '<input type="text" name="lname" required placeholder=" ">' .
         '<label>Прізвище *</label>' .
         '</div>' .
-        '<div class="input-container">' .
+        '<div class="input-container-grave">' .
         '<input type="text" name="fname" required placeholder=" ">' .
         '<label>Ім’я *</label>' .
         '</div>' .
-        '<div class="input-container">' .
+        '<div class="input-container-grave">' .
         '<input type="text" name="mname" placeholder=" ">' .
         '<label>По батькові</label>' .
         '</div>' .
         '</div>' .
 
-        '<div class="form-row">' .
-        '<div class="input-container">' .
+        '<div class="form-row-grave">' .
+        '<div class="input-container-grave">' .
         '<input type="date" name="birthdate" required placeholder="дд.мм.рррр" style="lang: uk;">' .
         '<label>Дата народження *</label>' .
         '</div>' .
-        '<div class="input-container">' .
+        '<div class="input-container-grave">' .
         '<input type="date" name="deathdate" required placeholder=" ">' .
         '<label>Дата смерті *</label>' .
         '</div>' .
@@ -71,35 +69,62 @@ function Contentgrave()
         '<h3><img src="/assets/images/flocation.png" class="section-icon">Місце поховання</h3>' .
         '</div>' .
 
-        '<div class="form-row">' .
-        '<div class="input-container">' .
+        '<div class="form-row-grave">' .
+        '<div class="input-container-grave">' .
         RegionSelect("region","city-select") .
         '<label>Область *</label>' .
+
         '</div>' .
-        '<div class="input-container">' .
+
+// поп-ап
+        '<div id="region-popup" class="popup">' .
+        '<div class="popup-content">' .
+        '<h3>Додати населений пункт</h3>' .
+        '<form method="post" action="">' .
+        '<div class="input-container-grave">' .
+        '<input type="text" name="new_region" id="new-region-input" placeholder=" " required>' .
+        '<label for="new-region-input">Введіть назву населеного пункту</label>' .
+        '</div>' .
+        '<div class="popup-actions">' .
+        '<button type="submit" class="sub-btn">Додати</button>' .
+        '<button type="button" id="close-popup" class="cancel-btn">Скасувати</button>' .
+        '</div>' .
+        '</form>' .
+        '</div>' .
+        '</div>' .
+
+        '<div class="input-container-grave">' .
         '<select name="district" id="district" required>' .
         '<option value="">Спочатку виберіть область</option>' .
         '</select>' .
         '<label>Район *</label>' .
         '</div>' .
-        '<div class="input-container">' .
+        '<div class="input-container-grave">' .
+        '<select name="settlement" id="settlement" required>' .
+        '<option value="">Виберіть</option>' .
+        '</select>' .
+        '<label>Населений пункт</label>' .
+        '<button type="button" class="add-region-btn">+</button>' .
+        '</div>' .
+
+        '</div>' .
+
+        '<div class="form-row-grave">' .
+        '<div class="input-container-grave">' .
         '<input type="text" name="cemetery" required placeholder=" ">' .
         '<label>Кладовище *</label>' .
         '</div>' .
-        '</div>' .
-
-        '<div class="form-row">' .
-        '<div class="input-container">' .
+        '<div class="input-container-md">' .
         '<input type="text" name="pos1" required placeholder=" ">' .
         '<label>Квартал</label>' .
         '</div>' .
-        '<div class="input-container">' .
+        '<div class="input-container-md">' .
         '<input type="text" name="pos2" required placeholder=" ">' .
         '<label>Ряд</label>' .
         '</div>' .
-        '<div class="input-container">' .
+        '<div class="input-container-md">' .
         '<input type="text" name="pos3" required placeholder=" ">' .
-        '<label>Місце поховання</label>' .
+        '<label>Місце</label>' .
         '</div>' .
         '</div>' .
 
@@ -107,24 +132,25 @@ function Contentgrave()
         '<h3><img src="/assets/images/fcamera.png" class="section-icon">Фотографії</h3>' .
         '</div>' .
         '<div class="form-vertical-grave">' .
-        '<div class="input-container upload">' .
+        '<div class="input-container-grave upload">' .
         '<input type="file" name="photo1">' .
         '<label>Фото поховання</label>' .
         '</div>' .
-        '<div class="input-container upload">' .
+        '<div class="input-container-grave upload">' .
         '<input type="file" name="photo2">' .
         '<label>Фото лиця</label>' .
         '</div>' .
         '</div>' .
 
-        '<div class="form-row form-actions">' .
-        '<button type="submit" class="sub-btn">Зберегти запис</button>' .
+        '<div class="form-row-grave form-actions-grave">' .
+        '<button type="submit" class="sub-btngrave">Зберегти запис</button>' .
         '<button type="reset" class="cancel-btn">Скасувати</button>' .
         '</div>' .
 
         '</form>' .
         '</div>' .
         '</div>';
+
 
     $out .= '
 <script>
@@ -142,6 +168,19 @@ function loadDistricts(regionId) {
     };
     xhr.send();
 }
+
+// показать попап
+document.addEventListener("click", function(e){
+    if(e.target.classList.contains("add-region-btn")){
+        document.getElementById("region-popup").style.display = "flex";
+    }
+});
+
+// закрыть попап
+document.getElementById("close-popup").onclick = function(){
+    document.getElementById("region-popup").style.display = "none";
+};
+
 </script>';
 
     return $out;

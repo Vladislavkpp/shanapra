@@ -14,6 +14,7 @@ View_Add('<div class="out">');
 //-----------------------------------------------------------------------------------------------
 //View_Add('* <br/>');
 View_Add('<pre style="color:white;font-weight: bold;"><a href="/gravelist.php" style="color:white;font-weight: bold;">Spisok</a> <br/>');
+View_Add('<a href="/backup.php" style="color:white;font-weight: bold;">BackUp</a> <br/>');
 View_Add('09-08-2025<br/>');
 View_Add('++ створи файл sitemap.xml<br/>');
 View_Add('++ в таблиці grave після колонки idxadd додати idtadd типу timestamp, де idxadd - користувач який додав поховання, а idtadd - час додавання<br/>');

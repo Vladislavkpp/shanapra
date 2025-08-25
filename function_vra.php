@@ -2,13 +2,13 @@
 //const DEBUG = 1;
 //define("BASE", dirname(__DIR__));
 define("BASE", $_SERVER['DOCUMENT_ROOT']);
-const WWW = 'http://127.0.0.1';
+//const WWW = 'http://127.0.0.1';
 //define("WWW", 'http://shanapra.com');
-const ASSETS = WWW . '/assets';
-const UPLOADSWWW = WWW . '/uploads';
-const UPLOADSLOC = BASE . '/uploads';
-const NO_IMAGE = ASSETS . '/images/no_image.jpg';
-const VENDOR = BASE . '/vendor/';
+//const ASSETS = WWW . '/assets';
+//const UPLOADSWWW = WWW . '/uploads';
+//const UPLOADSLOC = BASE . '/uploads';
+//const NO_IMAGE = ASSETS . '/images/no_image.jpg';
+//const VENDOR = BASE . '/vendor/';
 
 
 class Paginate
@@ -128,7 +128,7 @@ function Cards(int $idx=0, string $f='',string $i='',string $o='', string $d1=''
 {
     // прямоугольная форма, серая граница, закругленные края, тень,
     // фотография на белом фоне, остальное на сером фоне, ФИО, дата1-дата2, детали...
-    $out='<div class="cardx" style="flow: left;margin-right: 10px;margin-bottom: 10px;">';
+    $out='<div class="cardx" style="margin-right: 10px;margin-bottom: 10px;">';
     $out.='<div class="cardx-img">';
     // no-foto
     if (!is_file($_SERVER['DOCUMENT_ROOT'].$img))
