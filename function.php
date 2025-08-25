@@ -1,5 +1,45 @@
 <?php
+$auth_lifetime = 1800; // 30 минут
+
+// Куки для хранения авторизации
+$auth_cookie_name = 'user_auth';
+$auth_cookie_value = '';
+
+// Если пользователь выходит то:
+if (isset($_GET['exit']) && $_GET['exit'] == 1) {
+    setcookie($auth_cookie_name, '', time() - 3600, '/');
+    session_unset();
+    session_destroy();
+    header("Location: /index.php");
+    exit;
+}
+
+// Если пользователь авторизован через сессию — сохраняем в cookie
 session_start();
+if (isset($_SESSION['logged']) && $_SESSION['logged'] == 1) {
+    $auth_cookie_value = $_SESSION['uzver'];
+    setcookie($auth_cookie_name, $auth_cookie_value, time() + $auth_lifetime, '/');
+}
+
+if ((!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) && isset($_COOKIE[$auth_cookie_name])) {
+    $_SESSION['logged'] = 1;
+    $_SESSION['uzver'] = $_COOKIE[$auth_cookie_name];
+    $_SESSION['last_activity'] = time();
+}
+
+// Проверка последней активности для сессии
+$inactive = 1800; // 30 минут
+if (isset($_SESSION['last_activity'])) {
+    if (time() - $_SESSION['last_activity'] > $inactive) {
+        session_unset();
+        session_destroy();
+        setcookie($auth_cookie_name, '', time() - 3600, '/');
+    } else {
+        $_SESSION['last_activity'] = time(); // обновляем активность
+    }
+}
+
+
 const xbr = "\n";
 const no_grave_photo = '/graves/no_image_0.png';
 $buf = '';
