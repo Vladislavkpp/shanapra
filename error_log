@@ -74,3 +74,12 @@ Stack trace:
 Stack trace:
 #0 {main}
   thrown in /home/bicycleb/public_html/contacts.php on line 2
+[25-Aug-2025 11:45:59 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 8
+[25-Aug-2025 11:47:33 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 8
+[25-Aug-2025 11:47:57 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 9
+[25-Aug-2025 11:47:58 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 9
+[25-Aug-2025 11:48:00 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 9
+[25-Aug-2025 11:48:04 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 9
+[25-Aug-2025 11:48:04 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 9
+[25-Aug-2025 11:48:04 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 9
+[25-Aug-2025 11:48:05 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in /home/bicycleb/public_html/function.php on line 9
