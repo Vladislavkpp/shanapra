@@ -18,6 +18,8 @@ View_Add('<div class="out">');
 
 $em = '';
 $ep = '';
+$errorMsg = '';
+$successMsg = '';
 
 if ($md == 10) {
     if (isset($_POST['email'])) {
@@ -36,32 +38,29 @@ if ($md == 10) {
 
         $res = mysqli_query($dblink, 'SELECT idx FROM users WHERE email="' . $em . '"');
         if (mysqli_num_rows($res) > 0) {
-            View_Add('<div class="warn">' . $em1 . ' </div>'); // пользователь уже есть
+            $errorMsg = "Користувач уже зареєстрований";
         } else {
             $passhash = md5($ep);
             $sql = 'INSERT INTO users (email, pasw) VALUES ("' . $em . '", "' . $passhash . '")';
-            View_Add('===' . $sql);
             $ok = mysqli_query($dblink, $sql);
             if ($ok) {
-                View_Add('<div class="warn">' . $em1 . ' </div>'); // Успешно
+                $successMsg = "Реєстрація успішна!"; // успех
             } else {
-                View_Add('<div class="warn">' . $em1 . ' </div>'); // Ошибка при записи
+                $errorMsg = "Помилка при збереженні користувача";
             }
         }
 
         mysqli_close($dblink);
     } else {
-        View_Add('<div class="warn">' . $em1 . ' </div>'); // заполните поля
+        $errorMsg = "Заповніть усі поля";
     }
 }
 
-
-
-
 View_Add('
-<div class="regform-container">
+<div class="regform-container ' .
+    (!empty($errorMsg) ? 'has-error' : (!empty($successMsg) ? 'has-success' : '')) . '">
     <form action="?" method="post">
-       <input type="hidden" name="md" value="10">
+        <input type="hidden" name="md" value="10">
         <div class="regform-title regform-text-center">Реєстрація користувача</div>
         <hr class="regform-divider">
         
@@ -80,20 +79,20 @@ View_Add('
             <div class="regform-input-container" style="position: relative;">
                 <input class="regform-input" id="regPass" name="password" type="password" value="' . $ep . '" placeholder=" " required>
                 <label for="regPass">Пароль</label>
-               <button type="button" id="togglePass" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 0;">
-</button>
-
+                <button type="button" id="togglePass" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 0;">
+                </button>
             </div>
         </div>
+
+        ' . (!empty($errorMsg) ? '<div class="regerror1">' . $errorMsg . '</div>' : '') . '
+        ' . (!empty($successMsg) ? '<div class="regsuccess1">' . $successMsg . '</div>' : '') . '
 
         <div class="regform-row regform-vertical">
             <input class="regform-button" type="submit" value="Зареєструватися">
         </div>
     </form>
 </div>
-
 ');
-
 
 View_Add('</div></div>');
 View_Add(Page_Down());
