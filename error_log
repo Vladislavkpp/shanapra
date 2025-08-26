@@ -125,3 +125,21 @@ Stack trace:
 [26-Aug-2025 11:46:04 UTC] PHP Warning:  Undefined array key "logged" in /home/bicycleb/public_html/profile.php on line 63
 [26-Aug-2025 11:46:27 UTC] PHP Warning:  Undefined array key "logged" in /home/bicycleb/public_html/profile.php on line 63
 [26-Aug-2025 11:46:27 UTC] PHP Warning:  Undefined array key "logged" in /home/bicycleb/public_html/profile.php on line 105
+[26-Aug-2025 13:50:10 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 165
+[26-Aug-2025 13:50:10 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 166
+[26-Aug-2025 13:50:10 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 171
+[26-Aug-2025 13:50:12 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 165
+[26-Aug-2025 13:50:12 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 166
+[26-Aug-2025 13:50:12 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 171
+[26-Aug-2025 13:50:15 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 165
+[26-Aug-2025 13:50:15 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 166
+[26-Aug-2025 13:50:15 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 171
+[26-Aug-2025 13:50:16 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 165
+[26-Aug-2025 13:50:16 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 166
+[26-Aug-2025 13:50:16 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 171
+[26-Aug-2025 13:50:17 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 165
+[26-Aug-2025 13:50:17 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 166
+[26-Aug-2025 13:50:17 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 171
+[26-Aug-2025 13:50:17 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 165
+[26-Aug-2025 13:50:17 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 166
+[26-Aug-2025 13:50:17 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 171
