@@ -111,3 +111,17 @@ Stack trace:
 [25-Aug-2025 19:49:41 UTC] PHP Fatal error:  Cannot redeclare RegionSelect() (previously declared in /home/bicycleb/public_html/graveadd.php:50) in /home/bicycleb/public_html/function.php on line 337
 [25-Aug-2025 19:49:41 UTC] PHP Fatal error:  Cannot redeclare RegionSelect() (previously declared in /home/bicycleb/public_html/graveadd.php:50) in /home/bicycleb/public_html/function.php on line 337
 [25-Aug-2025 19:49:42 UTC] PHP Fatal error:  Cannot redeclare RegionSelect() (previously declared in /home/bicycleb/public_html/graveadd.php:50) in /home/bicycleb/public_html/function.php on line 337
+[26-Aug-2025 02:41:09 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/obituary.php on line 2
+[26-Aug-2025 02:41:09 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/obituary.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/obituary.php on line 2
+[26-Aug-2025 11:44:24 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/strepair.php on line 5
+[26-Aug-2025 11:44:24 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/strepair.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 5
+[26-Aug-2025 11:46:00 UTC] PHP Warning:  Undefined array key "logged" in /home/bicycleb/public_html/profile.php on line 63
+[26-Aug-2025 11:46:04 UTC] PHP Warning:  Undefined array key "logged" in /home/bicycleb/public_html/profile.php on line 63
+[26-Aug-2025 11:46:27 UTC] PHP Warning:  Undefined array key "logged" in /home/bicycleb/public_html/profile.php on line 63
+[26-Aug-2025 11:46:27 UTC] PHP Warning:  Undefined array key "logged" in /home/bicycleb/public_html/profile.php on line 105
