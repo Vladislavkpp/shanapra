@@ -1062,6 +1062,143 @@ body {
 }
 
 
+@media (max-width: 480px) {
+
+    .contentgrave-form {
+        max-width: 95%;
+        height: auto;
+        margin: 15px auto;
+        border-radius: 12px;
+    }
+
+
+    .form-header {
+        padding: 10px 20px;
+        border-radius: 10px 10px 0 0;
+    }
+
+    .form-header h2 {
+        font-size: 18px;
+        margin-bottom: 2px;
+    }
+
+    .form-header p {
+        font-size: 12px;
+    }
+
+
+
+    .section-header {
+        margin-bottom: 15px;
+        padding-bottom: 2px;
+    }
+
+    .section-header h3 {
+        font-size: 14px;
+        gap: 6px;
+        margin-bottom: 3px;
+    }
+
+    .section-header h3 img {
+        width: 16px;
+        height: 16px;
+    }
+
+
+    /* ФИО */
+    .form-row-grave.fio {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .form-row-grave.fio .input-container-grave:nth-child(3) {
+        grid-column: 1 / -1;
+    }
+
+    /* Даты */
+    .form-row-grave.dates {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    /* Место поховання */
+    .form-row-grave.location {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* область + район */
+        gap: 8px;
+    }
+    .form-row-grave.location .input-container-grave:nth-child(3) {
+        grid-column: 1 / -1;
+    }
+
+    /* все поля в ряд */
+    .form-row-grave.cemetery {
+        display: grid;
+        grid-template-columns: 1.4fr 0.9fr 0.7fr 0.7fr;
+        gap: 6px;
+        margin-right: -6px;
+    }
+
+    /* кладовище */
+    .form-row-grave.cemetery .input-container-grave:first-child {
+        min-width: 110px;
+    }
+
+    /* квартал */
+    .form-row-grave.cemetery .input-container-md:nth-child(2) {
+        min-width: 70px;
+    }
+
+    /* ряд — делаем уже */
+    .form-row-grave.cemetery .input-container-md:nth-child(3) {
+        min-width: 30px;
+    }
+
+
+
+    /* место */
+    .form-row-grave.cemetery .input-container-md:nth-child(4) {
+        min-width: 50px;
+    }
+
+    /* только для Квартал / Ряд / Місце */
+    .form-row-grave.cemetery .input-container-md label {
+        left: 4px; /* метка ближе к краю */
+    }
+
+    /* текст в полях Квартал / Ряд / Місце */
+    .form-row-grave.cemetery .input-container-md input {
+        padding-left: 8px;
+        padding-right: 8px;
+        box-sizing: border-box;
+    }
+
+    /* паддинги */
+    .form-row-grave.cemetery .input-container-md input {
+        padding-left: 2px;
+        padding-right: 8px;
+        box-sizing: border-box;
+    }
+
+
+    /* Кнопки */
+    .form-row-grave.form-actions-grave {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .form-row-grave.form-actions-grave button {
+        width: 100%;
+    }
+}
+
+
+
+
+
+
+
 
 
 .graveadd-container {

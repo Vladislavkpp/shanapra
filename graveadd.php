@@ -48,125 +48,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'], $_POST['regio
 
 // ==== Форма захоронения ====
 function Contentgrave() {
-    $out  = '<div class="contentgrave-form">
-<form action="/graveadd.php" method="post" enctype="multipart/form-data">
-<input type="hidden" name="md" value="grave">
+    $out  = '<div class="contentgrave-form">' .
+        '<form action="/graveadd.php" method="post" enctype="multipart/form-data">' .
+        '<input type="hidden" name="md" value="grave">' .
 
-<div class="form-header-wrap">
-<div class="form-header">
-<h2><i class="icon-person"></i> Форма реєстрації даних про померлого</h2>
-<p>Заповніть всі необхідні поля для створення запису</p>
-</div>
-</div>
+        '<div class="form-header-wrap">' .
+        '<div class="form-header">' .
+        '<h2><i class="icon-person"></i> Форма реєстрації даних про померлого</h2>' .
+        '<p>Заповніть всі необхідні поля для створення запису</p>' .
+        '</div>' .
+        '</div>' .
 
-<div class="form-content" style="padding:24px;padding-top:15px;padding-bottom:15px;">
-<div class="section-header">
-<h3><img src="/assets/images/fuser.png" class="section-icon">Особисті дані</h3>
-</div>
-<div class="form-row-grave">
-<div class="input-container-grave">
-<input type="text" name="lname" required placeholder=" ">
-<label>Прізвище *</label>
-</div>
-<div class="input-container-grave">
-<input type="text" name="fname" required placeholder=" ">
-<label>Ім’я *</label>
-</div>
-<div class="input-container-grave">
-<input type="text" name="mname" placeholder=" ">
-<label>По батькові</label>
-</div>
-</div>
+        '<div class="form-content" style="padding:24px;padding-top:15px;padding-bottom:15px;">' .
 
-<div class="form-row-grave">
-<div class="input-container-grave">
-<input type="date" name="birthdate" required placeholder="дд.мм.рррр" style="lang: uk;">
-<label>Дата народження *</label>
-</div>
-<div class="input-container-grave">
-<input type="date" name="deathdate" required placeholder=" ">
-<label>Дата смерті *</label>
-</div>
-</div>
+        '<div class="section-header">' .
+        '<h3><img src="/assets/images/fuser.png" class="section-icon">Особисті дані</h3>' .
+        '</div>' .
 
-<div class="section-header">
-<h3><img src="/assets/images/flocation.png" class="section-icon">Місце поховання</h3>
-</div>
-<div class="form-row-grave">
-<div class="input-container-grave">' . RegionSelect("region", "city-select") . '
-<label>Область *</label>
-</div>
-<div class="input-container-grave">
-<select name="district" id="district" required>
-<option value="">Спочатку виберіть область</option>
-</select>
-<label>Район *</label>
-</div>
-<div class="input-container-grave">
-<select name="settlement" id="settlement" required disabled>
-<option value="">Спочатку виберіть район</option>
-</select>
-<label>Населений пункт</label>
-<button type="button" id="add-settlement-btn" class="add-region-btn add-settlement-btn" disabled>+</button>
-</div>
-</div>
+        '<div class="form-row-grave fio">' .
+        '<div class="input-container-grave">' .
+        '<input type="text" name="lname" required placeholder=" ">' .
+        '<label>Прізвище *</label>' .
+        '</div>' .
+        '<div class="input-container-grave">' .
+        '<input type="text" name="fname" required placeholder=" ">' .
+        '<label>Ім’я *</label>' .
+        '</div>' .
+        '<div class="input-container-grave">' .
+        '<input type="text" name="mname" placeholder=" ">' .
+        '<label>По батькові</label>' .
+        '</div>' .
+        '</div>' .
 
-<div id="settlement-popup" class="popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);justify-content:center;align-items:center;z-index:9999;">
-<div class="popup-content" style="background:#fff;padding:20px;border-radius:12px;min-width:320px;max-width:90vw;box-shadow:0 2px 12px rgba(0,0,0,0.3);">
-<h3 style="margin-top:0;">Додати населений пункт</h3>
-<div id="add-settlement-form">
-<div class="input-container-grave">
-<input type="text" name="new_settlement" id="new-settlement-input" placeholder=" " required>
-<label for="new-settlement-input">Введіть назву населеного пункту</label>
-</div>
-<div class="popup-actions" style="margin-top:15px;display:flex;gap:8px;justify-content:flex-end;">
-<button type="button" id="submit-new-settlement" class="sub-btn">Додати</button>
-<button type="button" id="close-settlement-popup" class="cancel-btn">Скасувати</button>
-</div>
-</div>
-</div>
-</div>
+        '<div class="form-row-grave dates">' .
+        '<div class="input-container-grave">' .
+        '<input type="date" name="birthdate" required>' .
+        '<label>Дата народження *</label>' .
+        '</div>' .
+        '<div class="input-container-grave">' .
+        '<input type="date" name="deathdate" required>' .
+        '<label>Дата смерті *</label>' .
+        '</div>' .
+        '</div>' .
 
-<div class="form-row-grave">
-<div class="input-container-grave">
-<input type="text" name="cemetery" required placeholder=" ">
-<label>Кладовище *</label>
-</div>
-<div class="input-container-md">
-<input type="text" name="pos1" required placeholder=" ">
-<label>Квартал</label>
-</div>
-<div class="input-container-md">
-<input type="text" name="pos2" required placeholder=" ">
-<label>Ряд</label>
-</div>
-<div class="input-container-md">
-<input type="text" name="pos3" required placeholder=" ">
-<label>Місце</label>
-</div>
-</div>
+        '<div class="section-header">' .
+        '<h3><img src="/assets/images/flocation.png" class="section-icon">Місце поховання</h3>' .
+        '</div>' .
 
-<div class="section-header">
-<h3><img src="/assets/images/fcamera.png" class="section-icon">Фотографії</h3>
-</div>
-<div class="form-vertical-grave">
-<div class="input-container-grave upload">
-<input type="file" name="photo1">
-<label>Фото поховання</label>
-</div>
-<div class="input-container-grave upload">
-<input type="file" name="photo2">
-<label>Фото лиця</label>
-</div>
-</div>
+        '<div class="form-row-grave location">' .
+        '<div class="input-container-grave">' . RegionSelect("region", "city-select") .
+        '<label>Область *</label>' .
+        '</div>' .
+        '<div class="input-container-grave">' .
+        '<select name="district" id="district" required>' .
+        '<option value="">Спочатку виберіть область</option>' .
+        '</select>' .
+        '<label>Район *</label>' .
+        '</div>' .
+        '<div class="input-container-grave">' .
+        '<select name="settlement" id="settlement" required disabled>' .
+        '<option value="">Спочатку виберіть район</option>' .
+        '</select>' .
+        '<label>Населений пункт</label>' .
+        '<button type="button" id="add-settlement-btn" class="add-region-btn add-settlement-btn" disabled>+</button>' .
+        '</div>' .
+        '</div>' .
 
-<div class="form-row-grave form-actions-grave">
-<button type="submit" class="sub-btngrave">Зберегти запис</button>
-<button type="reset" class="cancel-btn">Скасувати</button>
-</div>
-</div>
-</form>
-</div>';
+        '<div id="settlement-popup" class="popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);justify-content:center;align-items:center;z-index:9999;">' .
+        '<div class="popup-content" style="background:#fff;padding:20px;border-radius:12px;min-width:320px;max-width:90vw;box-shadow:0 2px 12px rgba(0,0,0,0.3);">' .
+        '<h3 style="margin-top:0;">Додати населений пункт</h3>' .
+        '<div id="add-settlement-form">' .
+        '<div class="input-container-grave">' .
+        '<input type="text" name="new_settlement" id="new-settlement-input" placeholder=" " required>' .
+        '<label for="new-settlement-input">Введіть назву населеного пункту</label>' .
+        '</div>' .
+        '<div class="popup-actions" style="margin-top:15px;display:flex;gap:8px;justify-content:flex-end;">' .
+        '<button type="button" id="submit-new-settlement" class="sub-btn">Додати</button>' .
+        '<button type="button" id="close-settlement-popup" class="cancel-btn">Скасувати</button>' .
+        '</div>' .
+        '</div>' .
+        '</div>' .
+        '</div>' .
+
+        '<div class="form-row-grave cemetery">' .
+        '<div class="input-container-grave">' .
+        '<input type="text" name="cemetery" required placeholder=" ">' .
+        '<label>Кладовище *</label>' .
+        '</div>' .
+        '<div class="input-container-md">' .
+        '<input type="text" name="pos1" required placeholder=" ">' .
+        '<label>Квартал</label>' .
+        '</div>' .
+        '<div class="input-container-md">' .
+        '<input type="text" name="pos2" required placeholder=" ">' .
+        '<label>Ряд</label>' .
+        '</div>' .
+        '<div class="input-container-md">' .
+        '<input type="text" name="pos3" required placeholder=" ">' .
+        '<label>Місце</label>' .
+        '</div>' .
+        '</div>' .
+
+        '<div class="section-header">' .
+        '<h3><img src="/assets/images/fcamera.png" class="section-icon">Фотографії</h3>' .
+        '</div>' .
+
+        '<div class="form-vertical-grave">' .
+        '<div class="input-container-grave upload">' .
+        '<input type="file" name="photo1">' .
+        '<label>Фото поховання</label>' .
+        '</div>' .
+        '<div class="input-container-grave upload">' .
+        '<input type="file" name="photo2">' .
+        '<label>Фото лиця</label>' .
+        '</div>' .
+        '</div>' .
+
+        '<div class="form-row-grave form-actions-grave">' .
+        '<button type="submit" class="sub-btngrave">Зберегти запис</button>' .
+        '<button type="reset" class="cancel-btn">Скасувати</button>' .
+        '</div>' .
+
+        '</div>' .
+        '</form>' .
+        '</div>';
 
 // ===== JS =====
 $out .= '
