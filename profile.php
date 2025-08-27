@@ -10,8 +10,10 @@ require_once "function.php";
 View_Clear();
 View_Add(Page_Up());
 View_Add(Menu_Up());
+View_Add(Menu_Profile_Mobile());
 View_Add('<div class="out">');
 View_Add(Menu_Profile());
+
 
 //Основной екран
 
@@ -109,10 +111,10 @@ if ($md == 2) {
         if ($cnt == 1) {
             $p = mysqli_fetch_assoc($res);
             View_Add(
-                '<div class="settings-block">' .
+                '<div class="settings-block adaptive-block">' .  // добавлен класс adaptive-block
                 ' <h2 class="settings-title">Налаштування профілю</h2>' .
                 '    <hr class="settings-divider">' .
-                '    ' .
+                '' .
                 '  <form class="updatelname" action="?" method="post">' .
                 '    <label class="labelflname">Прізвище</label>' .
                 '     <div class="input-row">' .
@@ -152,6 +154,7 @@ if ($md == 2) {
                 '' .
                 '</div>'
             );
+
 
 
         }
@@ -269,6 +272,64 @@ function Menu_Profile(): string
 
     return $out;
 }
+
+function Menu_Profile_Mobile(): string {
+    $out = '
+    <button class="profile-menu-btn" id="openProfileMenu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-columns-gap" viewBox="0 0 16 16">
+  <path d="M6 1v3H1V1zM1 0a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1zm14 12v3h-5v-3zm-5-1a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1zM6 8v7H1V8zM1 7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zm14-6v7h-5V1zm-5-1a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1z"/>
+</svg> Меню профілю
+    </button>
+
+    <!-- Полноэкранное меню -->
+    <div id="profileMenu" class="profile-menu-overlay">
+        <span class="close-btn" id="closeProfileMenu">&times;</span>
+
+        <!-- Заголовок меню -->
+        <div class="profile-menu-title">Меню профілю</div>
+
+<hr class="profile-menu-separator">
+
+     <div class="profile-menu-list">
+    <a class="profile-menu-item" href="?md=0"><i class=""></i>Загальна інформація</a>
+    <a class="profile-menu-item" href="?md=2"><i class=""></i>Налаштування профілю</a>
+    <a class="profile-menu-item" href="?md=3"><i class=""></i>Контактна інформація</a>
+    <a class="profile-menu-item" href="?md=4"><i class=""></i>Фінансова інформація</a>
+    <a class="profile-menu-item" href="?md=5"><i class=""></i>Додаткове</a>
+</div>
+
+        <hr class="profile-menu-separator">
+
+        <!-- Кнопка выхода -->
+        <a class="profile-menu-logout-btn" href="?exit=1">
+    <i class="fas fa-sign-out-alt"></i> Вихід
+</a>
+    </div>
+
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const openBtn = document.getElementById("openProfileMenu");
+        const closeBtn = document.getElementById("closeProfileMenu");
+        const menu = document.getElementById("profileMenu");
+
+        if (openBtn && closeBtn && menu) {
+            openBtn.addEventListener("click", function() {
+                menu.style.display = "flex";
+            });
+            closeBtn.addEventListener("click", function() {
+                menu.style.display = "none";
+            });
+        }
+    });
+    </script>
+    ';
+
+    return $out;
+}
+
+
+
 
 
 

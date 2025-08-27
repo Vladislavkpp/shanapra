@@ -163,7 +163,7 @@ function Menu_Up(): string {
         $out .= '<input type="checkbox" id="dropdown-toggle" class="dropdown-checkbox" />';
         $out .= '<label for="dropdown-toggle" class="avatar-wrapper">';
         $out .= '<img class="menu-avatar" alt="profile" src="' . $avatar . '">';
-        $out .= '<span>' . $fullname . '</span>';
+        $out .= '<span class="user-fullname">' . $fullname . '</span>';
         $out .= '</label>';
         $out .= '<div class="dropdown-menu">';
         $out .= '<a href="/profile.php"><img src="/assets/images/profileicon.png" class="menu-icon"> Профіль</a>';

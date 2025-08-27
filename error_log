@@ -143,3 +143,24 @@ Stack trace:
 [26-Aug-2025 13:50:17 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 165
 [26-Aug-2025 13:50:17 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 166
 [26-Aug-2025 13:50:17 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 171
+[27-Aug-2025 17:03:05 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Menu_Profile_Mobile() in /home/bicycleb/public_html/profile.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/profile.php on line 13
+[27-Aug-2025 17:03:07 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Menu_Profile_Mobile() in /home/bicycleb/public_html/profile.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/profile.php on line 13
+[27-Aug-2025 17:03:07 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Menu_Profile_Mobile() in /home/bicycleb/public_html/profile.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/profile.php on line 13
+[27-Aug-2025 17:03:11 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Menu_Profile_Mobile() in /home/bicycleb/public_html/profile.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/profile.php on line 13
+[27-Aug-2025 17:03:13 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function Menu_Profile_Mobile() in /home/bicycleb/public_html/profile.php:13
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/profile.php on line 13
+[27-Aug-2025 18:22:01 UTC] PHP Warning:  Undefined array key "logged" in /home/bicycleb/public_html/profile.php on line 65
