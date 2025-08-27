@@ -20,19 +20,19 @@ if ($md == "grave") {
     $res = mysqli_query($dblink, $sql);
 }
 
-// === AJAX: загрузка районов по области ===
+// загрузка районов по области
 if (isset($_GET['ajax_districts']) && !empty($_GET['region_id'])) {
     echo getDistricts((int)$_GET['region_id']);
     exit;
 }
 
-// === AJAX: загрузка населённых пунктов по области и району ===
+// загрузка населённых пунктов по области и району
 if (isset($_GET['ajax_settlements']) && !empty($_GET['region_id']) && !empty($_GET['district_id'])) {
     echo getSettlements((int)$_GET['region_id'], (int)$_GET['district_id']);
     exit;
 }
 
-// === AJAX: добавление нового населённого пункта ===
+// добавление нового населённого пункта
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'], $_POST['region_id'], $_POST['district_id'])) {
     $region_id = (int)$_POST['region_id'];
     $district_id = (int)$_POST['district_id'];

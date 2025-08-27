@@ -42,6 +42,7 @@ body {
     background: #9f9f9f;
     height: 100vh;
     overflow-x: hidden;
+
 }
 /* Основной контейнер / Форма поиска */
 .content {
@@ -1612,6 +1613,21 @@ body {
     display: block;
 }
 
+
+/* скрыть имя на экранах ≤768px */
+@media (max-width: 768px) {
+    .avatar-wrapper .user-fullname {
+        display: none !important;
+    }
+    .dropdown {
+        border-radius: 50% !important;
+        padding: 2px;
+        width: auto;
+        display: inline-flex;
+    }
+}
+
+
 .login-btn {
     display: flex;
     align-items: center;
@@ -2023,18 +2039,191 @@ body {
 }
 
 
+@media (max-width: 779px) {
+    .Menu_Profile {
+        display: none;
+    }
+}
+
+
+
+.profile-menu-btn,
+.profile-menu-overlay {
+    display: none;
+}
+
+
+@media (max-width: 768px) {
+
+    .profile-menu-overlay,
+    .profile-menu-btn,
+    .profile-menu-title,
+    .profile-menu-item,
+    .profile-menu-logout-btn {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+
+
+    .profile-menu-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 15px;
+        cursor: pointer;
+        margin: 5px auto;
+        width: auto;
+    }
+
+
+    .profile-menu-btn:hover {
+        background: #0056b3;
+    }
+
+    .profile-menu-btn i {
+        font-size: 18px;
+    }
+
+    /* Оверлей меню */
+    .profile-menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #ffffff;
+        z-index: 9999;
+        display: none;
+        flex-direction: column;
+        padding: 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
+
+    /* Заголовок */
+    .profile-menu-title {
+        margin-top: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        text-align: left;
+        color: #333;
+    }
+
+    /* Кнопка закрытия */
+    .profile-menu-overlay .close-btn {
+        position: fixed;
+        top: 25px;
+        right: 20px;
+        font-size: 28px;
+        cursor: pointer;
+        color: #333;
+        font-weight: bold;
+        transition: color 0.3s;
+        z-index: 10000;
+    }
+
+    .profile-menu-overlay .close-btn:hover {
+        color: #000;
+    }
+
+    /* Сетка меню */
+    .profile-menu-list {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    /* Пункты меню */
+    .profile-menu-item {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        background: #f1f1f1;
+        border-radius: 10px;
+        padding: 18px 12px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid #ddd;
+
+        text-decoration: none;
+        color: inherit;
+        text-align: left;
+    }
+
+    .profile-menu-item:hover {
+        background: #e6f0ff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        border: 1px solid #007bff;
+        transform: translateY(-2px);
+    }
+
+    .profile-menu-item i {
+        font-size: 18px;
+        color: #007bff;
+    }
+
+
+    /* Разделитель */
+    .profile-menu-separator {
+        margin: 20px 0;
+        border: none;
+        border-top: 1px solid #ddd;
+    }
+
+
+    /* Кнопка выхода */
+    .profile-menu-logout-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        padding: 14px;
+        background: #f1f1f1;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 16px;
+        font-weight: bold;
+        color: #d9534f;
+        cursor: pointer;
+        transition: background 0.3s, border 0.3s;
+        font-family: Arial, Helvetica, sans-serif;
+        text-decoration: none;
+    }
+
+
+    .profile-menu-logout-btn:hover {
+        background: #fbeaea;
+        border: 1px solid #d9534f;
+    }
+
+}
 
 
 
 
 
-/*контактная инф. профиля*/
+
+/* Контактная информация профиля */
 .contact-card {
     background-color: #f9f9f9;
     padding: 20px;
     border-radius: 12px;
     max-width: 400px;
-    margin: 20px 20px 20px 20px;
+    margin: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     font-family: sans-serif;
     box-sizing: border-box;
@@ -2043,6 +2232,7 @@ body {
     overflow: hidden;
 }
 
+/* Заголовок */
 .contact-title {
     margin-bottom: 10px;
     font-size: 18px;
@@ -2050,27 +2240,26 @@ body {
     font-weight: bold;
 }
 
+/* Подписи полей */
 .contact-label {
     display: block;
     margin-bottom: 6px;
     font-size: 14px;
     color: #333;
     font-weight: 500;
-    text-align: left
-}
-
-.updatetel {
-    align-items: left;
+    text-align: left;
 }
 
 /* Контейнер для телефона и кнопки */
 .tel-row {
     display: flex;
     gap: 10px;
-    align-items: left;
+    align-items: center;
     margin-bottom: 10px;
+    flex-wrap: wrap; /* на мобильных переносить элементы */
 }
 
+/* Поля ввода */
 .contact-input {
     flex: 1;
     padding: 8px 10px;
@@ -2078,10 +2267,15 @@ body {
     border: 1px solid #ccc;
     border-radius: 6px;
     box-sizing: border-box;
-    align-items: left;
-    transition: border-color 0.2s
+    transition: border-color 0.2s;
 }
 
+.contact-input:focus {
+    border: 1px solid #007bff;
+    outline: none;
+}
+
+/* Кнопки */
 .contact-btn {
     padding: 8px 14px;
     background-color: #007bff;
@@ -2098,13 +2292,7 @@ body {
     background-color: #0060d0;
 }
 
-.contact-input:focus {
-    border: 1px solid #007bff; /* ярко-голубой */
-    outline: none;
-
-}
-
-
+/* Email блок */
 .email-display {
     margin-top: 12px;
 }
@@ -2118,10 +2306,34 @@ body {
     font-weight: 500;
 }
 
+/* Разделитель */
 .contact-divider {
     border: none;
     border-top: 1px solid #e0e0e0;
     margin: 10px 0 20px 0;
+}
+
+/* --- Адаптив для мобильных --- */
+@media (max-width: 600px) {
+    .contact-card {
+        display: block;
+        margin: 20px auto;
+        width: 90%;
+        max-width: 400px;
+        height: auto;
+    }
+
+    .tel-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .contact-card {
+        max-height: 235px;
+    }
+
 }
 
 
@@ -2322,26 +2534,38 @@ body {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Центрирование формы на мобильных */
+@media (max-width: 600px) {
+    .settings-block {
+        display: block;
+        margin: 20px auto;
+        width: 90%;
+        max-width: 400px;
+    }
+}
+
+
 
 /*Финансовая инфа*/
+
 .wallet-container {
     background-color: #f9f9f9;
     border-radius: 14px;
     padding: 20px;
     margin: 20px;
-    width: 300px;
-    height: 355px;
+    max-width: 320px;
+    width: 100%;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
     font-family: 'Segoe UI', Tahoma, sans-serif;
     box-sizing: border-box;
 }
+
 
 .balance-divider {
     border: none;
     border-top: 1px solid #e0e0e0;
     margin: 16px 0;
 }
-
 
 .wallet-header {
     display: flex;
@@ -2373,7 +2597,6 @@ body {
     font-size: 14px;
     color: #666;
 }
-
 
 .wallet-balance-box {
     background-color: #ffffff;
@@ -2426,9 +2649,11 @@ body {
 .finance-summary {
     display: flex;
     gap: 16px;
-    margin: 0 20px 20px 20px;
-    font-family: 'Segoe UI', Tahoma, sans-serif;
+    margin: 20px;
+    max-width: 100%;
+    box-sizing: border-box;
 }
+
 
 .finance-card {
     flex: 1;
@@ -2455,14 +2680,59 @@ body {
     color: #28a745;
 }
 
-
 .income .finance-amount {
     color: #28a745;
 }
 
 .expenses .finance-amount {
-    color: #dc3545; /
+    color: #dc3545;
 }
+
+.wallet-full-wrapper {
+    width: 100%;
+    max-width: 360px;
+    margin: 0;
+    flex-direction: column;
+    gap: 20px;
+    box-sizing: border-box;
+}
+
+
+/* --- Адаптив для мобильных --- */
+@media (max-width: 600px) {
+    .wallet-full-wrapper {
+        max-width: 100%;
+        padding: 0 8px;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .wallet-container {
+        margin: 12px auto;
+        padding: 16px;
+        max-width: 95%;
+    }
+
+    .finance-summary {
+        align-items: stretch;
+        gap: 12px;
+        margin: 0 auto 16px auto;
+        width: 100%;
+        max-width: 95%;
+    }
+
+    .finance-card {
+        width: 100%;
+        height: auto;
+        padding: 12px;
+    }
+}
+
+
+
+
+
+
 
 
 
