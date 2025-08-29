@@ -299,6 +299,18 @@ body {
     text-align: center;
 }
 
+
+.logform-container.has-error {
+    height: 330px;
+    transition: height 0.3s ease;
+}
+
+.logform-container.has-success{
+    height: 210px;
+    transition: height 0.3s ease;
+}
+
+
 /* Заголовок */
 .logform-title {
     font-size: 20px;
@@ -2652,6 +2664,7 @@ body {
     margin: 20px;
     max-width: 100%;
     box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
 }
 
 
@@ -2664,6 +2677,7 @@ body {
     padding: 16px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     text-align: center;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
 }
 
 .finance-title {
@@ -2722,6 +2736,7 @@ body {
     }
 
     .finance-card {
+
         width: 100%;
         height: auto;
         padding: 12px;

@@ -18,11 +18,13 @@ View_Add(Menu_Up());
 View_Add('<div class="out">');
 //View_Add(Menu_Left());
 
-$err = '';
+$authErrorMsg = '';
+$authSuccessMsg = '';
+
 
 if (($md == 0) || ($md == '')) {
     View_Add('
-<div class="logform-container">
+<div class="logform-container ' . (!empty($authErrorMsg) ? 'has-error' : (!empty($authSuccessMsg) ? 'has-success' : '')) . '">
     <form action="/auth.php" method="post">
         <input type="hidden" name="md" value="5">
 
@@ -30,17 +32,20 @@ if (($md == 0) || ($md == '')) {
 
         <div class="logform-row logform-vertical">
             <div class="logform-input-container">
-                <input class="logform-input" name="emailForLogin" type="email" placeholder=" " required>
+                <input class="logform-input" name="emailForLogin" type="email" value="' . htmlspecialchars($em ?? '') . '" placeholder=" " required>
                 <label>E-mail</label>
             </div>
         </div>
 
         <div class="logform-row logform-vertical">
             <div class="logform-input-container">
-                <input class="logform-input" name="paswForLogin" type="password" placeholder=" " required>
+                <input class="logform-input" name="paswForLogin" type="password" value="' . htmlspecialchars($ep ?? '') . '" placeholder=" " required>
                 <label>Пароль</label>
             </div>
         </div>
+
+        ' . (!empty($authErrorMsg) ? '<div class="regerror1">' . $authErrorMsg . '</div>' : '') . '
+        ' . (!empty($authSuccessMsg) ? '<div class="regsuccess1">' . $authSuccessMsg . '</div>' : '') . '
 
         <div class="logform-row logform-vertical">
             <input class="logform-button" type="submit" value="Увійти">
@@ -55,60 +60,79 @@ if (($md == 0) || ($md == '')) {
         </div>
     </form>
 
-
-
-<div class="authform-container2">
-    <div class="logform-row logform-vertical logform-google-row">
-        <a href="" class="logform-button logform-google">
-            <img src="/assets/images/google-icon.svg" alt="" width="17" height="17">
-            Увійти за допомогою Google
-        </a>
-    </div>
-    
+    <div class="authform-container2">
+        <div class="logform-row logform-vertical logform-google-row">
+            <a href="" class="logform-button logform-google">
+                <img src="/assets/images/google-icon.svg" alt="" width="17" height="17">
+                Увійти за допомогою Google
+            </a>
+        </div>
     </div>
 </div>
-
 ');
 }
 
-if ($md == 5) {
-    //проверка емейл в бд, если ок то запись. если не ок выдать ошибку неверный пароль и предложить перейти на страницу сбросить пароль
+if (!empty($authSuccessMsg)) {
+    echo '<script>
+        setTimeout(function() {
+            window.location.href = "/profile.php";
+        }, 3000);
+    </script>';
+    }
+
+
+    if ($md == 5) {
+
     if (isset($_POST['emailForLogin'])) {
         $em = $_POST['emailForLogin'];
-
     } else {
         $em = '';
     }
+
     if (isset($_POST['paswForLogin'])) {
         $ep = $_POST['paswForLogin'];
-
     } else {
         $ep = '';
     }
 
     $em1 = valide1();
-        $ep1 = valide1();
+    $ep1 = valide1();
 
     $dblink = DbConnect();
-    $sql = 'SELECT * FROM users WHERE ((email="' . $em . '")AND (pasw="' . md5($ep) . '"))';
+    $sql = 'SELECT * FROM users WHERE ((email="' . $em . '") AND (pasw="' . md5($ep) . '"))';
     $res = mysqli_query($dblink, $sql);
-    View_Add('===' . $sql);
+
+
     $cnt = mysqli_num_rows($res);
+
     if ($cnt == 1) {
-        //ok
+        // ok
         $a = mysqli_fetch_assoc($res);
         $_SESSION['logged'] = 1;
         $_SESSION['uzver'] = $a['idx'];
+
+        $authSuccessMsg = "Вхід виконано успішно!";
         $md = 25;
     } else {
+        // если пользователь не найден — пишем ошибку
+        $authErrorMsg = "Користувача з таким e-mail або паролем не знайдено.";
         $md = 7;
     }
 
 
+
+
+
+
+
+
 }
-if ($md == 7) { //Ошибки валидации
+if ($md == 7) {
+
+    $authErrorMsg = "Користувача з таким e-mail або паролем не знайдено.";
+
     View_Add('
-<div class="logform-container">
+<div class="logform-container ' . (!empty($authErrorMsg) ? 'has-error' : (!empty($authSuccessMsg) ? 'has-success' : '')) . '">
     <form action="/auth.php" method="post">
         <input type="hidden" name="md" value="5">
 
@@ -116,25 +140,20 @@ if ($md == 7) { //Ошибки валидации
 
         <div class="logform-row logform-vertical">
             <div class="logform-input-container">
-                <input class="logform-input" name="emailForLogin" type="email" value="' . $em . '" placeholder=" " required>
+                <input class="logform-input" name="emailForLogin" type="email" value="' . htmlspecialchars($em) . '" placeholder=" " required>
                 <label>E-mail</label>
             </div>
         </div>
-        
-        <div class="warn">
-        ' . $em1 . '
-</div>
 
         <div class="logform-row logform-vertical">
             <div class="logform-input-container">
-                <input class="logform-input" name="paswForLogin" type="password" value="' . $ep . '" placeholder=" " required>
+                <input class="logform-input" name="paswForLogin" type="password" value="' . htmlspecialchars($ep) . '" placeholder=" " required>
                 <label>Пароль</label>
             </div>
         </div>
-        
-         <div class="warn">
-        ' . $ep1 . '
-</div>
+
+        ' . (!empty($authErrorMsg) ? '<div class="regerror1">' . $authErrorMsg . '</div>' : '') . '
+        ' . (!empty($authSuccessMsg) ? '<div class="regsuccess1">' . $authSuccessMsg . '</div>' : '') . '
 
         <div class="logform-row logform-vertical">
             <input class="logform-button" type="submit" value="Увійти">
@@ -143,29 +162,87 @@ if ($md == 7) { //Ошибки валидации
         <div class="logform-row logform-right">
             <a class="logform-advanced-link" href="/strepair.php">Забули пароль?</a>
         </div>
-        
+
         <div class="logform-row logform-center logform-registration-line">
             <span>Ще не зареєстровані? <a class="logform-reg-link" href="/stregs.php">Зареєструватися</a></span>
         </div>
 
- 
- <div class="authform-container2">
-<div class="logform-row logform-vertical logform-google-row">
-            <button class="logform-button logform-google" type="button">
-                <img src="/assets/images/google-icon.svg" alt="" width="17" height="17">
-                <a href="<?=htmlspecialchars($login_url)?>">Увійти за допомогою Google</a>
-            </button>
+        <div class="authform-container2">
+            <div class="logform-row logform-vertical logform-google-row">
+                <a href="<?=htmlspecialchars($login_url)?>" class="logform-button logform-google">
+                    <img src="/assets/images/google-icon.svg" alt="" width="17" height="17">
+                    Увійти за допомогою Google
+                </a>
+            </div>
         </div>
-</div>
-
     </form>
 </div>
 ');
 }
+
+
 if ($md == 25) {
-    header("refresh: 1; url=http://shanapra.com/profile.php");
-    exit;
+    View_Add('
+<div class="logform-container has-success">
+    <form action="/auth.php" method="post">
+        <input type="hidden" name="md" value="5">
+
+        <div class="logform-title logform-text-center">Вхід в систему</div>
+
+        <div class="logform-row logform-vertical">
+            <div class="logform-input-container">
+                <input class="logform-input" name="emailForLogin" type="email" value="' . htmlspecialchars($em ?? '') . '" placeholder=" " required>
+                <label>E-mail</label>
+            </div>
+        </div>
+
+        <div class="logform-row logform-vertical">
+            <div class="logform-input-container">
+                <input class="logform-input" name="paswForLogin" type="password" value="' . htmlspecialchars($ep ?? '') . '" placeholder=" " required>
+                <label>Пароль</label>
+            </div>
+        </div>
+
+        <div class="logform-row logform-vertical">
+            <div class="regsuccess1" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Вхід виконано успішно!</span>
+                <span id="countdown-circle" style="
+                    display:inline-block;
+                    width:24px;
+                    height:24px;
+                    line-height:24px;
+                    text-align:center;
+                    border-radius:50%;
+                    border: 1px solid #3ac93a;
+                    color:#006600;
+                    font-weight:bold;
+                ">3</span>
+            </div>
+        </div>
+
+        
+    </form>
+</div>
+');
+
+    echo '<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let count = 3;
+    const countdownEl = document.getElementById("countdown-circle");
+    const interval = setInterval(function() {
+        count--;
+        if(count <= 0) {
+            clearInterval(interval);
+            window.location.href = "/profile.php";
+        } else {
+            countdownEl.textContent = count;
+        }
+    }, 1000);
+});
+</script>';
 }
+
+
 
 
 
