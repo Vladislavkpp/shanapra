@@ -351,3 +351,11 @@ Stack trace:
   thrown in /home/bicycleb/public_html/searchx.php on line 27
 [04-Sep-2025 19:13:02 UTC] PHP Warning:  Undefined variable $search_line in /home/bicycleb/public_html/searchx.php on line 95
 [04-Sep-2025 19:13:03 UTC] PHP Warning:  Undefined variable $search_line in /home/bicycleb/public_html/searchx.php on line 95
+[04-Sep-2025 20:10:59 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method mysqli_stmt::get_result() in /home/bicycleb/public_html/searchx.php:57
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchx.php on line 57
+[04-Sep-2025 20:11:00 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method mysqli_stmt::get_result() in /home/bicycleb/public_html/searchx.php:57
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/searchx.php on line 57

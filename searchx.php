@@ -5,16 +5,15 @@ require_once "function_vra.php";
 $cp = $_GET['page'] ?? 1;
 $perpage = 5;
 
-// Получаем параметры поиска
-$surname = $_GET['surname'] ?? '';
-$name    = $_GET['name'] ?? '';
-$mname   = $_GET['mname'] ?? '';
+// Получаем параметры поиска из формы
+$surname    = $_GET['surname'] ?? '';
+$name       = $_GET['name'] ?? '';
+$patronymic = $_GET['patronymic'] ?? '';
 
 $dblink = DbConnect();
 $rows = [];
 
-// ----- Формируем массив $rows -----
-if ($surname !== '' || $name !== '' || $mname !== '') {
+if ($surname !== '' || $name !== '' || $patronymic !== '') {
     $sql = "SELECT * FROM grave WHERE 1=1";
     $params = [];
     $types = '';
@@ -35,23 +34,28 @@ if ($surname !== '' || $name !== '' || $mname !== '') {
         $types .= "ss";
     }
 
-    if ($mname !== '') {
+    if ($patronymic !== '') {
         $sql .= " AND (mname LIKE ? OR SOUNDEX(mname) = SOUNDEX(?))";
-        $like_mname = "%$mname%";
-        $params[] = &$like_mname;
-        $params[] = &$mname;
+        $like_patronymic = "%$patronymic%";
+        $params[] = &$like_patronymic;
+        $params[] = &$patronymic;
         $types .= "ss";
     }
 
     $stmt = $dblink->prepare($sql);
 
     if (!empty($params)) {
-        array_unshift($params, $types);
-        call_user_func_array([$stmt, 'bind_param'], $params);
+        $bind_names = [];
+        $bind_names[] = $types;
+        for ($i = 0; $i < count($params); $i++) {
+            $bind_names[] = &$params[$i];
+        }
+        call_user_func_array([$stmt, 'bind_param'], $bind_names);
     }
 
     $stmt->execute();
 
+    // --- Получаем результат через bind_result (как в твоём старом коде) ---
     $meta = $stmt->result_metadata();
     $fields = [];
     $data = [];
@@ -76,28 +80,26 @@ if ($surname !== '' || $name !== '' || $mname !== '') {
     }
 }
 
-
+// Количество результатов
 $cout = count($rows);
 
-
+// Формируем строку поиска для отображения
 $search_parts = [];
-if ($surname !== '') $search_parts[] = "$surname";
-if ($name !== '')    $search_parts[] = "$name";
-if ($mname !== '')   $search_parts[] = "$mname";
+if ($surname)    $search_parts[] = $surname;
+if ($name)       $search_parts[] = $name;
+if ($patronymic) $search_parts[] = $patronymic;
 
 $search_line = !empty($search_parts) ? implode(", ", $search_parts) : "Всі записи";
 
-
-
+// --- Вывод ---
 View_Clear();
 View_Add(Page_Up('Результати пошуку'));
 View_Add(Menu_Up());
 View_Add('<div class="out">');
 
-
+// Контейнер поиска
 View_Add('<div class="search-container">');
 View_Add('<div class="search-out" style="display:flex; gap:16px; align-items:center;">');
-
 
 View_Add('<div class="search-left">');
 View_Add('<span class="search-param">Пошук за параметрами: '.$search_line.' </span>');
@@ -105,14 +107,12 @@ View_Add('<div class="search-divider"></div>');
 View_Add('<span class="search-count">Картки: '.$cout.'</span>');
 View_Add('</div>');
 
-
 View_Add('<div class="search-right">');
-
 // форма поиска
 View_Add('<form class="search-form" action="/searchx.php" method="get">');
 View_Add('<div class="search-input-container">');
 View_Add('<input type="text" name="surname" placeholder=" " id="search-input" class="search-inputx" autocomplete="off">');
-View_Add('<label for="search-input">Пошук по базі</label>');
+View_Add('<label for="search-input">Пошук по прізвищу</label>');
 View_Add('</div>');
 View_Add('<input type="submit" class="search-btn" value="Пошук">');
 View_Add('</form>');
@@ -120,14 +120,10 @@ View_Add('<div class="search-divider"></div>');
 View_Add('<button type="button" class="filter-btnx">Фільтр</button>');
 View_Add('</div>');
 
-
-
-
 View_Add('</div>');
 
-
+// --- Карточки с пагинацией ---
 View_Add('<div class="cards-out">');
-
 $offset = ($cp - 1) * $perpage;
 $rows_page = array_slice($rows, $offset, $perpage);
 
@@ -137,7 +133,7 @@ foreach ($rows_page as $c) {
 
 View_Add('</div><br>'.xbr);
 
-// ----- Пагинация -----
+// Пагинация
 View_Add('<div class="paginator-out">');
 View_Add(Paginate::Show($cp, $cout, $perpage));
 View_Add('</div><br>'.xbr);
