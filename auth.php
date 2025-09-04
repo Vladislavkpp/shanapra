@@ -21,7 +21,6 @@ View_Add('<div class="out">');
 $authErrorMsg = '';
 $authSuccessMsg = '';
 
-
 if (($md == 0) || ($md == '')) {
     View_Add('
 <div class="logform-container ' . (!empty($authErrorMsg) ? 'has-error' : (!empty($authSuccessMsg) ? 'has-success' : '')) . '">
@@ -118,12 +117,6 @@ if (!empty($authSuccessMsg)) {
         $authErrorMsg = "Користувача з таким e-mail або паролем не знайдено.";
         $md = 7;
     }
-
-
-
-
-
-
 
 
 }

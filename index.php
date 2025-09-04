@@ -12,23 +12,19 @@ if (isset($_GET['exit']) && $_GET['exit'] == 1) {
     exit;
 }
 
-
 function Content(): string
 {
     $dblink = DbConnect();
     $res = mysqli_query($dblink, "SELECT idx FROM grave");
-    if ($res) {
-        $count = mysqli_num_rows($res);
-    }else{$count = 0;}
+    $count = $res ? mysqli_num_rows($res) : 0;
     mysqli_close($dblink);
 
     $out = '<div class="content">' .
         '<div class="login-formContainer">' .
         '<div class="form-title">Пошук по базі</div>' .
         '<div>Усього в базі ' . $count . ' поховань</div><br>' .
-        '<form class="formindex" action="/searchout.php" method="get" lang="uk">' .
+        '<form class="formindex" action="/searchx.php" method="get" lang="uk">' .
         '<input type="hidden" name="page" value="1">' .
-        '<input type="hidden" name="s" value="1">' .
 
         // Первый ряд ФИО
         '<div class="form-row form-vertical" lang="uk">' .
@@ -40,7 +36,7 @@ function Content(): string
 
         '<div class="input-container">' .
         '<input type="text" name="name" class="login-Input" placeholder=" " autocomplete="off">' .
-        "<label>Ім'я</label>" .
+        '<label>Ім\'я</label>' .
         '</div>' .
 
         '<div class="input-container">' .

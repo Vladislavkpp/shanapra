@@ -118,7 +118,7 @@ function View_Add(null|string $a = '')
 function Menu_Up(): string {
     $out = '<div class="Menu_Up">';
 
-    // Левая часть (бургер + логотип + название)
+
     $out .= '<div class="menu-left">';
     $out .= '<div class="burger"><span></span><span></span><span></span></div>';
     $out .= '<div class="logo"><img src="/assets/images/logobrand2.png" alt="Логотип"></div>';
@@ -225,6 +225,15 @@ function Page_Up($ttl = ''): string
         '<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1, shrink-to-fit=yes">' . xbr .
         '<meta name="robots" content="all">' . xbr .
         '<link rel="stylesheet" href="/assets/css/common.css">' . xbr .
+        '<script>
+ 
+  history.pushState(null, "", location.href);
+  window.addEventListener("popstate", function() {
+      window.location.href = "/";
+      //не полностью работает так как надо.
+  });
+</script>
+' . xbr .
         '</head>' . xbr .
         '<body class="bg-dark">' . xbr .
         '<div id="wrapper" class="wrapper">' . xbr;
@@ -421,4 +430,46 @@ function addSettlement($region_id, $district_id, $name)
     mysqli_close($dblink);
     return $out;
 }
+
+
+
+function Cardsx(
+    int $idx = 0,
+    string $f = '',
+    string $i = '',
+    string $o = '',
+    string $d1 = '',
+    string $d2 = '',
+    string $img = ''
+): string {
+    // если фото не найдено — подставляем no_image
+    if (!is_file($_SERVER['DOCUMENT_ROOT'].$img)) {
+        $img = '/graves/no_image.png';
+    }
+
+    $out  = '<div class="cardx">';
+
+    // фото
+    $out .= '  <div class="cardx-img">';
+    $out .= '      <img src="'.$img.'" class="cardx-image" alt="'.$f.' '.$i.' '.$o.'" title="'.$f.' '.$i.' '.$o.'">';
+    $out .= '  </div>';
+
+    // блок с данными
+    $out .= '  <div class="cardx-data">';
+    $out .= '      <div class="text2center font-bold font-white height50">';
+    $out .=            $f.' '.$i.' '.$o.'<br>';
+    $out .= '      </div>';
+    $out .= '      <div class="text2center font-white">';
+    $out .=            DateFormat($d1).' - '.DateFormat($d2).'<br>';
+    $out .= '      </div>';
+    $out .= '      <div class="text2right">';
+    $out .= '          <a href="/cardout.php?idx='.$idx.'">детали...</a>';
+    $out .= '      </div>';
+    $out .= '  </div>';
+
+    $out .= '</div>';
+
+    return $out;
+}
+
 
