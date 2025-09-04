@@ -1844,7 +1844,7 @@ body {
         flex-direction: column;
         background: #ffffff;
         border-radius: 8px;
-        margin-top: 10px;
+        #margin-top: 10px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 
 
@@ -2562,7 +2562,7 @@ body {
 
 .wallet-container {
     background-color: #f9f9f9;
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 20px;
     margin: 20px;
     max-width: 320px;
@@ -2716,15 +2716,15 @@ body {
 @media (max-width: 600px) {
     .wallet-full-wrapper {
         max-width: 100%;
-        padding: 0 8px;
+        padding: 0 18px;
         align-items: center;
         gap: 16px;
     }
 
     .wallet-container {
-        margin: 12px auto;
+        margin: 20px auto;
         padding: 16px;
-        max-width: 95%;
+        max-width: 100%;
     }
 
     .finance-summary {
@@ -2732,7 +2732,7 @@ body {
         gap: 12px;
         margin: 0 auto 16px auto;
         width: 100%;
-        max-width: 95%;
+        max-width: 100%;
     }
 
     .finance-card {
@@ -2750,10 +2750,9 @@ body {
 
 
 
-
 .search-container {
-    display: flex;
     flex-direction: column;
+    justify-content: space-between;
     gap: 20px;
     width: 100%;
     box-sizing: border-box;
@@ -2761,13 +2760,181 @@ body {
 }
 
 .search-out {
-    background-color: #ffffff;
-    border-radius: 12px;
+    display: flex;
+    gap: 16px;
+    width: -webkit-fill-available;
+    background-color: #fff;
     padding: 16px;
-    margin-top: 30px;
-    border: 1px solid #e0e0e0;
-    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.04);
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.04);
 }
+
+/* Левая часть */
+.search-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 14px;
+    color: #000;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    height: 36px;
+    box-sizing: border-box;
+}
+
+/* Текст параметра */
+.search-param {
+    font-weight: 500;
+    color: #333;
+}
+
+
+.search-count {
+    color: #555;
+}
+
+
+.search-left .search-divider {
+    width: 1px;
+    height: 18px;
+    background-color: #ccc;
+}
+
+
+.search-right {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    min-width: 320px;
+    margin-left: auto;
+}
+
+/* Форма поиска */
+.search-form {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #fff;
+}
+
+/* Контейнер инпута */
+.search-input-container {
+    position: relative;
+    flex: 1;
+}
+
+/* Поле ввода */
+.search-inputx {
+    width: 100%;
+    padding: 0 12px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    background: #fff;
+    color: #000;
+    box-sizing: border-box;
+    caret-color: #000;
+    transition: border-color 0.2s;
+    height: 36px;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+}
+
+.search-inputx:focus {
+    border-color: #007bff;
+}
+
+/* Лейбл */
+.search-input-container label {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    background: white;
+    padding: 0 4px;
+    color: #888;
+    font-size: 14px;
+    pointer-events: none;
+    transition: 0.2s ease all;
+}
+
+.search-inputx:focus + label,
+.search-inputx:not(:placeholder-shown) + label {
+    top: -8px;
+    left: 10px;
+    font-size: 12px;
+    color: #007bff;
+}
+
+/* Кнопки */
+.search-btn,
+.filter-btnx {
+    height: 36px;
+    padding: 0 16px;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.search-btn {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.search-btn:hover {
+    background-color: #0056b3;
+}
+
+.filter-btnx {
+    background-color: #004687;
+    color: #fff;
+}
+
+.filter-btnx:hover {
+    background-color: #002147;
+}
+
+/* Разделитель */
+.search-divider {
+    width: 1px;
+    height: 28px;
+    background-color: #ccc;
+}
+
+.search-input {
+    flex: 1;
+    padding: 6px 10px;
+}
+
+/* Кнопки */
+.sub-btnx, .filter-btn {
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.sub-btnx {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+}
+
+.filter-btn {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+}
+
 
 .paginator-out {
     display: flex;
@@ -2808,7 +2975,7 @@ body {
 
 .paginator-out .active,
 .paginator-out span.current {
-    border-color: #0061ba;
+    border-color: #0060d0;
     font-weight: bold;
 }
 
@@ -2829,24 +2996,37 @@ body {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     display: flex;
     flex-direction: column;
-    align-items: center;
     text-align: center;
+    height: 400px;
 }
 
-.cardx:hover {
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+.cardx-img {
+    flex: 0 0 auto;
+    margin-bottom: 12px;
 }
 
-.cardx .text2right {
-    margin-top: auto;
-    width: 100%;
+.cardx-img img {
+    max-width: 100%;
+    max-height: 290px;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+.cardx-data {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.cardx-data .text2right {
+    margin-top: 10px;
     display: flex;
     justify-content: center;
 }
 
 .cardx .text2right a {
     display: inline-block;
-    margin-top: 5px;
     padding: 6px 14px;
     background: #007bff;
     color: #fff;
