@@ -359,3 +359,206 @@ Stack trace:
 Stack trace:
 #0 {main}
   thrown in /home/bicycleb/public_html/searchx.php on line 57
+[06-Sep-2025 08:24:41 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/service.php on line 2
+[06-Sep-2025 08:24:41 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/service.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/service.php on line 2
+[07-Sep-2025 09:57:04 UTC] PHP Warning:  Undefined variable $sql in /home/bicycleb/public_html/searchx.php on line 64
+[07-Sep-2025 09:57:09 UTC] PHP Warning:  Undefined variable $sql in /home/bicycleb/public_html/searchx.php on line 64
+[07-Sep-2025 10:00:05 UTC] PHP Warning:  Undefined variable $sql in /home/bicycleb/public_html/searchx.php on line 64
+[07-Sep-2025 16:00:06 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/strepair.php on line 5
+[07-Sep-2025 16:00:06 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/strepair.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 5
+[07-Sep-2025 17:09:29 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/search.php on line 2
+[07-Sep-2025 17:09:29 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/search.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/search.php on line 2
+[07-Sep-2025 19:30:52 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/strepair.php on line 5
+[07-Sep-2025 19:30:52 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/strepair.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 5
+[08-Sep-2025 15:35:50 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/strepair.php on line 5
+[08-Sep-2025 15:35:50 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/strepair.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 5
+[08-Sep-2025 15:50:30 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/contacts.php on line 2
+[08-Sep-2025 15:50:30 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/contacts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 2
+[08-Sep-2025 17:05:28 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/favor.php on line 2
+[08-Sep-2025 17:05:28 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/favor.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/favor.php on line 2
+[09-Sep-2025 01:53:03 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/userpage.php on line 5
+[09-Sep-2025 01:53:03 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/userpage.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/userpage.php on line 5
+[09-Sep-2025 15:34:26 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/obituary.php on line 2
+[09-Sep-2025 15:34:26 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/obituary.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/obituary.php on line 2
+[09-Sep-2025 17:19:37 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/favor.php on line 2
+[09-Sep-2025 17:19:37 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/favor.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/favor.php on line 2
+[09-Sep-2025 17:31:22 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/obituary.php on line 2
+[09-Sep-2025 17:31:22 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/obituary.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/obituary.php on line 2
+[09-Sep-2025 21:55:33 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/search.php on line 2
+[09-Sep-2025 21:55:33 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/search.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/search.php on line 2
+[09-Sep-2025 22:40:57 UTC] PHP Warning:  require_once(vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/stlogin.php on line 7
+[09-Sep-2025 22:40:57 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/stlogin.php:7
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/stlogin.php on line 7
+[11-Sep-2025 15:05:50 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/strepair.php on line 5
+[11-Sep-2025 15:05:50 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/strepair.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 5
+[12-Sep-2025 18:46:07 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/service.php on line 2
+[12-Sep-2025 18:46:07 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/service.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/service.php on line 2
+[13-Sep-2025 23:48:02 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/search.php on line 2
+[13-Sep-2025 23:48:02 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/search.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/search.php on line 2
+[14-Sep-2025 20:28:48 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/strepair.php on line 5
+[14-Sep-2025 20:28:48 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/strepair.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 5
+[14-Sep-2025 23:09:48 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/contacts.php on line 2
+[14-Sep-2025 23:09:48 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/contacts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 2
+[15-Sep-2025 00:09:51 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/favor.php on line 2
+[15-Sep-2025 00:09:51 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/favor.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/favor.php on line 2
+[15-Sep-2025 09:41:48 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/userpage.php on line 5
+[15-Sep-2025 09:41:48 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/userpage.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/userpage.php on line 5
+[15-Sep-2025 20:32:44 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/strepair.php on line 5
+[15-Sep-2025 20:32:44 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/strepair.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 5
+[15-Sep-2025 23:03:34 UTC] PHP Warning:  require_once(vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/stlogin.php on line 7
+[15-Sep-2025 23:03:34 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/stlogin.php:7
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/stlogin.php on line 7
+[16-Sep-2025 00:04:22 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/obituary.php on line 2
+[16-Sep-2025 00:04:22 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/obituary.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/obituary.php on line 2
+[16-Sep-2025 13:10:42 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function FormList() in /home/bicycleb/public_html/graveupdate.php:86
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/graveupdate.php on line 86
+[16-Sep-2025 13:10:59 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function GraveList01() in /home/bicycleb/public_html/graveupdate.php:87
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/graveupdate.php on line 87
+[16-Sep-2025 13:25:00 UTC] PHP Warning:  Undefined array key "md" in /home/bicycleb/public_html/graveupload.php on line 42
+[17-Sep-2025 07:38:04 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/strepair.php on line 5
+[17-Sep-2025 07:38:04 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/strepair.php:5
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 5
+[17-Sep-2025 10:50:01 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/service.php on line 2
+[17-Sep-2025 10:50:01 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/service.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/service.php on line 2
+[17-Sep-2025 11:57:32 UTC] PHP Warning:  require_once(/home/bicycleb/public_html/vendor/autoload.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/contacts.php on line 2
+[17-Sep-2025 11:57:32 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_html/vendor/autoload.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/contacts.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 2
+[17-Sep-2025 13:46:13 UTC] PHP Warning:  Undefined variable $id in /home/bicycleb/public_html/editgrave.php on line 85
+[17-Sep-2025 13:46:14 UTC] PHP Warning:  Undefined variable $id in /home/bicycleb/public_html/editgrave.php on line 85
+[17-Sep-2025 13:46:54 UTC] PHP Warning:  Undefined array key "id" in /home/bicycleb/public_html/editgrave.php on line 84
+[17-Sep-2025 13:46:55 UTC] PHP Warning:  Undefined array key "id" in /home/bicycleb/public_html/editgrave.php on line 84
+[17-Sep-2025 13:46:56 UTC] PHP Warning:  Undefined array key "id" in /home/bicycleb/public_html/editgrave.php on line 84
+[17-Sep-2025 13:46:58 UTC] PHP Warning:  Undefined array key "id" in /home/bicycleb/public_html/editgrave.php on line 84
+[17-Sep-2025 13:47:32 UTC] PHP Warning:  Undefined array key "id" in /home/bicycleb/public_html/editgrave.php on line 84
+[17-Sep-2025 14:17:54 UTC] PHP Warning:  require_once(/home/bicycleb/public_htmlfunction.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/graveadd.php on line 7
+[17-Sep-2025 14:17:54 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/bicycleb/public_htmlfunction.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/graveadd.php:7
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/graveadd.php on line 7
+[17-Sep-2025 14:34:58 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:34:58 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:34:59 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:34:59 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:34:59 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:34:59 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:34:59 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:00 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:00 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:00 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:02 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:02 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:02 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:02 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:02 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:02 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:02 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:02 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:03 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:03 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:03 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:03 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:03 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:03 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:04 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:04 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:04 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:04 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:04 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:05 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:05 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 14:35:14 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bicycleb/public_html/function.php on line 18
+[17-Sep-2025 15:37:57 UTC] PHP Warning:  Undefined array key "uzver" in /home/bicycleb/public_html/graveadd.php on line 25
+[17-Sep-2025 16:01:06 UTC] PHP Warning:  Undefined variable $showMessage in /home/bicycleb/public_html/graveadd.php on line 321
+[17-Sep-2025 16:01:07 UTC] PHP Warning:  Undefined variable $showMessage in /home/bicycleb/public_html/graveadd.php on line 321
+[17-Sep-2025 16:01:18 UTC] PHP Warning:  Undefined variable $showMessage in /home/bicycleb/public_html/graveadd.php on line 321
+[17-Sep-2025 16:01:19 UTC] PHP Warning:  Undefined variable $showMessage in /home/bicycleb/public_html/graveadd.php on line 321

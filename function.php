@@ -86,6 +86,8 @@ function DbConnect(): int|null|bool|mysqli
     mysqli_query($dblink, "set character_set_client='utf8'");
     mysqli_query($dblink, "set character_set_results='utf8'");
     mysqli_query($dblink, "set collation_connection='utf8_general_ci'");
+
+
     return $dblink;
 }
 
