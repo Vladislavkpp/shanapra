@@ -21,8 +21,7 @@ function Content(): string
 
     $out = '<div class="content">' .
         '<div class="login-formContainer">' .
-        '<div class="form-title">Пошук по базі</div>' .
-        '<div>Усього в базі ' . $count . ' поховань</div><br>' .
+        '<div class="form-title">Пошук інформації про померлих</div>' .
         '<form class="formindex" action="/searchx.php" method="get" lang="uk">' .
         '<input type="hidden" name="page" value="1">' .
 

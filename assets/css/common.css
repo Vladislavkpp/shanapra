@@ -47,7 +47,7 @@ body {
 /* Основной контейнер / Форма поиска */
 .content {
     max-width: 420px;
-    max-height: 360px;
+    max-height: 320px;
     margin: 40px auto;
     padding: 24px;
     border-radius: 12px;
@@ -114,14 +114,16 @@ body {
     min-width: 160px;
 }
 
-/* Поля ввода и select */
+/* Поля ввода */
 .input-container input[type="text"],
 .input-container input[type="date"],
 .input-container select,
 .login-Input {
     width: 100%;
-    padding: 10px 12px;
+    height: 34px;
+    padding: 0 8px 0 14px;
     font-size: 14px;
+    line-height: 1.2;
     border: 1px solid #ccc;
     border-radius: 6px;
     background: white;
@@ -130,18 +132,10 @@ body {
     color: #000;
     box-sizing: border-box;
     caret-color: #000;
-}
-
-.input-container input[type="text"],
-.input-container input[type="date"],
-.input-container select {
-    height: 34px;
-    line-height: 1.2;
-    padding: 0px 8px 0px 14px;
     appearance: none;
 }
 
-/* Фокус на поля */
+/* Фокус */
 .input-container input:focus,
 .input-container select:focus,
 .login-Input:focus {
@@ -178,14 +172,14 @@ body {
 /* Кнопки */
 .login-Binput,
 .sub-btn {
+    width: 100%;
+    max-width: 100%;
     padding: 10px 24px;
     font-size: 15px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.2s;
-    width: 100%;
-    max-width: 100%;
 }
 
 .login-Binput {
@@ -209,7 +203,7 @@ body {
     background-color: #0060d0;
 }
 
-/* Деталізований пошук */
+/* Доп. ссылка */
 .advanced-link {
     display: block;
     margin-top: 12px;
@@ -226,7 +220,7 @@ body {
 .form-separator {
     border: none;
     border-top: 1px solid #ccc;
-    margin: 0px 0;
+    margin: 0;
     width: 100%;
     height: 0;
     background: none;
@@ -237,7 +231,8 @@ body {
     color: transparent;
 }
 
-/* Адаптация для экранов до 480px */
+
+/*  Адаптация для экранов до 480px */
 @media (max-width: 480px) {
     .content {
         width: 290px;
@@ -252,7 +247,7 @@ body {
     }
 
     .form-row {
-        #flex-direction: column;
+        flex-direction: column;
         gap: 12px;
     }
 
@@ -281,6 +276,7 @@ body {
         text-align: center;
     }
 }
+
 
 
 /*форма входа*/
@@ -1461,6 +1457,7 @@ body {
     text-align: center;
     padding: 20px 0;
     width: 100%;
+    margin-top: auto;
 }
 
 .menu_down {
@@ -2013,8 +2010,6 @@ body {
     padding: 10px 16px;
     border-radius: 8px;
     transition: background-color 0.2s;
-
-    /* Подстройка шрифта */
     font-weight: 600;
     font-size: 15px;
 }
@@ -2268,7 +2263,7 @@ body {
     gap: 10px;
     align-items: center;
     margin-bottom: 10px;
-    flex-wrap: wrap; /* на мобильных переносить элементы */
+    flex-wrap: wrap;
 }
 
 /* Поля ввода */
@@ -3039,3 +3034,265 @@ body {
 .cardx .text2right a:hover {
     background: #0060d0;
 }
+
+
+.no-results-wrap {
+    display: flex;
+    justify-content: center;
+    height: 55px;
+}
+
+.no-results {
+    max-width: 400px;
+    padding: 15px 15px;
+    text-align: center;
+    font-size: 18px;
+    color: #444;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.cards-out:has(.no-results-wrap) {
+    display: flex;
+    justify-content: center;
+    min-height: 50vh;
+}
+
+
+/* Контейнер формы */
+.update-grave {
+    max-width: 400px;
+    height: 250px;
+    margin: 40px auto;
+    background: #f9f9f9;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    font-family: 'Arial', sans-serif;
+    color: #333;
+    transition: height 0.3s ease;
+}
+
+.update-grave.has-message {
+    height: 80px;
+}
+
+/* Заголовок формы */
+.update-grave .form-title {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Сетка формы */
+.update-grave form {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+}
+
+/* ФИО */
+.update-grave .fullname {
+    grid-column: span 3;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+}
+
+/* Даты */
+.update-grave .dates {
+    grid-column: span 3;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+/* Подписи */
+.update-grave label {
+    margin-bottom: 5px;
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #002147;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+/* Поля ввода */
+.update-grave input[type="text"],
+.update-grave input[type="date"] {
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.2s;
+    color: #000;
+    box-sizing: border-box;
+}
+
+.update-grave input[type="text"]:focus,
+.update-grave input[type="date"]:focus {
+    border-color: #007bff;
+}
+
+/* Кнопка формы */
+.update-grave input[type="submit"] {
+    grid-column: span 3;
+    padding: 12px;
+    background: #007bff;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+.update-grave input[type="submit"]:hover {
+    background: #0056b3;
+}
+
+
+.alert {
+    padding: 10px 20px;
+    margin-bottom: 5px;
+    max-width: 100%;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    animation: fadeIn 0.4s ease;
+}
+
+.alert-success {
+    background: #e6ffed;
+    border: 1px solid #28a745;
+    color: #155724;
+}
+
+.alert-error {
+    background: #ffe6e6;
+    border: 1px solid #dc3545;
+    color: #721c24;
+}
+
+.back-link {
+    text-align: center;
+    margin-top: 15px;
+}
+.back-link a {
+    text-decoration: none;
+    font-weight: bold;
+    color: #007bff;
+    transition: 0.3s;
+}
+.back-link a:hover {
+    color: #0056b3;
+}
+
+/* Анимация появления */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+
+
+
+/* Контейнер блока сообщений для graveadd */
+.graveadd.has-message {
+    max-width: 400px;
+    height: 80px;
+    margin: 40px auto;
+    background: #f9f9f9;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    font-family: 'Arial', sans-serif;
+    color: #333;
+    text-align: center;
+    transition: height 0.3s ease;
+}
+
+
+.graveadd.has-message .alert {
+    padding: 10px 10px;
+    margin-bottom: 5px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    animation: fadeIn 0.4s ease;
+}
+
+/* Успешное сообщение */
+.graveadd.has-message .alert-success {
+    background: #e6ffed;
+    border: 1px solid #28a745;
+    color: #155724;
+}
+
+/* Ошибка */
+.graveadd.has-message .alert-error {
+    background: #ffe6e6;
+    border: 1px solid #dc3545;
+    color: #721c24;
+}
+
+/* Ссылка возврата */
+.graveadd.has-message .back-link {
+    text-align: center;
+    margin-top: 15px;
+}
+.graveadd.has-message .back-link a {
+    text-decoration: none;
+    font-weight: bold;
+    color: #007bff;
+    transition: 0.3s;
+}
+.graveadd.has-message .back-link a:hover {
+    color: #0056b3;
+}
+
+.success-overlay {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-40px);
+    background: #e6ffed;
+    border: 1px solid #28a745;
+    color: #155724;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    z-index: 99999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+
+.success-overlay.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+
+.success-overlay.hide {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-40px);
+    pointer-events: none;
+}
+
