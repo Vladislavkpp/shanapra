@@ -14,12 +14,26 @@ View_Add('<div class="out">');
 View_Add("<link rel='stylesheet' href='function.css'>");
 
 $showMessage = false;
-$messageHtml = '';
 $messageType = '';
 $messageText = '';
 
-if (isset($_POST['id'])) {
-    // если форма отправлена – обновляем
+if (isset($_POST['delete_id'])) {
+    $deleteId = $_POST['delete_id'];
+    $sql = 'DELETE FROM grave WHERE idx=' . $deleteId;
+    $res = mysqli_query($dblink, $sql);
+
+    $showMessage = true;
+    if ($res) {
+        $messageType = 'alert-success';
+        $messageText = 'Запис №'.$deleteId.' успішно видалено!';
+    } else {
+        $messageType = 'alert-error';
+        $messageText = 'Помилка видалення запису №'.$deleteId;
+    }
+}
+
+
+elseif (isset($_POST['id'])) {
     $id = $_POST['id'];
     $lname = $_POST['lname'];
     $fname = $_POST['fname'];
@@ -36,20 +50,19 @@ if (isset($_POST['id'])) {
             WHERE idx=' . $id;
     $res = mysqli_query($dblink, $sql);
 
+    $showMessage = true;
     if ($res) {
-        $showMessage = true;
         $messageType = 'alert-success';
         $messageText = 'Запис №'.$id.' успішно оновлено!';
     } else {
-        $showMessage = true;
         $messageType = 'alert-error';
         $messageText = 'Помилка оновлення запису №'.$id;
     }
 }
 
+
 if (!$showMessage) {
     if (isset($_GET['id'])) {
-
         $id = $_GET['id'];
         $sql = 'SELECT * FROM grave WHERE idx=' . $id;
         $res = mysqli_query($dblink, $sql);
@@ -59,6 +72,7 @@ if (!$showMessage) {
             View_Add('<div class="update-grave">');
             View_Add('<h2 class="form-title">Редагування запису №' . $row['idx'] . '</h2>');
 
+            // Форма редактирования
             View_Add('<form method="post" action="editgrave.php">');
             View_Add('<input type="hidden" name="id" value="' . $row['idx'] . '">');
 
@@ -73,10 +87,11 @@ if (!$showMessage) {
             View_Add('<div><label>Дата смерті:</label><input type="date" name="dt2" value="' . $row['dt2'] . '"></div>');
             View_Add('</div>');
 
-            View_Add('<input type="submit" value="Зберегти">');
+            View_Add('<input type="submit" value="Зберегти" class="editbtn">');
             View_Add('</form>');
-            View_Add('</div>');
 
+
+            View_Add('</div>'); // .update-grave
         } else {
             $showMessage = true;
             $messageType = 'alert-error';
@@ -88,6 +103,7 @@ if (!$showMessage) {
         $messageText = 'Помилка редагування!';
     }
 }
+
 
 if ($showMessage) {
     View_Add('<div class="update-grave has-message">

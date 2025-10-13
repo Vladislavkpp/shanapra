@@ -11,6 +11,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/validator.php";
 //use vendor\vodovra\View;
 //use vendor\vodovra\Dbs;
 
+if (isset($_SESSION['logged']) && $_SESSION['logged'] == 1) {
+    header('Location: /profile.php');
+    exit;
+}
 
 View_Clear();
 View_Add(Page_Up());
@@ -22,7 +26,7 @@ $authErrorMsg = '';
 $authSuccessMsg = '';
 
 if (($md == 0) || ($md == '')) {
-    View_Add('
+        View_Add('
 <div class="logform-container ' . (!empty($authErrorMsg) ? 'has-error' : (!empty($authSuccessMsg) ? 'has-success' : '')) . '">
     <form action="/auth.php" method="post">
         <input type="hidden" name="md" value="5">
@@ -59,6 +63,15 @@ if (($md == 0) || ($md == '')) {
         </div>
     </form>
 
+  
+</div>
+');
+    }
+
+
+
+/*</form>
+
     <div class="authform-container2">
         <div class="logform-row logform-vertical logform-google-row">
             <a href="" class="logform-button logform-google">
@@ -66,10 +79,7 @@ if (($md == 0) || ($md == '')) {
                 Увійти за допомогою Google
             </a>
         </div>
-    </div>
-</div>
-');
-}
+    </div>*/
 
 if (!empty($authSuccessMsg)) {
     echo '<script>
@@ -77,10 +87,10 @@ if (!empty($authSuccessMsg)) {
             window.location.href = "/profile.php";
         }, 3000);
     </script>';
-    }
+}
 
 
-    if ($md == 5) {
+if ($md == 5) {
 
     if (isset($_POST['emailForLogin'])) {
         $em = $_POST['emailForLogin'];
@@ -160,14 +170,7 @@ if ($md == 7) {
             <span>Ще не зареєстровані? <a class="logform-reg-link" href="/stregs.php">Зареєструватися</a></span>
         </div>
 
-        <div class="authform-container2">
-            <div class="logform-row logform-vertical logform-google-row">
-                <a href="<?=htmlspecialchars($login_url)?>" class="logform-button logform-google">
-                    <img src="/assets/images/google-icon.svg" alt="" width="17" height="17">
-                    Увійти за допомогою Google
-                </a>
-            </div>
-        </div>
+        
     </form>
 </div>
 ');
@@ -175,6 +178,7 @@ if ($md == 7) {
 
 
 if ($md == 25) {
+    header("Refresh:2; url=/profile.php");
     View_Add('
 <div class="logform-container has-success">
     <form action="/auth.php" method="post">
@@ -199,47 +203,17 @@ if ($md == 25) {
         <div class="logform-row logform-vertical">
             <div class="regsuccess1" style="display:flex; justify-content:space-between; align-items:center;">
                 <span>Вхід виконано успішно!</span>
-                <span id="countdown-circle" style="
-                    display:inline-block;
-                    width:24px;
-                    height:24px;
-                    line-height:24px;
-                    text-align:center;
-                    border-radius:50%;
-                    border: 1px solid #3ac93a;
-                    color:#006600;
-                    font-weight:bold;
-                ">3</span>
-            </div>
+                     </div>
+                     
         </div>
-
-        
-    </form>
+      </form>
 </div>
 ');
-
-    echo '<script>
-document.addEventListener("DOMContentLoaded", function() {
-    let count = 3;
-    const countdownEl = document.getElementById("countdown-circle");
-    const interval = setInterval(function() {
-        count--;
-        if(count <= 0) {
-            clearInterval(interval);
-            window.location.href = "/profile.php";
-        } else {
-            countdownEl.textContent = count;
-        }
-    }, 1000);
-});
-</script>';
 }
 
 
+View_Add('</div>'); // .out
 
-
-
-View_Add('</div></div>');
 View_Add(Page_Down());
 View_Out();
 View_Clear();

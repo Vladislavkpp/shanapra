@@ -1,0 +1,550 @@
+* {
+    margin: 0;
+}
+
+html, body, div, table, td, th, a, img, p, font, ul, pre, input {
+    padding: 0;
+}
+
+div {
+    display:block;
+}
+
+html {
+    scrollbar-shadow-color:black;
+    scrollbar-arrow-color:black;
+    scrollbar-darkshadow-color:white;
+    overflow-y: auto;
+    overflow-x: hidden;
+    line-height:1.47;
+}
+
+img {
+    border: 0;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+
+#wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.out {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background: #9f9f9f;
+    overflow-x: hidden;
+    gap: 10px;
+}/* Контейнер ленты */
+.lenta-container {
+    width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+
+
+/* Форма создания публикации */
+.lenta-create-post {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 16px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    margin-bottom: 12px;
+    transition: 0.3s ease;
+}
+
+.lenta-create-post:hover {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Аватар */
+.lenta-avatar {
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.avatar-link {
+    display: inline-block;
+    border-radius: 50%;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.avatar-link:hover {
+    transform: scale(1.05);
+}
+
+.user-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+    transition: filter 0.3s ease;
+    display: block;
+}
+
+.avatar-link:hover .user-avatar {
+    filter: brightness(80%);
+}
+
+/* Поле */
+.lenta-input {
+    flex: 1;
+    border: none;
+    border-radius: 50px;
+    background: #f0f2f5;
+    padding: 12px 18px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.lenta-input:hover {
+    background: #e8eaed;
+}
+
+/* Модалка */
+.lenta-modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    #background: rgba(0, 0, 0, 0.45);
+    background: rgba(255, 255, 255, 0.64);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.lenta-modal.show {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Контент модалки */
+.lenta-modal-content {
+    background: #fff;
+    width: 100%;
+    max-width: 500px;
+    border-radius: 14px;
+    padding: 20px;
+    #box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    box-shadow:
+            0 10px 25px rgba(0, 0, 0, 0.1),
+            0 15px 50px rgba(0, 0, 0, 0.15),
+            0 20px 80px rgba(0, 0, 0, 0.2);
+}
+
+.lenta-modal.show .lenta-modal-content {
+    animation: slideUp 0.3s ease forwards;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+html.modal-open,
+body.modal-open {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+    padding-right: var(--scrollbar-width);
+}
+
+:root {
+    --scrollbar-width: 0px;
+}
+
+
+.char-count{
+    font-family: 'Arial', sans-serif;
+}
+
+/* Заголовок */
+.lenta-modal-title-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 15px;
+    font-family: 'Arial', sans-serif;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.modal-title-text {
+    font-weight: 600;
+    font-size: 20px;
+    text-align: center;
+    flex: 1;
+}
+
+.lenta-close {
+    position: absolute;
+    right: 0;
+    cursor: pointer;
+}
+
+.lenta-close:hover{
+    filter: brightness(95%);
+    transition: 0.3s;
+}
+
+.close-icon {
+    width: 30px;
+    height: 30px;
+}
+
+/* Шапка */
+.lenta-modal-header {
+    display: flex;
+    font-family: 'Arial', sans-serif;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.small-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.lenta-user-info {
+    display: flex;
+    flex-direction: column;
+    font-family: 'Arial', sans-serif;
+    justify-content: center;
+    gap: 4px;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 1.2;
+}
+
+.privacy-indicator {
+    font-size: 12px;
+    width: fit-content;
+    padding: 4px;
+    border-radius: 6px;
+    background: #e2e5e9;
+    vertical-align: middle;
+}
+
+.lenta-input:focus{
+    outline: none;
+}
+.lenta-modal textarea:focus {
+    outline: none;
+    border-color: #1877f2;
+    box-shadow: 0 0 4px rgba(24, 119, 242, 0.5);
+}
+
+/* Текстовое поле */
+.lenta-modal textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+    min-height: 60px;
+    max-height: none;
+    padding: 12px 15px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    background: #f4f6f8;
+    font-size: 18px;
+    line-height: 1.4;
+    resize: none;
+    overflow: hidden;
+    transition: font-size 0.2s, height 0.2s;
+}
+
+
+
+/* Кнопка */
+.lenta-btn {
+    width: 100%;
+    background: #1877f2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 15px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.lenta-btn:hover {
+    background: #165fc1;
+}
+
+.lenta-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.lenta-success {
+    color: green;
+}
+
+.lenta-error {
+    color: red;
+}
+
+.body-no-scroll {
+    overflow: hidden;
+}
+
+/* Адаптивность */
+@media (max-width: 650px) {
+    .lenta-create-post {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .lenta-avatar {
+        margin-bottom: 8px;
+    }
+
+    .lenta-input {
+        width: 100%;
+    }
+
+    .lenta-modal-content {
+        width: 90%;
+        margin: 0 5%;
+    }
+}
+
+
+/* ПУБЛИКАЦИИ */
+/* Сообщения */
+.lenta-message {
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: 0.3s;
+}
+
+.post-message {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    background-color: #fafafa;
+    max-width: 600px;
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-family: 'Arial', sans-serif;
+}
+
+.post-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+}
+
+.post-user-info {
+    display: flex;
+    flex-direction: column;
+    font-family: 'Arial', sans-serif;
+}
+
+.post-username {
+    font-size: 16px;
+    color: #333;
+}
+
+.post-date {
+    font-size: 12px;
+    color: #888;
+    font-family: 'Arial', sans-serif;
+}
+
+.post-text {
+    font-size: 14px;
+    color: #444;
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    max-width: 100%;
+    font-family: 'Arial', sans-serif;
+}
+
+/*  реакции */
+.post-actions {
+    display: flex;
+    border-top: 1px solid #ccc;
+    gap: 15px;
+    margin-top: 10px;
+    padding-top: 10px;
+    font-family: 'Arial', sans-serif;
+}
+
+.post-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 5px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.post-action-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+.post-action-btn:hover {
+    background: #eee;
+    color: #000;
+}
+
+/*
+background: #e6edff;
+    border: 1px solid #2848a7;
+    color: #152857;
+*/
+
+.massage-text-modal{
+    padding: 10px 20px;
+    margin-bottom: 5px;
+    max-width: 100%;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    animation: fadeIn 0.4s ease;
+    font-family: 'Arial', sans-serif;
+}
+
+.massage-text-modal.success {
+    background: #e6ffed;
+    border: 1px solid #28a745;
+    color: #155724;
+    font-family: 'Arial', sans-serif;
+}
+
+.massage-text-modal.error {
+    background: #ffe6e6;
+    border: 1px solid #dc3545;
+    color: #721c24;
+    font-family: 'Arial', sans-serif;
+}
+
+
+/*Блоки для неавторизованных*/
+
+.nomassage{
+    display: flex;
+    font-family: 'Arial', sans-serif;
+    align-items: center;
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 16px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    margin-bottom: 12px;
+    gap: 15px;
+    transition: 0.3s ease;
+}
+
+.linkaddmass{
+    background: #1877f2;
+    font-family: 'Arial', sans-serif;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    text-decoration: none;
+}
+.linkaddmass:hover {
+    background: #165fc1;
+}
+
+.notf-auth{
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 16px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    margin-bottom: 12px;;
+    transition: 0.3s ease;
+    font-family: 'Arial', sans-serif;
+}
+
+.massage-auth{
+    background: #e6ecff;
+    border: 1px solid #2844a7;
+    color: #152057;
+    padding: 10px 20px;
+    margin-bottom: 5px;
+    max-width: 100%;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    animation: fadeIn 0.4s ease;
+    font-family: 'Arial', sans-serif;
+}
+
+.link-auth{
+    background: #1877f2;
+    font-family: 'Arial', sans-serif;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 24px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    text-decoration: none;
+}
+
+.link-auth:hover {
+    background: #165fc1;
+}

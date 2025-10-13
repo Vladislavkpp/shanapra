@@ -10,6 +10,11 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/validator.php";
 //use vendor\vodovra\View;
 //use vendor\vodovra\Dbs;
 
+if (isset($_SESSION['logged']) && $_SESSION['logged'] == 1) {
+    header('Location: /profile.php');
+    exit;
+}
+
 View_Clear();
 View_Add(Page_Up());
 View_Add(Menu_Up());
@@ -22,29 +27,45 @@ $errorMsg = '';
 $successMsg = '';
 
 if ($md == 10) {
-    if (isset($_POST['email'])) {
-        $em = $_POST['email'];
-    }
 
-    if (isset($_POST['password'])) {
-        $ep = $_POST['password'];
-    }
+    $em = $_POST['email'] ?? '';
+    $ep = $_POST['password'] ?? '';
 
-    $em1 = valide1($em);
-    $ep1 = valide1($ep);
+    $emError = '';
+    $epError = '';
 
-    if ($em1 != '' && $ep1 != '') {
+    $em1 = valide1($em, 'email', $emError);
+    $ep1 = valide1($ep, 'password', $epError);
+
+    if ($em1 !== '' && $ep1 !== '') {
         $dblink = DbConnect();
 
-        $res = mysqli_query($dblink, 'SELECT idx FROM users WHERE email="' . $em . '"');
+        // Проверяем есть ли уже пользователь с такой почтой
+        $emEscaped = mysqli_real_escape_string($dblink, $em1);
+        $res = mysqli_query($dblink, 'SELECT idx FROM users WHERE email="' . $emEscaped . '"');
+
         if (mysqli_num_rows($res) > 0) {
             $errorMsg = "Користувач уже зареєстрований";
         } else {
-            $passhash = md5($ep);
-            $sql = 'INSERT INTO users (email, pasw) VALUES ("' . $em . '", "' . $passhash . '")';
+            $passhash = md5($ep1);
+            $sql = 'INSERT INTO users (email, pasw) VALUES ("' . $emEscaped . '", "' . $passhash . '")';
             $ok = mysqli_query($dblink, $sql);
+
             if ($ok) {
-                $successMsg = "Реєстрація успішна!"; // успех
+                session_start();
+                $userId = mysqli_insert_id($dblink);
+
+                $_SESSION['logged'] = 1;
+                $_SESSION['uzver'] = $userId;
+                $_SESSION['last_activity'] = time();
+
+                $successMsg = "Реєстрація успішна!";
+
+                echo '<script>
+                    setTimeout(function(){
+                        window.location.href = "/profile.php";
+                    }, 3000);
+                </script>';
             } else {
                 $errorMsg = "Помилка при збереженні користувача";
             }
@@ -52,14 +73,16 @@ if ($md == 10) {
 
         mysqli_close($dblink);
     } else {
-        $errorMsg = "Заповніть усі поля";
+        // Если валидация не прошла — выводим ошибку
+        $errorMsg = $emError ?: $epError ?: "Заповніть усі поля";
     }
 }
+
 
 View_Add('
 <div class="regform-container ' .
     (!empty($errorMsg) ? 'has-error' : (!empty($successMsg) ? 'has-success' : '')) . '">
-    <form action="?" method="post">
+    <form action="/stregs.php" method="post">
         <input type="hidden" name="md" value="10">
         <div class="regform-title regform-text-center">Реєстрація користувача</div>
         <hr class="regform-divider">
@@ -94,7 +117,8 @@ View_Add('
 </div>
 ');
 
-View_Add('</div></div>');
+View_Add('</div>'); // .out
+
 View_Add(Page_Down());
 View_Out();
 View_Clear();

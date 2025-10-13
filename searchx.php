@@ -5,27 +5,46 @@ require_once "function_vra.php";
 $cp = $_GET['page'] ?? 1;
 $perpage = 5;
 
-
-$surname = $_GET['surname'] ?? '';
-$name = $_GET['name'] ?? '';
-$patronymic = $_GET['patronymic'] ?? '';
+$surname     = $_GET['surname'] ?? '';
+$name        = $_GET['name'] ?? '';
+$patronymic  = $_GET['patronymic'] ?? '';
+$birthdate   = $_GET['birthdate'] ?? '';
+$deathdate   = $_GET['deathdate'] ?? '';
 
 $dblink = DbConnect();
 $rows = [];
 $sql = "SELECT * FROM grave WHERE (1=1)";
-if ($surname != '' || $name != '' || $patronymic != '') {
+
+if ($surname != '' || $name != '' || $patronymic != '' || $birthdate != '' || $deathdate != '') {
     if ($surname != '') {
-        $sql .= 'AND (lname LIKE "%' . $surname . '%")';
+        $sql .= ' AND (lname LIKE "%' . $surname . '%")';
     }
 
     if ($name != '') {
-        $sql .= 'AND (fname LIKE "%' . $name . '%")';
+        $sql .= ' AND (fname LIKE "%' . $name . '%")';
     }
 
     if ($patronymic != '') {
-        $sql .= 'AND (mname LIKE "%' . $patronymic . '%")';
-
+        $sql .= ' AND (mname LIKE "%' . $patronymic . '%")';
     }
+
+    // Даты
+    if ($birthdate != '' && $deathdate == '') {
+
+        $sql .= " AND (dt1 >= '" . $birthdate . "')";
+    }
+
+    if ($deathdate != '' && $birthdate == '') {
+
+        $sql .= " AND (dt2 <= '" . $deathdate . "')";
+    }
+
+    if ($birthdate != '' && $deathdate != '') {
+
+        $sql .= " AND ((dt1 >= '" . $birthdate . "')";
+        $sql .= " AND (dt2 <= '" . $deathdate . "'))";
+    }
+
     $res = mysqli_query($dblink, $sql);
     while ($row = mysqli_fetch_assoc($res)) {
         $rows[] = $row;
@@ -59,7 +78,8 @@ View_Add('<span class="search-param">Пошук за параметрами: ' .
 View_Add('<div class="search-divider"></div>');
 View_Add('<span class="search-count">Картки: ' . $cout . '</span>' );
 View_Add('</div>');
-
+View_Add('<div class="search-divider"></div>');
+View_Add('<a href="graveadd.php" class="searchklb-btn">+ Додати поховання</a>');
 View_Add('<div class="search-right">');
 // форма поиска
 View_Add('<form class="search-form" action="/searchx.php" method="get">');
@@ -89,16 +109,17 @@ if ($cout === 0) {
     }
 }
 
-View_Add('</div><br>' . xbr);
+View_Add('</div>' . xbr);
 
 
 // Пагинация
 if ($cout > 0) {
     View_Add('<div class="paginator-out">');
-    View_Add(Paginate::Show($cp, $cout, $perpage));
-    View_Add('</div><br>' . xbr);
+    View_Add(Paginatex::Showx($cp, $cout, $perpage));
+    View_Add('</div>' . xbr);
 }
+View_Add('</div></div>');
 
 View_Add(Page_Down());
-View_Add('</div>');
 View_Out();
+View_Clear();
