@@ -79,7 +79,9 @@ if (($md == 0) || ($md == '')) {
         $res = mysqli_query($dblink, $sql);
         if (mysqli_num_rows($res) == 1) {
             $p = mysqli_fetch_assoc($res);
-
+            View_Add('<div class="profile-container">');
+View_Add('<div class="banner-profile">
+</div>');
             View_Add('<div class="profile-card">');
 
 
@@ -92,7 +94,6 @@ if (($md == 0) || ($md == '')) {
                     </div>
                 ');
 
-
                 if (empty($p['tel'])) {
                     View_Add('
                         <div class="profile-emptyt">
@@ -101,17 +102,8 @@ if (($md == 0) || ($md == '')) {
                     ');
                 }
 
+
             } else {
-                View_Add('<div class="profile-info" style="flex:1; display:flex; align-items:flex-start; gap:20px;">');
-
-                View_Add(
-                    '<div class="avatar-name">' .
-                    '<input type="text" name="lname" class="avatar-lname" value="' . $p['lname'] . '">' .
-                    '<input type="text" name="fname" class="avatar-fname" value="' . $p['fname'] . '">' .
-                    '</div>'
-                );
-
-
                 if (empty($p['tel'])) {
                     View_Add('
                         <div class="profile-empty tel-empty" style="margin:0;">
@@ -120,10 +112,24 @@ if (($md == 0) || ($md == '')) {
                     ');
                 }
 
+                View_Add('<div class="profile-info" style="flex:1; display:flex; align-items:flex-start; gap:20px;">');
+                View_Add(
+                    '<div class="avatar-name-row">' .
+                    '<div class="avatar-fullname">' . htmlspecialchars($p['lname']) . ' ' . htmlspecialchars($p['fname']) . '</div>' .
+                    '<div class="avatar-followers">Підписників:</div>' .
+                    '</div>'
+                );
+
+
+
+
+
+
                 View_Add('</div>');
             }
 
             View_Add('<hr class="profile-separator"></div>');
+            View_Add('</div>');
         }
     }
 }

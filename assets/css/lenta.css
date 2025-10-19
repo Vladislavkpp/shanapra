@@ -275,11 +275,39 @@ body.modal-open {
     font-size: 18px;
     line-height: 1.4;
     resize: none;
-    overflow: hidden;
+    overflow: auto;
     transition: font-size 0.2s, height 0.2s;
 }
 
 
+
+.lenta-modal textarea::-webkit-scrollbar {
+    width: 8px;
+    margin-right: 5px;
+}
+
+.lenta-modal textarea::-webkit-scrollbar-track {
+    background: #f4f6f8;
+    margin-right: 5px;
+    border-radius: 12px;
+}
+
+.lenta-modal textarea::-webkit-scrollbar-thumb {
+    background-color: #d0d0d0;
+    border-radius: 15px;
+    border: 2px solid #f4f6f8;
+}
+
+.lenta-modal textarea::-webkit-scrollbar-thumb:hover {
+    background-color: #e0e0e0;
+}
+
+
+.lenta-modal textarea {
+    scrollbar-width: thin;
+    scroll-margin: 5px!important;
+    scrollbar-color: #d0d0d0 #f4f6f8;
+}
 
 /* Кнопка */
 .lenta-btn {

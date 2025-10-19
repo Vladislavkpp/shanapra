@@ -91,7 +91,6 @@ body {
 }
 
 
-
 .cardout {
     width: max-content;
     max-width: 620px;
@@ -176,20 +175,6 @@ body {
     border-bottom: 1px solid #ddd;
 }
 
-.cardout-subtitle{
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    margin-bottom: 5px;
-    margin-top: 0px;
-    padding: 0;
-    font-size: 15px;
-    text-align: left;
-    color: #004687;
-    font-weight: 600;
-    border-bottom: 1px solid #ddd;
-}
-
 .cardout-subtitle-3{
     display: flex;
     align-items: center;
@@ -235,7 +220,7 @@ body {
     width: 190px;
     height: 240px;
     flex: 0 0 190px;
-    object-fit: cover;
+    /*object-fit: cover;*/
     border-radius: 10px;
     background: #eaeaea;
     border: #e0e0e0 2px solid;
@@ -294,12 +279,11 @@ body {
 
 .nocem{
     background: #e6ecff;
-    border: 1px solid #2844a7;
+    border: none;
     color: #152057;
     padding: 3px 3px;
     font-size: 14px;
     border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     font-family: 'Arial', sans-serif;
 }
 
@@ -419,4 +403,188 @@ body {
     opacity: 0.75;
     cursor: not-allowed;
     background-color: rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 480px) {
+    .outpage {
+        display: block;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        min-height: auto;
+    }
+    .cardout {
+        width: -webkit-fill-available;
+        height: max-content;
+        font-family: 'Inter', sans-serif;
+        margin: 0px;
+        padding: 10px 20px 20px 20px;
+        background: #fff;
+        border-radius: 0px 0px 15px 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .cardout-photo img {
+        width: auto;
+        height: 240px;
+        max-height: 400px;
+        /*object-fit: cover;*/
+        border-radius: 10px;
+        background: #eaeaea;
+        border: 2px solid #e0e0e0;
+    }
+
+    .cardout-photo-slider {
+        position: relative;
+        overflow: visible;
+        max-width: 100%;
+    }
+
+    .cardout-photo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+    }
+
+    .cardout-icon svg {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+    }
+
+
+    .nocem {
+        background: #e6ecff;
+        border: none;
+        color: #152057;
+        padding: 3px 3px;
+        font-size: 14px;
+        border-radius: 6px;
+        font-family: 'Arial', sans-serif;
+    }
+
+    .cemetery-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: #152057;
+        margin-bottom: 10px;
+    }
+
+    .cardout-top {
+        display: block;
+        align-items: flex-start;
+    }
+
+    .cardout-subtitle{
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 5px;
+        margin-top: 0;
+        padding: 0;
+        font-size: 12px;
+        text-align: left;
+        color: #004687;
+        font-weight: 600;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .cardout-subtitle.one{
+display: none;
+}
+
+    .cardout-subtitle-3 {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 5px;
+        margin-top: 10px;
+        padding: 0;
+        font-size: 12px;
+        text-align: left;
+        color: #004687;
+        font-weight: 600;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .cardout-data h2 {
+        text-align: center;
+        font-size: 1.3em;
+    }
+    .date-value {
+        font-size: 12px;
+        font-weight: 600;
+        color: #0053a0;
+    }
+
+    .cardout-dates {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+
+    .grave-locations {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .grave-item{
+        min-width: 80px;
+        display: flex;
+        justify-content: space-around;
+    }
+
+    .lenta-container{
+        width: -webkit-fill-available!important;
+        box-sizing: border-box!important;
+    }
+    .lenta-create-post {
+        flex-direction: row!important;
+        align-items: stretch;
+    }
+
+    .lenta-input{
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    .lenta-avatar {
+        margin-bottom: 0px!important;
+    }
+
+    .nomassage {
+        display: flex;
+        flex-direction: column;
+        font-family: 'Arial', sans-serif;
+        align-items: center;
+        background: #fff;
+        border-radius: 14px;
+        padding: 12px 16px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        margin-bottom: 12px;
+        gap: 5px;
+        transition: 0.3s ease;
+    }
+
+    .post-action-btn {
+        display: block!important;
+        align-items: center;
+        gap: 8px;
+        background: none;
+        border: none;
+        color: #555;
+        font-size: 14px;
+        cursor: pointer;
+        padding: 5px 8px;
+        border-radius: 5px;
+        transition: background 0.2s, color 0.2s;
+    }
+
 }

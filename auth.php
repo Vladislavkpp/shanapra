@@ -50,36 +50,33 @@ if (($md == 0) || ($md == '')) {
         ' . (!empty($authErrorMsg) ? '<div class="regerror1">' . $authErrorMsg . '</div>' : '') . '
         ' . (!empty($authSuccessMsg) ? '<div class="regsuccess1">' . $authSuccessMsg . '</div>' : '') . '
 
-        <div class="logform-row logform-vertical">
+        <div class="logform-row logform-vertical butt">
             <input class="logform-button" type="submit" value="Увійти">
         </div>
 
-        <div class="logform-row logform-right">
+        <div class="logform-row logform-right a">
             <a class="logform-advanced-link" href="/strepair.php">Забули пароль?</a>
         </div>
 
-        <div class="logform-row logform-center logform-registration-line">
+        <div class="logform-row logform-center logform-registration-line but">
             <span>Ще не зареєстровані? <a class="logform-reg-link" href="/stregs.php">Зареєструватися</a></span>
         </div>
-    </form>
+        
+        <div class="separatorform">
+           <span>або</span>
+        </div>
 
-  
+        <div class="logform-row logform-vertical but">
+           <a class="googlelog" href="/oauth.php">
+    <img src="/assets/images/Google_Favicon_2025.png" alt="Google" class="google-icon">
+    Увійти за допомогою Google
+</a>
+        </div>
+
+    </form>
 </div>
 ');
     }
-
-
-
-/*</form>
-
-    <div class="authform-container2">
-        <div class="logform-row logform-vertical logform-google-row">
-            <a href="" class="logform-button logform-google">
-                <img src="/assets/images/google-icon.svg" alt="" width="17" height="17">
-                Увійти за допомогою Google
-            </a>
-        </div>
-    </div>*/
 
 if (!empty($authSuccessMsg)) {
     echo '<script>
@@ -158,19 +155,29 @@ if ($md == 7) {
         ' . (!empty($authErrorMsg) ? '<div class="regerror1">' . $authErrorMsg . '</div>' : '') . '
         ' . (!empty($authSuccessMsg) ? '<div class="regsuccess1">' . $authSuccessMsg . '</div>' : '') . '
 
-        <div class="logform-row logform-vertical">
+        <div class="logform-row logform-vertical butt">
             <input class="logform-button" type="submit" value="Увійти">
         </div>
 
-        <div class="logform-row logform-right">
+        <div class="logform-row logform-right a">
             <a class="logform-advanced-link" href="/strepair.php">Забули пароль?</a>
         </div>
 
-        <div class="logform-row logform-center logform-registration-line">
+        <div class="logform-row logform-center logform-registration-line but">
             <span>Ще не зареєстровані? <a class="logform-reg-link" href="/stregs.php">Зареєструватися</a></span>
         </div>
-
         
+        <div class="separatorform">
+           <span>або</span>
+        </div>
+
+        <div class="logform-row logform-vertical but">
+           <a class="googlelog" href="/oauth.php">
+    <img src="/assets/images/Google_Favicon_2025.png" alt="Google" class="google-icon">
+    Увійти за допомогою Google
+</a>
+        </div>
+
     </form>
 </div>
 ');
@@ -178,39 +185,49 @@ if ($md == 7) {
 
 
 if ($md == 25) {
-    header("Refresh:2; url=/profile.php");
+    $_SESSION['last_activity'] = time();
+
+    $authSuccessMsg = "Вхід виконано успішно!";
+    $md = 25;
+
     View_Add('
 <div class="logform-container has-success">
-    <form action="/auth.php" method="post">
+    <form action="/auth.php" method="post" novalidate>
         <input type="hidden" name="md" value="5">
 
         <div class="logform-title logform-text-center">Вхід в систему</div>
 
         <div class="logform-row logform-vertical">
             <div class="logform-input-container">
-                <input class="logform-input" name="emailForLogin" type="email" value="' . htmlspecialchars($em ?? '') . '" placeholder=" " required>
+                <input class="logform-input" name="emailForLogin" type="email" value="' . htmlspecialchars($em ?? '') . '" placeholder=" ">
                 <label>E-mail</label>
             </div>
         </div>
 
         <div class="logform-row logform-vertical">
             <div class="logform-input-container">
-                <input class="logform-input" name="paswForLogin" type="password" value="' . htmlspecialchars($ep ?? '') . '" placeholder=" " required>
+                <input class="logform-input" name="paswForLogin" type="password" value="' . htmlspecialchars($ep ?? '') . '" placeholder=" ">
                 <label>Пароль</label>
             </div>
         </div>
 
-        <div class="logform-row logform-vertical">
-            <div class="regsuccess1" style="display:flex; justify-content:space-between; align-items:center;">
-                <span>Вхід виконано успішно!</span>
-                     </div>
-                     
+        <div class="logform-row logform-vertical succ">
+            <div class="loginsuccess" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>' . $authSuccessMsg . '</span>
+            </div>
         </div>
-      </form>
+    </form>
 </div>
+
+<script>
+    setTimeout(function(){
+        window.location.href = "/profile.php";
+    }, 2000);
+</script>
 ');
 }
 
+//1qazxcde345tgb
 
 View_Add('</div>'); // .out
 

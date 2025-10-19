@@ -13,7 +13,6 @@ $dblink = DbConnect();
 $rows = [];
 $sql = "SELECT c.* FROM cemetery c JOIN district d ON c.district = d.idx WHERE 1=1";
 
-
 if ($region != '' || $district != '' || $title != '') {
 
     if ($region !== '') {
@@ -28,6 +27,8 @@ if ($region != '' || $district != '' || $title != '') {
         $sql .= " AND (c.title LIKE '%".mysqli_real_escape_string($dblink, $title)."%')";
     }
 
+    $sql .= " ORDER BY c.idx ASC";
+
     $res = mysqli_query($dblink, $sql);
     if (!$res) {
         die("SQL Error: " . mysqli_error($dblink) . "<br>Query: " . $sql);
@@ -37,12 +38,13 @@ if ($region != '' || $district != '' || $title != '') {
     }
 
 } else {
-    // если все поля пустые — выводим все записи
-    $res = mysqli_query($dblink, "SELECT * FROM cemetery");
+    // если все поля пустые — выводим все записи с сортировкой
+    $res = mysqli_query($dblink, "SELECT * FROM cemetery ORDER BY idx ASC");
     while ($row = mysqli_fetch_assoc($res)) {
         $rows[] = $row;
     }
 }
+
 
 
 // Количество результатов
@@ -115,7 +117,7 @@ if ($cout === 0) {
     $rows_page = array_slice($rows, $offset, $perpage);
 
     foreach ($rows_page as $c) {
-        View_Add(CardsK($c['idx'], $c['title'], $c['town'], $c['district'], $c['adress']));
+        View_Add(CardsK($c['idx'], $c['title'], $c['town'], $c['district'], $c['adress'], $c['scheme']));
     }
 }
 

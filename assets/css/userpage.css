@@ -1,0 +1,170 @@
+* {
+    margin: 0;
+}
+
+html, body, div, table, td, th, a, img, p, font, ul, pre, input {
+    padding: 0;
+}
+
+div {
+    display:block;
+}
+
+html {
+    scrollbar-shadow-color:black;
+    scrollbar-arrow-color:black;
+    scrollbar-darkshadow-color:white;
+    overflow-y: auto;
+    overflow-x: hidden;
+    line-height:1.47;
+}
+
+img {
+    border: 0;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+
+#wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.outuser {
+    display: flex;
+    width: 100%;
+    background: rgb(250, 250, 250);
+    box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+    overflow-x: hidden;
+    position: relative;
+    z-index: 1;
+}
+
+.lentauser {
+    display: flex;
+    flex: 1 0 auto;
+    width: 100%;
+    background: #9f9f9f;
+    overflow-x: hidden;
+
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #284c79 #001242;
+}
+
+/* Chrome */
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #333;
+}
+
+.banner-profile {
+
+    border-radius: 0px 0px 25px 25px!important;
+
+}
+
+.avataruser {
+    margin-top: -60px;
+    margin-left: 30px;
+    margin-right: 10px;
+    display: flex;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: #e0e0e0;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 4px #f1f1f1, 0 0 0 5px #e9e9e9;
+}
+.user-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    position: relative;
+    width: 100%;
+    height: 120px;
+    font-family: sans-serif;
+    box-sizing: border-box;
+    background: rgb(250, 250, 250);
+    padding: 20px;
+    gap: 20px;
+}
+
+.profile-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    top: 0;
+}
+
+.avatar-name-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Контейнер кнопок */
+.profile-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: flex-start;
+    margin-left: auto;
+}
+
+.profile-actions button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: "Inter", "Arial", sans-serif;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s;
+}
+
+/* Написати */
+.btn-write {
+    background-color: #e3e3e3;
+}
+
+.btn-write:hover {
+    background-color: #d2d2d2;
+}
+
+/* Підписатися */
+.btn-follow {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.btn-follow:hover {
+    background-color: #0060d0;
+}

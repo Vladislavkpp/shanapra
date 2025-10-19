@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" serverName="project1" showEqualInSync="true" showDifferentInSync="false" showNewOnSourceInSync="false" showNewOnTargetInSync="false">
+  <component name="PublishConfigData" serverName="project1" showEqualInSync="true">
     <serverData>
       <paths name="project1">
         <serverdata>
@@ -12,6 +12,7 @@
             <excludedPath path="/pma" />
             <excludedPath local="true" path="$PROJECT_DIR$/Temp" />
             <excludedPath local="true" path="$PROJECT_DIR$/pma" />
+            <excludedPath path="/vendor" />
           </excludedPaths>
         </serverdata>
       </paths>

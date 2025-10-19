@@ -1,4 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 /**
  * @var $md
  */
@@ -52,7 +55,6 @@ if ($md == 10) {
             $ok = mysqli_query($dblink, $sql);
 
             if ($ok) {
-                session_start();
                 $userId = mysqli_insert_id($dblink);
 
                 $_SESSION['logged'] = 1;
@@ -61,11 +63,7 @@ if ($md == 10) {
 
                 $successMsg = "Реєстрація успішна!";
 
-                echo '<script>
-                    setTimeout(function(){
-                        window.location.href = "/profile.php";
-                    }, 3000);
-                </script>';
+                echo '<meta http-equiv="refresh" content="2;url=/profile.php">';
             } else {
                 $errorMsg = "Помилка при збереженні користувача";
             }
@@ -85,12 +83,8 @@ View_Add('
     <form action="/stregs.php" method="post">
         <input type="hidden" name="md" value="10">
         <div class="regform-title regform-text-center">Реєстрація користувача</div>
-        <hr class="regform-divider">
-        
-        <div class="regform-row regform-center regform-login-line">
-            <span>Вже зареєстровані? <a class="regform-reg-link" href="/auth.php">Авторизуватися</a></span>
-        </div>
-
+       
+     
         <div class="regform-row regform-vertical">
             <div class="regform-input-container">
                 <input class="regform-input" id="regEmail" name="email" type="email" value="' . $em . '" placeholder=" " required>
@@ -110,8 +104,11 @@ View_Add('
         ' . (!empty($errorMsg) ? '<div class="regerror1">' . $errorMsg . '</div>' : '') . '
         ' . (!empty($successMsg) ? '<div class="regsuccess1">' . $successMsg . '</div>' : '') . '
 
-        <div class="regform-row regform-vertical">
+        <div class="regform-row regform-vertical but">
             <input class="regform-button" type="submit" value="Зареєструватися">
+        </div>
+          <div class="regform-row regform-center regform-login-line a">
+            <span>Вже зареєстровані? <a class="regform-reg-link" href="/auth.php">Авторизуватися</a></span>
         </div>
     </form>
 </div>

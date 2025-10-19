@@ -44,12 +44,24 @@ if (!$showMessage && isset($_POST['md']) && $_POST['md'] === 'cemetery') {
         foreach (['photo1', 'scheme'] as $field) {
             if (isset($_FILES[$field]) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
                 $ext = strtolower(pathinfo($_FILES[$field]['name'], PATHINFO_EXTENSION));
+                if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
+                    error_log("Неподдерживаемое расширение у {$field}: {$ext}");
+                    continue;
+                }
+
                 $safeName = $field . "." . $ext;
                 $targetPath = $uploadDir . "/" . $safeName;
 
-                if (move_uploaded_file($_FILES[$field]['tmp_name'], $targetPath)) {
+                $success = kladbcompress($_FILES[$field]['tmp_name'], $targetPath, 75, 300);
+
+                if ($success && file_exists($targetPath)) {
                     $photos[$field] = "/cemeteries/$newId/$safeName";
+                    error_log("Фото успешно сохранено: {$targetPath}");
+                } else {
+                    error_log("Ошибка при сжатии или сохранении {$field}");
                 }
+            } elseif (isset($_FILES[$field])) {
+                error_log("Ошибка загрузки {$field}: " . $_FILES[$field]['error']);
             }
         }
 
@@ -59,7 +71,6 @@ if (!$showMessage && isset($_POST['md']) && $_POST['md'] === 'cemetery') {
                 $updates[] = "$col='" . mysqli_real_escape_string($dblink, $path) . "'";
             }
             $sqlUpdate = "UPDATE cemetery SET " . implode(",", $updates) . " WHERE idx=" . intval($newId);
-
             if (!mysqli_query($dblink, $sqlUpdate)) {
                 die("Ошибка обновления путей к фото: " . mysqli_error($dblink));
             }

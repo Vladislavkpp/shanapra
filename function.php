@@ -131,12 +131,47 @@ function Menu_Up(): string {
 
     $out .= '<div class="menu-left">';
 
-    $out .= '<div class="burger"><span></span><span></span><span></span></div>';
+    // мобильное меню
+    $out .= '
+    <div class="dropdown nav">
+        <input type="checkbox" id="menu-main" class="dropdown-toggle">
+        <label for="menu-main" class="menu-button nav" data-tooltip="Меню">
+            <div class="burger">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+        </label>
+
+        <div class="dropdown-menu nav">
+        <div class="menu-nav">
+                <span class="menu-name">Меню</span>
+            </div>
+            <ul class="menu_ups_mobile">
+                <li><a href="/">Головна</a></li>
+                <li class="has-submenu">
+        <input type="checkbox" id="mobile-work-toggle" class="submenu-toggle">
+        <label for="mobile-work-toggle" class="submenu-label">Робота</label>
+
+        <ul class="submenu-mobile">
+            <li><a href="/clean-cemeteries.php">Прибирання кладовищ</a></li>
+            <li><a href="/prod-monuments.php">Виготовлення пам`ятників</a></li> 
+            <li><a href="/other-job.php">Інші роботи</a></li>
+        </ul>
+    </li>
+                <li><a href="/clients.php">Наші клієнти</a></li>
+                <li><a href="/graveadd.php">Додати поховання</a></li>
+            </ul>
+        </div>
+    </div>
+    ';
+
     $out .= '<div class="logo"><a href="/"><img src="/assets/images/logobrand3.png" alt="Логотип"></a></div>';
     $out .= '<a href="/" class="title">ІПС Шана</a>';
-    $out .= '</div>';
 
-    $out .= '<div class="menu-divider"></div>'; // вертикальная линия
+    $out .= '</div>'; // menu-left
+
+    $out .= '<div class="menu-divider"></div>';
 
     // Центральное меню
     $out .= '<div class="menu-center">';
@@ -171,6 +206,16 @@ function Menu_Up(): string {
 
         $out .= '
 <div class="header-right">
+
+ <a href="/messenger.php" class="menu-button" data-tooltip="Чати">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 13.5997 2.37562 15.1116 3.04346 16.4525C3.22094 16.8088 3.28001 17.2161 3.17712 17.6006L2.58151 19.8267C2.32295 20.793 3.20701 21.677 4.17335 21.4185L6.39939 20.8229C6.78393 20.72 7.19121 20.7791 7.54753 20.9565C8.88837 21.6244 10.4003 22 12 22Z" fill="#000000"/>
+            <path d="M15 12C15 12.5523 15.4477 13 16 13C16.5523 13 17 12.5523 17 12C17 11.4477 16.5523 11 16 11C15.4477 11 15 11.4477 15 12Z" fill="white"/>
+            <path d="M11 12C11 12.5523 11.4477 13 12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12Z" fill="white"/>
+            <path d="M7 12C7 12.5523 7.44772 13 8 13C8.55228 13 9 12.5523 9 12C9 11.4477 8.55228 11 8 11C7.44772 11 7 11.4477 7 12Z" fill="white"/>
+        </svg>
+    </a>
+   
 
     <div class="dropdown">
         <input type="checkbox" id="menu-left" class="dropdown-toggle">
@@ -241,7 +286,7 @@ function Menu_Up(): string {
                 <img src="' . $avatar . '" class="menu-avatar">
                 <span class="menu-name">' . $fullname . '</span>
             </div>
-            <div class="menu-separator"></div>
+          
             <div class="menu-separator"></div>
 
 <a href="/profile.php?md=2">
@@ -288,7 +333,8 @@ function Menu_Up(): string {
 
 </div>
 ';
-$out .='<script>
+
+        $out .='<script>
 document.addEventListener("DOMContentLoaded", () => {
     const toggles = document.querySelectorAll(".dropdown-toggle");
     const dropdowns = document.querySelectorAll(".dropdown");
@@ -298,64 +344,44 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     document.addEventListener("click", (e) => {
-        let clickedInside = false;
-
+        let inside = false;
         dropdowns.forEach(drop => {
-            if (drop.contains(e.target)) clickedInside = true;
+            if (drop.contains(e.target)) inside = true;
         });
-
-        if (!clickedInside) closeAll();
+        if (!inside) closeAll();
     });
 
     toggles.forEach(toggle => {
         toggle.addEventListener("change", () => {
             if (toggle.checked) {
-                toggles.forEach(t => {
-                    if (t !== toggle) t.checked = false;
-                });
+                toggles.forEach(t => { if (t !== toggle) t.checked = false; });
             }
         });
     });
+
     document.querySelectorAll(".open-support").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        document.querySelectorAll(".dropdown-toggle").forEach(t => t.checked = false); 
-        const supportToggle = document.getElementById("menu-support");
-        if (supportToggle) supportToggle.checked = true;
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            closeAll();
+            const sup = document.getElementById("menu-support");
+            if (sup) {
+                sup.checked = true;
+                const dropdown = document.getElementById("support-menu");
+                dropdown.style.visibility = "visible";
+                dropdown.style.pointerEvents = "auto";
+            }
+        });
     });
-});
-    
-    document.querySelectorAll(".open-support").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        document.querySelectorAll(".dropdown-toggle").forEach(t => t.checked = false); 
-        const supportToggle = document.getElementById("menu-support");
-        if (supportToggle) {
-            supportToggle.checked = true; 
-         
-            const dropdown = document.getElementById("support-menu");
-            dropdown.style.visibility = "visible";
-            dropdown.style.pointerEvents = "auto";
-        }
-    });
-});
 
     document.getElementById("open-support-arrow").addEventListener("click", (e) => {
-    e.preventDefault();
-    document.querySelectorAll(".dropdown-toggle").forEach(t => t.checked = false);
-
-    const supportToggle = document.getElementById("menu-avatar");
-    if (supportToggle) {
-        supportToggle.checked = true;
-    }
-});
-
-
+        e.preventDefault();
+        closeAll();
+        const avatar = document.getElementById("menu-avatar");
+        if (avatar) avatar.checked = true;
+    });
 });
 </script>
 ';
-
-
 
     } else {
         $out .= '<div class="login-btn"><a class="login-link" href="/auth.php">Увійти</a></div>';
@@ -363,27 +389,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     $out .= '</div>';
 
-
-    $out .= '
-    <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const burger = document.querySelector(".burger");
-        const menu = document.querySelector(".menu-center");
-
-        if (burger && menu) {
-            burger.addEventListener("click", function () {
-                burger.classList.toggle("active");
-                menu.classList.toggle("active");
-            });
-        }
-    });
-    </script>
-    ';
-
-
     return $out;
 }
-
 
 
 function Menu_Left(): string
@@ -404,7 +411,7 @@ function Page_Up($ttl = ''): string
         '<title>ІПС Shana | ' . $ttl . '</title>' . xbr .
         '<base href="http://shanapra.com/">' . xbr .
         '<link rel="icon" type="image/x-icon" href="/assets/images/logobrand3.png">' . xbr .
-        '<meta charset="utf-8">' . xbr .
+        '<meta charset="utf-8"><link rel="canonical" href="http://shanapra.com/">' . xbr .
         '<meta http-equiv="Content-Type" content="text/html">' . xbr .
         '<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1, shrink-to-fit=yes">' . xbr .
         '<meta name="robots" content="all">' . xbr .
@@ -719,7 +726,7 @@ function CardsK(
     string $town = '',
     string $district = '',
     string $adress = '',
-    string $img = ''
+    string $scheme = ''
 ): string {
 
     $dblink = DbConnect();
@@ -741,15 +748,15 @@ function CardsK(
         }
     }
 
-    if (!is_file($_SERVER['DOCUMENT_ROOT'].$img) || empty($img)) {
-        $img = '/cemeteries/noscheme.png';
+    if (!is_file($_SERVER['DOCUMENT_ROOT'].$scheme) || empty($scheme)) {
+        $scheme = '/cemeteries/noscheme.png';
     }
 
     $out  = '<div class="cardk">';
 
     // фото
     $out .= '  <div class="cardk-img">';
-    $out .= '      <img src="'.$img.'" class="cardk-image" alt="'.htmlspecialchars($title).'" title="'.htmlspecialchars($title).'">';
+    $out .= '      <img src="'.$scheme.'" class="cardk-image" alt="'.htmlspecialchars($title).'" title="'.htmlspecialchars($title).'">';
     $out .= '  </div>';
 
     // блок с данными
@@ -967,3 +974,41 @@ function gravecompress($sourcePath, $targetPath, $maxSizeKB = 300, $maxWidth = 1
     imagedestroy($image);
     return true;
 }
+
+function kladbcompress($sourcePath, $targetPath, $maxSizeKB = 300, $maxWidth = 1920, $maxHeight = 1080, $quality = 85) {
+    $info = getimagesize($sourcePath);
+    if (!$info) return false;
+
+    $mime = $info['mime'];
+    switch ($mime) {
+        case 'image/jpeg': $image = imagecreatefromjpeg($sourcePath); break;
+        case 'image/png': $image = imagecreatefrompng($sourcePath); break;
+        case 'image/gif': $image = imagecreatefromgif($sourcePath); break;
+        default: return false;
+    }
+
+    copy($sourcePath, $targetPath);
+
+    $filesizeKB = filesize($targetPath) / 1024;
+
+    if ($filesizeKB <= $maxSizeKB) {
+        imagedestroy($image);
+        return true;
+    }
+
+    $currentQuality = $quality;
+    while ($filesizeKB > $maxSizeKB && $currentQuality > 30) {
+        $currentQuality -= 5;
+        if ($mime == 'image/jpeg') {
+            imagejpeg($image, $targetPath, $currentQuality);
+        } elseif ($mime == 'image/png') {
+            $pngQuality = 9 - round($currentQuality / 10);
+            imagepng($image, $targetPath, $pngQuality);
+        }
+        $filesizeKB = filesize($targetPath) / 1024;
+    }
+
+    imagedestroy($image);
+    return true;
+}
+
