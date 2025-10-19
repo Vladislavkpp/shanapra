@@ -1,8 +1,18 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 session_start();
 $auth_lifetime = 1800;
 $auth_cookie_name = 'user_auth';
 
+$envFile = $_SERVER['DOCUMENT_ROOT'] . '/.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue; // пропускаем комментарии
+        [$name, $value] = explode('=', $line, 2);
+        $_ENV[trim($name)] = trim($value);
+    }
+}
 //Выход
 if (isset($_GET['exit']) && $_GET['exit'] == 1) {
     session_unset();
@@ -74,17 +84,33 @@ function warn($x = ''): string
 /**Створює підключення до бази даних
  * @return int|null|bool|mysqli
  */
-function DbConnect(): int|null|bool|mysqli
+function DbConnect(): mysqli|bool|null
 {
+    if (!class_exists('Dotenv\Dotenv')) {
+        require_once $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
+    }
 
-    $db = 'bicycleb_shana';
-    $dbuser = 'bicycleb_shanarw';
-    $dbpassword = '@komnata44';
-    $dblink = mysqli_connect("localhost", $dbuser, $dbpassword, $db);
-    mysqli_query($dblink, "set character_set_client='utf8'");
-    mysqli_query($dblink, "set character_set_results='utf8'");
-    mysqli_query($dblink, "set collation_connection='utf8_general_ci'");
 
+    // Загружаем .env
+    if (!isset($_ENV['DB_HOST'])) {
+        $dotenv = Dotenv::createImmutable($_SERVER['DOCUMENT_ROOT']);
+        $dotenv->load();
+    }
+
+    $dbhost = $_ENV['DB_HOST'] ?? 'localhost';
+    $dbuser = $_ENV['DB_USER'] ?? '';
+    $dbpass = $_ENV['DB_PASS'] ?? '';
+    $dbname = $_ENV['DB_NAME'] ?? '';
+
+    $dblink = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
+
+    if (!$dblink) {
+        die('Ошибка подключения к базе данных: ' . mysqli_connect_error());
+    }
+
+    mysqli_query($dblink, "SET NAMES 'utf8'");
+    mysqli_query($dblink, "SET CHARACTER SET 'utf8'");
+    mysqli_query($dblink, "SET SESSION collation_connection = 'utf8_general_ci'");
 
     return $dblink;
 }

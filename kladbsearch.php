@@ -129,7 +129,7 @@ if ($cout > 0) {
     View_Add(Paginatex::Showx($cp, $cout, $perpage));
     View_Add('</div>' . xbr);
 }
-View_Add('</div></div>');
+View_Add('</div>');
 
 View_Add(Page_Down());
 View_Out();
