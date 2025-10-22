@@ -33,7 +33,7 @@ html, body {
 
 
 #wrapper {
-    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
 }
@@ -391,6 +391,19 @@ html, body {
     z-index: 10;
 }
 
+/* Счетчик символов */
+.chat-input #charCounter {
+    font-size: 12px;
+    color: #666;
+    display: block;
+    text-align: left;
+    margin-bottom: 2px;
+}
+
+.chat-input #charCounter.max {
+    color: red;
+}
+
 .chat-input .input-area {
     display: flex;
     gap: 10px;
@@ -401,18 +414,19 @@ html, body {
 .chat-input textarea {
     flex: 1;
     padding: 10px;
+    box-sizing: border-box;
     font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', sans-serif;
     border: 1px solid #ccc;
     border-radius: 15px;
     outline: none;
     resize: none;
-    height: 40px;
+    height: 41px;
     max-height: 150px;
     overflow-y: auto;
-    font-family: inherit;
     line-height: 1.4;
     scrollbar-width: thin;
     scrollbar-color: #c5c5c5 transparent;
+    transition: height 0.2s ease;
 }
 
 .chat-input textarea::-webkit-scrollbar {
@@ -439,7 +453,7 @@ html, body {
     opacity: 1;
 }
 
-
+/* Кнопка отправки */
 #chatForm button {
     background-color: #001242;
     color: #fff;
@@ -448,8 +462,8 @@ html, body {
     padding: 10px 16px;
     cursor: pointer;
     transition: background 0.3s, opacity 0.3s;
-    min-width: 39px;
-    min-height: 39px;
+    min-width: 41px;
+    min-height: 41px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -459,7 +473,6 @@ html, body {
     background-color: #0a2d7a;
 }
 
-
 #chatForm button.disabled,
 #chatForm button:disabled {
     background-color: #999 !important;
@@ -467,18 +480,6 @@ html, body {
     opacity: 0.6 !important;
 }
 
-
-/* Счетчик символов*/
-.chat-input #charCounter {
-    font-size: 12px;
-    color: #666;
-    display: none;
-}
-
-/* Счетчик красный при превышении лимита */
-.chat-input #charCounter.max {
-    color: red;
-}
 
 /* Правая панель */
 .chat-info {
@@ -629,36 +630,86 @@ padding-top: 20px;
     text-align: center;
     color: #777;
 }
-
-@media (max-width: 900px) {
-    .messenger-container { grid-template-columns: 35% 65%; }
-    .chat-info { display: none; }
-
-
-
-}
-
 @media (max-width: 600px) {
-    .messenger-container {
-        grid-template-columns: 100%;
-        height: 100vh;
-    }
-    .chat-list { display: none; }
-
-    .chat-messages{
-        padding-bottom: 150px;
+    :root {
+        --chat-header-height: 30px;
+        --chat-input-height: 68px;
     }
 
-    .chat-input {
-        position: fixed;
-        bottom: 0;
+    * {
+       font-family: "Inter", "Arial", sans-serif;
+    }
+
+    .mobile-chat-list,
+    .mobile-chat-window {
+        position: absolute;
+        top: 0;
         left: 0;
-        right: 0;
-        z-index: 10;
+        width: 100%;
+        height: 100dvh;
+        display: none;
+        flex-direction: column;
+        background: #f2f2f2;
+        z-index: 900;
+    }
+
+    .mobile-chat-list.active,
+    .mobile-chat-window.active {
+        display: flex;
+    }
+
+    /* чат окно */
+    .mobile-chat-window .chat-header {
+        position: sticky;
+        top: 0;
+        z-index: 910;
+        height: var(--chat-header-height);
+        min-height: var(--chat-header-height);
+        background: #f2f2f2;
+    }
+    .chat-messages {
+        padding-top: 60px;
+    }
+
+    .chat-window {
+        display: flex;
+        flex-direction: column;
+        background: #e6e6e6;
+        position: relative;
+        height: 100dvh;
+    }
+
+    .chat-list {
+        background: #001242;
+        color: #fff;
+        height: 100dvh;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #284c79 transparent;
+    }
+
+    /* текстовое поле */
+    .chat-input {
+        position: sticky;
+        bottom: 0;
+        z-index: 910;
+    }
+
+    body.noscroll, .outmsg.noscroll {
+        overflow: hidden;
+        height: 100dvh;
+    }
+    body.noscroll,
+    html.noscroll {
+        position: fixed;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
     }
 
 }
-
 
 
 [data-tooltip] {
@@ -699,4 +750,18 @@ padding-top: 20px;
 
 [data-tooltip]::after {
     transition-delay: 0s;
+}
+
+.temp-user-id{
+    background: #e6ecff;
+    border: 1px solid #2844a7;
+    color: #152057;
+    padding: 10px 20px;
+    max-width: 100%;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: "Inter", "Arial", sans-serif;
 }

@@ -4093,3 +4093,382 @@ Stack trace:
 Stack trace:
 #0 {main}
   thrown in /home/bicycleb/public_html/messenger.php on line 51
+[19-Oct-2025 17:34:22 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 277
+[19-Oct-2025 17:34:22 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 286
+[19-Oct-2025 17:34:22 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 287
+[19-Oct-2025 17:34:22 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 307
+[19-Oct-2025 17:34:24 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 277
+[19-Oct-2025 17:34:24 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 286
+[19-Oct-2025 17:34:24 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 287
+[19-Oct-2025 17:34:24 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 307
+[19-Oct-2025 20:46:28 Europe/Kiev] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:82
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(173): DbConnect()
+#1 /home/bicycleb/public_html/index.php(243): StatsBlock()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 82
+[19-Oct-2025 20:47:19 Europe/Kiev] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:84
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(173): DbConnect()
+#1 /home/bicycleb/public_html/index.php(243): StatsBlock()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 84
+[19-Oct-2025 20:47:20 Europe/Kiev] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:84
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(173): DbConnect()
+#1 /home/bicycleb/public_html/index.php(243): StatsBlock()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 84
+[19-Oct-2025 20:47:21 Europe/Kiev] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:84
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(173): DbConnect()
+#1 /home/bicycleb/public_html/index.php(243): StatsBlock()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 84
+[19-Oct-2025 20:47:24 Europe/Kiev] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:84
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(173): DbConnect()
+#1 /home/bicycleb/public_html/index.php(243): StatsBlock()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 84
+[19-Oct-2025 20:47:25 Europe/Kiev] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:84
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(173): DbConnect()
+#1 /home/bicycleb/public_html/index.php(243): StatsBlock()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 84
+[19-Oct-2025 20:47:40 Europe/Kiev] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:84
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(173): DbConnect()
+#1 /home/bicycleb/public_html/index.php(243): StatsBlock()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 84
+[19-Oct-2025 20:47:41 Europe/Kiev] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:84
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(173): DbConnect()
+#1 /home/bicycleb/public_html/index.php(243): StatsBlock()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 84
+[19-Oct-2025 20:48:43 Europe/Kiev] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:88
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(173): DbConnect()
+#1 /home/bicycleb/public_html/index.php(243): StatsBlock()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 88
+[19-Oct-2025 20:48:44 Europe/Kiev] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:88
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(173): DbConnect()
+#1 /home/bicycleb/public_html/index.php(243): StatsBlock()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 88
+[19-Oct-2025 20:48:44 Europe/Kiev] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:88
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(173): DbConnect()
+#1 /home/bicycleb/public_html/index.php(243): StatsBlock()
+#2 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 88
+[19-Oct-2025 17:49:38 UTC] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:8
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(7): require_once()
+#1 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 8
+[19-Oct-2025 17:49:38 UTC] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:8
+Stack trace:
+#0 /home/bicycleb/public_html/404.php(7): require_once()
+#1 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 8
+[19-Oct-2025 17:49:39 UTC] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:8
+Stack trace:
+#0 /home/bicycleb/public_html/index.php(7): require_once()
+#1 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 8
+[19-Oct-2025 17:49:39 UTC] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:8
+Stack trace:
+#0 /home/bicycleb/public_html/404.php(7): require_once()
+#1 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 8
+[19-Oct-2025 17:50:46 UTC] PHP Fatal error:  Uncaught Error: Class "Dotenv\Dotenv" not found in /home/bicycleb/public_html/function.php:8
+Stack trace:
+#0 /home/bicycleb/public_html/404.php(7): require_once()
+#1 {main}
+  thrown in /home/bicycleb/public_html/function.php on line 8
+[19-Oct-2025 17:58:51 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[19-Oct-2025 17:58:51 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[19-Oct-2025 17:58:51 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[19-Oct-2025 17:58:51 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[19-Oct-2025 17:58:51 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[19-Oct-2025 17:58:51 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[19-Oct-2025 17:58:51 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[19-Oct-2025 17:58:51 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[19-Oct-2025 17:58:52 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[19-Oct-2025 17:58:52 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[19-Oct-2025 17:58:52 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[19-Oct-2025 17:58:52 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[19-Oct-2025 17:58:53 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[19-Oct-2025 17:58:53 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[19-Oct-2025 17:58:53 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[19-Oct-2025 17:58:53 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[19-Oct-2025 17:58:54 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[19-Oct-2025 17:58:54 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[19-Oct-2025 17:58:54 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[19-Oct-2025 17:58:54 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[20-Oct-2025 03:00:36 UTC] PHP Warning:  Undefined variable $client in /home/bicycleb/public_html/stlogin.php on line 24
+[20-Oct-2025 03:00:36 UTC] PHP Warning:  Attempt to read property "setRedirectUri" on null in /home/bicycleb/public_html/stlogin.php on line 24
+[20-Oct-2025 03:00:36 UTC] PHP Fatal error:  Uncaught Error: Class name must be a valid object or a string in /home/bicycleb/public_html/stlogin.php:24
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/stlogin.php on line 24
+[20-Oct-2025 09:17:12 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:15:00 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/bicycleb/public_html/classes/chats.php:176
+Stack trace:
+#0 /home/bicycleb/public_html/support.php(60): Chats->getChatsByType()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/chats.php on line 176
+[20-Oct-2025 11:16:32 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method mysqli_stmt::get_result() in /home/bicycleb/public_html/classes/chats.php:190
+Stack trace:
+#0 /home/bicycleb/public_html/support.php(60): Chats->getChatsByType()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/chats.php on line 190
+[20-Oct-2025 11:16:34 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method mysqli_stmt::get_result() in /home/bicycleb/public_html/classes/chats.php:190
+Stack trace:
+#0 /home/bicycleb/public_html/support.php(60): Chats->getChatsByType()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/chats.php on line 190
+[20-Oct-2025 11:31:10 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:34:41 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:34:43 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:34:44 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:34:45 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:36:52 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:36:55 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:37:03 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:38:00 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:38:31 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:39:12 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:39:53 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:39:56 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:39:56 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:39:57 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:39:58 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:39:58 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:39:59 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:40:03 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:41:53 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:42:01 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:43:30 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:43:54 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:46:01 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:46:19 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:46:22 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:46:36 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:47:10 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:47:16 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:47:17 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:56:32 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:56:33 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:56:35 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:56:37 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:07 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:07 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:08 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:11 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:11 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:12 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:12 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:13 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:13 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:14 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:14 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:15 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:15 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:16 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:16 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:17 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:17 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:17 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:21 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:27 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:29 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 11:59:58 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::markChatAsRead() in /home/bicycleb/public_html/messenger.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 51
+[20-Oct-2025 12:07:34 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Dbs" not found in /home/bicycleb/public_html/userpage.php:11
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/userpage.php on line 11
+[20-Oct-2025 18:02:52 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function mysqli_stmt_get_result() in /home/bicycleb/public_html/messenger.php:108
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 108
+[20-Oct-2025 19:00:16 UTC] PHP Parse error:  syntax error, unexpected string content ";" in /home/bicycleb/public_html/messenger.php on line 318
+[21-Oct-2025 01:59:35 UTC] PHP Warning:  ZipArchive::addFile(): No such file or directory in /home/bicycleb/public_html/backup.php on line 32
+[21-Oct-2025 01:59:35 UTC] PHP Warning:  ZipArchive::close(): Read error: Is a directory in /home/bicycleb/public_html/backup.php on line 35

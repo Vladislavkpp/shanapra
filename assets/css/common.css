@@ -2096,6 +2096,36 @@ body {
     display: block;
 }
 
+.support-login-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    z-index: 200;
+}
+
+.support-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e8f3fc;
+    color: #007bff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.support-btn:hover {
+    color: #004687;
+}
+
+.support-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
 .login-btn {
     display: flex;
     align-items: center;
@@ -2103,19 +2133,18 @@ body {
 }
 
 .login-link {
-    padding: 6px 14px;
-    font-size: 14px;
+    padding: 8px 14px;
     color: #007bff;
     background-color: #e8f3fc;
-    border: 1.5px solid #007bff;
-    border-radius: 15px;
+    border-radius: 30px;
     text-decoration: none;
     transition: all 0.3s ease;
+    font-family: "Inter", "Arial", sans-serif;
 }
 
 .login-link:hover {
     background-color: #ffffff;
-    color: #000000;
+    color: #004687;
 }
 
 
@@ -2216,14 +2245,14 @@ filter: brightness(80%);
 }
 
 .avatar-wrapper {
-    position: relative;
+    position: relative !important;
     display: inline-block;
 }
 
 .avatar-arrow {
-    position: absolute;
-    bottom: 5.7px;
-    right: 0px;
+    position: absolute!important;
+    bottom: 5.7px!important;
+    right: 0px!important;
     width: 14px;
     height: 14px;
     background: #fff;
@@ -2232,6 +2261,7 @@ filter: brightness(80%);
     align-items: center;
     justify-content: center;
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box!important;
 }
 
 .avatar-arrow img {
