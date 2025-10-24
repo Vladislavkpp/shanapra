@@ -4472,3 +4472,63 @@ Stack trace:
 [20-Oct-2025 19:00:16 UTC] PHP Parse error:  syntax error, unexpected string content ";" in /home/bicycleb/public_html/messenger.php on line 318
 [21-Oct-2025 01:59:35 UTC] PHP Warning:  ZipArchive::addFile(): No such file or directory in /home/bicycleb/public_html/backup.php on line 32
 [21-Oct-2025 01:59:35 UTC] PHP Warning:  ZipArchive::close(): Read error: Is a directory in /home/bicycleb/public_html/backup.php on line 35
+[22-Oct-2025 16:37:28 UTC] PHP Warning:  require_once(classes/Chats.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/messenger.php on line 2
+[22-Oct-2025 16:37:28 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'classes/Chats.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/messenger.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 2
+[22-Oct-2025 16:37:29 UTC] PHP Warning:  require_once(classes/Chats.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/messenger.php on line 2
+[22-Oct-2025 16:37:29 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'classes/Chats.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/messenger.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 2
+[22-Oct-2025 16:37:59 UTC] PHP Warning:  mysqli_connect(): (28000/1045): Access denied for user 'user'@'localhost' (using password: YES) in /home/bicycleb/public_html/messenger.php on line 7
+[22-Oct-2025 16:37:59 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_real_escape_string(): Argument #1 ($mysql) must be of type mysqli, bool given in /home/bicycleb/public_html/classes/chats.php:126
+Stack trace:
+#0 /home/bicycleb/public_html/classes/chats.php(126): mysqli_real_escape_string()
+#1 /home/bicycleb/public_html/messenger.php(12): Chats->getChatsByType()
+#2 {main}
+  thrown in /home/bicycleb/public_html/classes/chats.php on line 126
+[22-Oct-2025 16:39:56 UTC] PHP Warning:  require_once(classes/Chats.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/messenger.php on line 7
+[22-Oct-2025 16:39:56 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'classes/Chats.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/messenger.php:7
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 7
+[22-Oct-2025 16:40:08 UTC] PHP Warning:  Undefined variable $user_id in /home/bicycleb/public_html/messenger.php on line 10
+[22-Oct-2025 16:41:44 UTC] PHP Warning:  require_once(classes/Chats.php): Failed to open stream: No such file or directory in /home/bicycleb/public_html/messenger.php on line 10
+[22-Oct-2025 16:41:44 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'classes/Chats.php' (include_path='.:/opt/alt/php80/usr/share/pear:/opt/alt/php80/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bicycleb/public_html/messenger.php:10
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 10
+[22-Oct-2025 20:09:23 UTC] PHP Fatal error:  Uncaught Error: Class "MessengerRender" not found in /home/bicycleb/public_html/messenger.php:24
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 24
+[22-Oct-2025 20:09:42 UTC] PHP Warning:  Undefined array key "action" in /home/bicycleb/public_html/messenger.php on line 27
+[23-Oct-2025 10:03:20 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[23-Oct-2025 10:51:44 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::getSupportChatsByDefault() in /home/bicycleb/public_html/messenger.php:89
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 89
+[23-Oct-2025 10:52:06 UTC] PHP Warning:  Undefined variable $userChats in /home/bicycleb/public_html/messenger.php on line 109
+[23-Oct-2025 10:53:52 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::getSupportChatsByDefault() in /home/bicycleb/public_html/messenger.php:89
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 89
+[23-Oct-2025 11:04:13 UTC] PHP Warning:  Undefined array key "uzver" in /home/bicycleb/public_html/messenger.php on line 26
+[23-Oct-2025 11:05:25 UTC] PHP Warning:  Undefined array key "uzver" in /home/bicycleb/public_html/messenger.php on line 31
+[23-Oct-2025 12:00:15 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function Chats::createChat(), 2 passed in /home/bicycleb/public_html/userprofile.php on line 39 and exactly 3 expected in /home/bicycleb/public_html/classes/chats.php:130
+Stack trace:
+#0 /home/bicycleb/public_html/userprofile.php(39): Chats->createChat()
+#1 /home/bicycleb/public_html/userprofile.php(86): userpage()
+#2 {main}
+  thrown in /home/bicycleb/public_html/classes/chats.php on line 130
+[23-Oct-2025 12:16:27 UTC] PHP Fatal error:  Cannot redeclare createGuestChat() (previously declared in /home/bicycleb/public_html/messenger.php:8) in /home/bicycleb/public_html/classes/chats.php on line 168
+[23-Oct-2025 12:17:27 UTC] PHP Fatal error:  Cannot redeclare createGuestChat() (previously declared in /home/bicycleb/public_html/messenger.php:8) in /home/bicycleb/public_html/classes/chats.php on line 168
+[23-Oct-2025 12:31:24 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/strepair.php:11
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/strepair.php on line 11
