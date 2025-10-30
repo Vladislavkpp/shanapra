@@ -4532,3 +4532,505 @@ Stack trace:
 Stack trace:
 #0 {main}
   thrown in /home/bicycleb/public_html/strepair.php on line 11
+[23-Oct-2025 12:57:02 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::getGuestChatByUser() in /home/bicycleb/public_html/messenger.php:95
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 95
+[23-Oct-2025 17:48:24 UTC] PHP Fatal error:  Uncaught TypeError: number_format(): Argument #1 ($num) must be of type float, string given in /home/bicycleb/public_html/profile.php:419
+Stack trace:
+#0 /home/bicycleb/public_html/profile.php(419): number_format()
+#1 {main}
+  thrown in /home/bicycleb/public_html/profile.php on line 419
+[23-Oct-2025 17:52:33 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[23-Oct-2025 17:52:33 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[23-Oct-2025 17:52:33 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[23-Oct-2025 17:52:33 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[23-Oct-2025 18:05:31 UTC] PHP Fatal error:  Uncaught Error: Call to undefined method Chats::getUserSupportChat() in /home/bicycleb/public_html/messenger.php:88
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 88
+[23-Oct-2025 18:30:51 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatInfo(), 2 passed in /home/bicycleb/public_html/classes/MessengerRender.php on line 36 and exactly 3 expected in /home/bicycleb/public_html/classes/MessengerRender.php:172
+Stack trace:
+#0 /home/bicycleb/public_html/classes/MessengerRender.php(36): MessengerRender->renderChatInfo()
+#1 /home/bicycleb/public_html/messenger.php(137): MessengerRender->renderContainer()
+#2 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 172
+[23-Oct-2025 18:36:00 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatInfo(), 2 passed in /home/bicycleb/public_html/classes/MessengerRender.php on line 36 and exactly 3 expected in /home/bicycleb/public_html/classes/MessengerRender.php:172
+Stack trace:
+#0 /home/bicycleb/public_html/classes/MessengerRender.php(36): MessengerRender->renderChatInfo()
+#1 /home/bicycleb/public_html/messenger.php(137): MessengerRender->renderContainer()
+#2 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 172
+[23-Oct-2025 18:36:55 UTC] PHP Warning:  foreach() argument must be of type array|object, string given in /home/bicycleb/public_html/classes/MessengerRender.php on line 137
+[23-Oct-2025 18:38:50 UTC] PHP Warning:  foreach() argument must be of type array|object, int given in /home/bicycleb/public_html/classes/MessengerRender.php on line 137
+[23-Oct-2025 18:43:10 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatInfo(), 2 passed in /home/bicycleb/public_html/classes/MessengerRender.php on line 36 and exactly 3 expected in /home/bicycleb/public_html/classes/MessengerRender.php:172
+Stack trace:
+#0 /home/bicycleb/public_html/classes/MessengerRender.php(36): MessengerRender->renderChatInfo()
+#1 /home/bicycleb/public_html/messenger.php(137): MessengerRender->renderContainer()
+#2 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 172
+[23-Oct-2025 18:44:54 UTC] PHP Fatal error:  Uncaught TypeError: Cannot access offset of type string on string in /home/bicycleb/public_html/classes/MessengerRender.php:69
+Stack trace:
+#0 /home/bicycleb/public_html/classes/MessengerRender.php(30): MessengerRender->renderChatList()
+#1 /home/bicycleb/public_html/messenger.php(137): MessengerRender->renderContainer()
+#2 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 69
+[23-Oct-2025 18:45:12 UTC] PHP Fatal error:  Uncaught TypeError: Cannot access offset of type string on string in /home/bicycleb/public_html/classes/MessengerRender.php:69
+Stack trace:
+#0 /home/bicycleb/public_html/classes/MessengerRender.php(30): MessengerRender->renderChatList()
+#1 /home/bicycleb/public_html/messenger.php(137): MessengerRender->renderContainer()
+#2 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 69
+[23-Oct-2025 18:45:41 UTC] PHP Fatal error:  Uncaught TypeError: Cannot access offset of type string on string in /home/bicycleb/public_html/classes/MessengerRender.php:59
+Stack trace:
+#0 /home/bicycleb/public_html/classes/MessengerRender.php(30): MessengerRender->renderChatList()
+#1 /home/bicycleb/public_html/messenger.php(137): MessengerRender->renderContainer()
+#2 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 59
+[23-Oct-2025 18:46:59 UTC] PHP Warning:  Undefined array key "user_one" in /home/bicycleb/public_html/classes/MessengerRender.php on line 103
+[23-Oct-2025 18:46:59 UTC] PHP Warning:  foreach() argument must be of type array|object, string given in /home/bicycleb/public_html/classes/MessengerRender.php on line 124
+[23-Oct-2025 18:46:59 UTC] PHP Warning:  Undefined array key "user_one" in /home/bicycleb/public_html/classes/MessengerRender.php on line 163
+[23-Oct-2025 18:46:59 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 187
+[23-Oct-2025 18:46:59 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 188
+[23-Oct-2025 18:46:59 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 203
+[23-Oct-2025 18:47:24 UTC] PHP Warning:  Undefined array key "user_one" in /home/bicycleb/public_html/classes/MessengerRender.php on line 102
+[23-Oct-2025 18:47:24 UTC] PHP Warning:  Undefined array key "user_one" in /home/bicycleb/public_html/classes/MessengerRender.php on line 158
+[23-Oct-2025 18:47:24 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 182
+[23-Oct-2025 18:47:24 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 183
+[23-Oct-2025 18:47:24 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 198
+[23-Oct-2025 18:48:47 UTC] PHP Warning:  Undefined array key "user_one" in /home/bicycleb/public_html/classes/MessengerRender.php on line 165
+[23-Oct-2025 18:48:47 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 189
+[23-Oct-2025 18:48:47 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 190
+[23-Oct-2025 18:48:47 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 205
+[23-Oct-2025 18:49:41 UTC] PHP Warning:  Undefined array key "user_one" in /home/bicycleb/public_html/classes/MessengerRender.php on line 172
+[23-Oct-2025 18:49:41 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 196
+[23-Oct-2025 18:49:41 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 197
+[23-Oct-2025 18:49:41 UTC] PHP Warning:  Undefined array key "type" in /home/bicycleb/public_html/classes/MessengerRender.php on line 212
+[23-Oct-2025 20:34:35 UTC] PHP Parse error:  Unclosed '{' on line 291 in /home/bicycleb/public_html/classes/MessengerRender.php on line 301
+[24-Oct-2025 05:48:59 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/obituary.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/obituary.php on line 8
+[24-Oct-2025 06:36:40 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[24-Oct-2025 09:27:55 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function Lenta::FormMassageAdd(), 0 passed in /home/bicycleb/public_html/lenta_page.php on line 12 and at least 1 expected in /home/bicycleb/public_html/classes/lenta.php:37
+Stack trace:
+#0 /home/bicycleb/public_html/lenta_page.php(12): Lenta->FormMassageAdd()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/lenta.php on line 37
+[24-Oct-2025 10:10:42 UTC] PHP Fatal error:  Uncaught Error: Class "MessengerRender" not found in /home/bicycleb/public_html/messenger.php:35
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/messenger.php on line 35
+[24-Oct-2025 10:17:00 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 48 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:106
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(48): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 106
+[24-Oct-2025 10:17:16 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 48 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:106
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(48): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 106
+[24-Oct-2025 10:19:26 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderScripts(), 1 passed in /home/bicycleb/public_html/classes/MessengerRender.php on line 40 and exactly 2 expected in /home/bicycleb/public_html/classes/MessengerRender.php:273
+Stack trace:
+#0 /home/bicycleb/public_html/classes/MessengerRender.php(40): MessengerRender->renderScripts()
+#1 /home/bicycleb/public_html/messenger.php(172): MessengerRender->renderContainer()
+#2 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 273
+[24-Oct-2025 10:21:21 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 48 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:106
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(48): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 106
+[24-Oct-2025 10:21:35 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 48 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:106
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(48): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 106
+[24-Oct-2025 10:37:40 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 48 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:106
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(48): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 106
+[24-Oct-2025 10:40:50 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 48 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:106
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(48): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 106
+[24-Oct-2025 10:43:46 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 48 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:106
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(48): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 106
+[24-Oct-2025 11:00:26 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 48 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:106
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(48): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 106
+[24-Oct-2025 14:08:09 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 55 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:132
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(55): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 132
+[24-Oct-2025 14:08:16 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 55 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:132
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(55): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 132
+[24-Oct-2025 14:11:00 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 55 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:132
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(55): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 132
+[24-Oct-2025 14:11:17 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function MessengerRender::renderChatWindow(), 4 passed in /home/bicycleb/public_html/messenger.php on line 55 and exactly 5 expected in /home/bicycleb/public_html/classes/MessengerRender.php:132
+Stack trace:
+#0 /home/bicycleb/public_html/messenger.php(55): MessengerRender->renderChatWindow()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/MessengerRender.php on line 132
+[24-Oct-2025 14:24:23 UTC] PHP Warning:  ZipArchive::addFile(): No such file or directory in /home/bicycleb/public_html/backup.php on line 32
+[24-Oct-2025 14:24:23 UTC] PHP Warning:  ZipArchive::close(): Read error: Is a directory in /home/bicycleb/public_html/backup.php on line 35
+[24-Oct-2025 14:24:30 UTC] PHP Warning:  ZipArchive::addFile(): No such file or directory in /home/bicycleb/public_html/backup.php on line 32
+[24-Oct-2025 14:24:30 UTC] PHP Warning:  ZipArchive::close(): Read error: Is a directory in /home/bicycleb/public_html/backup.php on line 35
+[24-Oct-2025 15:47:02 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[24-Oct-2025 15:47:02 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[24-Oct-2025 15:47:02 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[24-Oct-2025 15:47:02 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[24-Oct-2025 15:47:02 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[24-Oct-2025 15:47:02 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[24-Oct-2025 15:47:02 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[24-Oct-2025 15:47:02 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[24-Oct-2025 15:47:51 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[24-Oct-2025 15:47:51 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[24-Oct-2025 15:47:51 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[24-Oct-2025 15:47:51 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[24-Oct-2025 15:47:52 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[24-Oct-2025 15:47:52 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[24-Oct-2025 15:47:52 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[24-Oct-2025 15:47:52 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[24-Oct-2025 15:47:53 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[24-Oct-2025 15:47:53 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[24-Oct-2025 15:47:53 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[24-Oct-2025 15:47:53 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[24-Oct-2025 15:47:54 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[24-Oct-2025 15:47:54 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[24-Oct-2025 15:47:54 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[24-Oct-2025 15:47:54 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[24-Oct-2025 19:24:07 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[24-Oct-2025 19:24:11 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[24-Oct-2025 19:24:12 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[26-Oct-2025 07:18:34 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[26-Oct-2025 16:31:24 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[26-Oct-2025 16:31:26 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[26-Oct-2025 16:31:26 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[26-Oct-2025 16:31:26 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[26-Oct-2025 16:31:26 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[26-Oct-2025 16:31:26 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 303
+[26-Oct-2025 16:31:26 UTC] PHP Warning:  Undefined variable $avatar in /home/bicycleb/public_html/function.php on line 312
+[26-Oct-2025 16:31:26 UTC] PHP Warning:  Undefined variable $fullname in /home/bicycleb/public_html/function.php on line 313
+[26-Oct-2025 16:31:26 UTC] PHP Warning:  Undefined variable $formattedCash in /home/bicycleb/public_html/function.php on line 333
+[26-Oct-2025 19:42:12 UTC] PHP Warning:  Undefined array key "idx" in /home/bicycleb/public_html/cardout.php on line 198
+[27-Oct-2025 20:19:37 UTC] PHP Warning:  ZipArchive::addFile(): No such file or directory in /home/bicycleb/public_html/backup.php on line 32
+[27-Oct-2025 20:19:37 UTC] PHP Warning:  ZipArchive::close(): Read error: Is a directory in /home/bicycleb/public_html/backup.php on line 35
+[27-Oct-2025 23:40:42 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[28-Oct-2025 03:19:36 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[28-Oct-2025 05:45:14 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[28-Oct-2025 05:54:00 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Dbs" not found in /home/bicycleb/public_html/userpage.php:11
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/userpage.php on line 11
+[28-Oct-2025 08:04:38 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/search.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/search.php on line 8
+[28-Oct-2025 09:27:06 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[28-Oct-2025 12:36:41 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[28-Oct-2025 14:58:35 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[28-Oct-2025 17:38:04 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[28-Oct-2025 17:41:22 UTC] PHP Warning:  Undefined variable $a in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 17:41:22 UTC] PHP Warning:  Undefined variable $b in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 17:41:22 UTC] PHP Warning:  Undefined variable $a in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 17:41:22 UTC] PHP Warning:  Undefined variable $b in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 17:41:25 UTC] PHP Warning:  Undefined variable $a in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 17:41:25 UTC] PHP Warning:  Undefined variable $b in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 17:41:25 UTC] PHP Warning:  Undefined variable $a in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 17:41:25 UTC] PHP Warning:  Undefined variable $b in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 17:42:05 UTC] PHP Warning:  Undefined variable $a in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 17:42:05 UTC] PHP Warning:  Undefined variable $b in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 17:42:05 UTC] PHP Warning:  Undefined variable $a in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 17:42:05 UTC] PHP Warning:  Undefined variable $b in /home/bicycleb/public_html/function.php on line 454
+[28-Oct-2025 18:42:56 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/service.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/service.php on line 8
+[28-Oct-2025 21:40:44 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/favor.php:10
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/favor.php on line 10
+[29-Oct-2025 14:07:34 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[29-Oct-2025 16:05:47 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/favor.php:10
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/favor.php on line 10
+[29-Oct-2025 18:07:52 UTC] PHP Warning:  Undefined variable $client in /home/bicycleb/public_html/stlogin.php on line 24
+[29-Oct-2025 18:07:52 UTC] PHP Warning:  Attempt to read property "setRedirectUri" on null in /home/bicycleb/public_html/stlogin.php on line 24
+[29-Oct-2025 18:07:52 UTC] PHP Fatal error:  Uncaught Error: Class name must be a valid object or a string in /home/bicycleb/public_html/stlogin.php:24
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/stlogin.php on line 24
+[29-Oct-2025 20:16:44 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:16:47 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:16:48 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:16:50 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:16:58 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:17:01 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:17:03 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:17:07 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:17:11 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:17:24 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:17:35 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:17:45 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:17:46 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 20:17:50 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:02:17 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:02:22 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:02:29 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:02:35 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:02:45 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:45:56 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:52:05 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:52:09 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:52:11 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:52:32 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:55:51 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:57:04 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:57:10 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:57:13 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:57:19 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:57:30 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:57:42 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:57:51 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:57:53 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:58:05 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:58:08 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 21:58:22 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 22:01:25 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 22:01:35 UTC] PHP Fatal error:  Uncaught TypeError: mysqli_fetch_assoc(): Argument #1 ($result) must be of type mysqli_result, bool given in /home/bicycleb/public_html/cardout.php:55
+Stack trace:
+#0 /home/bicycleb/public_html/cardout.php(55): mysqli_fetch_assoc()
+#1 {main}
+  thrown in /home/bicycleb/public_html/cardout.php on line 55
+[29-Oct-2025 23:51:13 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function Lenta::FormMassageAdd(), 0 passed in /home/bicycleb/public_html/lenta_page.php on line 12 and at least 1 expected in /home/bicycleb/public_html/classes/lenta.php:37
+Stack trace:
+#0 /home/bicycleb/public_html/lenta_page.php(12): Lenta->FormMassageAdd()
+#1 {main}
+  thrown in /home/bicycleb/public_html/classes/lenta.php on line 37
+[30-Oct-2025 02:32:56 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Page" not found in /home/bicycleb/public_html/contacts.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/contacts.php on line 8
+[30-Oct-2025 10:05:37 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Dbs" not found in /home/bicycleb/public_html/userpage.php:11
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/userpage.php on line 11
+[30-Oct-2025 13:00:56 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Dbs" not found in /home/bicycleb/public_html/userpage.php:11
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/userpage.php on line 11

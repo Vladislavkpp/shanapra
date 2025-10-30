@@ -894,6 +894,12 @@ body {
     transition: height 0.3s ease;
 }
 
+.toggle-eye-icon{
+    color: #ccc;
+    padding: 5px;
+    vertical-align: middle;
+    transition: fill 0.2s ease;
+}
 
 /* Заголовок */
 .regform-title {
@@ -920,6 +926,10 @@ body {
 
 .regform-row.a{
     margin-bottom: 0px;
+}
+
+.regform-row.fl{
+   flex-direction: row;
 }
 
 .regform-row.but {
@@ -2112,6 +2122,8 @@ body {
     height: 40px;
     border-radius: 50%;
     background: #e8f3fc;
+    border: none;
+    cursor: pointer;
     color: #007bff;
     text-decoration: none;
     transition: all 0.3s ease;
@@ -5469,4 +5481,110 @@ select.form-input-kladb option[value=""] {
     select {
         font-size: 16px !important;
     }
+}
+/* каптча */
+.captcha-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.64);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.captcha-modal.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+}
+
+.captcha-box {
+    background: #fff;
+    font-family: "Inter", "Arial", sans-serif;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1),
+    0 15px 50px rgba(0, 0, 0, 0.15),
+    0 20px 80px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 360px;
+
+    opacity: 0;
+    transform: scale(0.9);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.captcha-modal.show .captcha-box {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.captcha-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    margin: 15px 0;
+    text-align: center;
+}
+
+.captcha-title span#captchaQuestion {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.captcha-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 15px;
+    font-family: "Inter", "Arial", sans-serif;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.captcha-modal-title {
+    font-weight: 600;
+    font-size: 20px;
+    text-align: center;
+    flex: 1;
+}
+
+.captcha-close {
+    position: absolute;
+    right: 0;
+    cursor: pointer;
+    transition: transform 0.25s ease, filter 0.3s ease;
+}
+
+.captcha-close:hover {
+    filter: brightness(95%);
+}
+
+.captcha-close-icon {
+    width: 30px;
+    height: 30px;
+}
+
+.captcha-actions {
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-around;
+}
+
+.captcha-error {
+    margin-top: 15px;
+    background: #ffe6e6;
+    border: 1px solid #dc3545;
+    color: #721c24;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: left;
+    display: none;
 }

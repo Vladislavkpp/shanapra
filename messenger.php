@@ -5,6 +5,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/classes/MessengerRender.php";
 
 session_start();
 
+if (!isset($_SESSION['captcha_passed']) && isset($_COOKIE['captcha_passed']) && $_COOKIE['captcha_passed'] === 'true') {
+    $_SESSION['captcha_passed'] = true;
+}
+
 function sendJson($data) {
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json; charset=utf-8');
@@ -15,7 +19,6 @@ function sendJson($data) {
 $isAjax = isset($_GET['action']) || ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['chat_idx']));
 $type = isset($_GET['type']) ? (int)$_GET['type'] : 0;
 
-
 if (!$isAjax && !isset($_GET['type'])) {
     header("Location: /messenger.php?type=1");
     exit;
@@ -23,7 +26,7 @@ if (!$isAjax && !isset($_GET['type'])) {
 
 $user_id = isset($_SESSION['uzver']) ? (int)$_SESSION['uzver'] : null;
 
-// Гостевой ID
+/* айди гостя */
 if (!isset($_SESSION['guest_id'])) {
     if (isset($_COOKIE['guest_id'])) {
         $guest_id = (int)$_COOKIE['guest_id'];
@@ -35,6 +38,7 @@ if (!isset($_SESSION['guest_id'])) {
     }
 }
 $guest_id = $_SESSION['guest_id'];
+
 $currentUser = ($user_id !== null) ? $user_id : $guest_id;
 
 $dblink = DbConnect();
@@ -48,7 +52,7 @@ if ($user_id === null && $type !== 3 && !$isAjax) {
 
 if (isset($_GET['action'])) {
 
-    // Получение HTML чата
+    // Получение чата
     if ($_GET['action'] === 'get_chat_html' && isset($_GET['chat'])) {
         $chatId = (int)$_GET['chat'];
         $messages = $chats->getMessages($chatId);
@@ -56,8 +60,7 @@ if (isset($_GET['action'])) {
         exit;
     }
 
-
-    // Новые сообщения
+    // Получение новых сообщений
     if ($_GET['action'] === 'get_new_messages' && isset($_GET['chat'], $_GET['last_msg_id'])) {
         $chat_id = (int)$_GET['chat'];
         $last_msg_id = (int)$_GET['last_msg_id'];
@@ -69,7 +72,15 @@ if (isset($_GET['action'])) {
     if ($_GET['action'] === 'send_message' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $chat_idx = (int)($_POST['chat_idx'] ?? 0);
         $message = trim($_POST['message'] ?? '');
-        if ($message === '') sendJson(['status' => 'error', 'msg' => 'Empty message']);
+
+        if ($message === '') sendJson(['status' => 'error', 'msg' => 'Порожнє повідомлення']);
+
+        // Проверка каптчи
+        if ($type === 3 && $user_id === null) {
+            if (!isset($_SESSION['captcha_passed']) || $_SESSION['captcha_passed'] !== true) {
+                sendJson(['status' => 'captcha_required', 'msg' => 'Потрібно підтвердити капчу.']);
+            }
+        }
 
         $senderId = $currentUser;
         $success = $chats->addMessage($chat_idx, $senderId, $message);

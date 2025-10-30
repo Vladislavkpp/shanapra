@@ -7,7 +7,6 @@
 //require_once $_SERVER['DOCUMENT_ROOT'] .'/vendor/autoload.php';
 require_once "function.php";
 
-
 function valide1($u = null, $type = 'text', &$error = '')
 {
     if ($u === null || trim($u) === '') {
@@ -23,13 +22,11 @@ function valide1($u = null, $type = 'text', &$error = '')
             $error = 'Некоректний формат e-mail';
             return '';
         }
-
         return strtolower($u);
     }
 
-    // -пароль
+    // пароль
     if ($type === 'password') {
-
         if (strlen($u) < 8 || strlen($u) > 64) {
             $error = 'Пароль має містити від 8 до 64 символів';
             return '';
@@ -40,12 +37,10 @@ function valide1($u = null, $type = 'text', &$error = '')
             return '';
         }
 
-
         if (!preg_match('/[a-z]/', $u)) {
             $error = 'Потрібна мала літера';
             return '';
         }
-
 
         $forbidden = ['password', '123456', 'qwerty', 'admin', 'user', 'test'];
         foreach ($forbidden as $bad) {
@@ -57,6 +52,21 @@ function valide1($u = null, $type = 'text', &$error = '')
 
         return htmlspecialchars($u, ENT_QUOTES, 'UTF-8');
     }
+
+    if ($type === 'text') {
+        if (!preg_match('/^[A-Za-zА-Яа-яІіЇїЄєЁё\'\-\s]+$/u', $u)) {
+            $error = 'Допускаються лише літери, пробіли, апостроф або дефіс';
+            return '';
+        }
+
+        if (preg_match('/\d/', $u)) {
+            $error = 'Поле не повинно містити цифр';
+            return '';
+        }
+
+        return htmlspecialchars($u, ENT_QUOTES, 'UTF-8');
+    }
+
 
     return '';
 }

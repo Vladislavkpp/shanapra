@@ -408,27 +408,139 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 ';
-
     } else {
         $out .= '
 <div class="support-login-container">
-    <a href="/messenger.php?type=3" class="support-btn" data-tooltip="Технічна Підтримка">
+    <button type="button" class="support-btn" data-tooltip="Технічна Підтримка" id="openSupport" style="padding: 0;">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-           class="dpm-icon bi bi-chat-square-dots-fill" viewBox="0 0 16 16">
-        <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.5a1 1 0 0 0-.8.4l-1.9 2.533a1 1 0 0 1-1.6 0L5.3 12.4a1 1 0 0 0-.8-.4H2a2 2 0 0 1-2-2zm5 4a1 1 0 1 0-2 0 1 1 0 0 0 2 0m4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
-      </svg>
-    </a>
+             class="dpm-icon bi bi-chat-square-dots-fill" viewBox="0 0 16 16">
+            <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.5a1 1 0 0 0-.8.4l-1.9 2.533a1 1 0 0 1-1.6 0L5.3 12.4a1 1 0 0 0-.8-.4H2a2 2 0 0 1-2-2zm5 4a1 1 0 1 0-2 0 1 1 0 0 0 2 0m4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+        </svg>
+    </button>
     <div class="login-btn">
         <a class="login-link" href="/auth.php">Увійти</a>
     </div>
 </div>
+
+<!-- каптча -->
+<div class="captcha-modal" id="captchaModal">
+  <div class="captcha-box">
+  
+     <div class="captcha-modal-header">
+      <span class="captcha-modal-title">Підтвердіть, що ви не бот</span>
+       <span class="captcha-close">
+        <img src="/assets/images/closemodal.png" alt="Закрити" class="captcha-close-icon">
+      </span>
+    </div>
+    
+    <p class="captcha-title">Скільки буде <span id="captchaQuestion"></span> ?</p>
+
+    <div class="logform-input-container">
+      <input type="text" id="captchaAnswer" class="logform-input" placeholder="" required>
+      <label for="captchaAnswer">Ваша відповідь</label>
+    </div>
+
+    <div class="captcha-error" style="display:none;"></div>
+    
+    <div class="captcha-actions">
+      <button class="logform-button" id="captchaSubmit">Підтвердити</button>
+    </div>
+   
+  </div>
+</div>
+
 ';
+        $out .= <<<HTML
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const openBtn = document.getElementById("openSupport");
+  const modal = document.getElementById("captchaModal");
+  const box = modal.querySelector(".captcha-box");
+  const question = document.getElementById("captchaQuestion");
+  const answer = document.getElementById("captchaAnswer");
+  const submit = document.getElementById("captchaSubmit");
+  const errorMsg = modal.querySelector(".captcha-error");
+  const closeBtn = modal.querySelector(".captcha-close");
+  
+  let correctAnswer = 0;
+
+  function setCookie(name, value, days) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+  }
+
+  function getCookie(name) {
+    return document.cookie.split('; ').reduce((r, v) => {
+      const parts = v.split('=');
+      return parts[0] === name ? decodeURIComponent(parts[1]) : r;
+    }, '');
+  }
+
+  function generateCaptcha() {
+    const a = Math.floor(Math.random() * 5) + 5;
+    const b = Math.floor(Math.random() * 5) + 1;
+    correctAnswer = a + b;
+    question.textContent = a + " + " + b;
+    answer.value = "";
+  }
+
+  function showError(msg) {
+    if(msg) {
+      errorMsg.style.display = "block";
+      errorMsg.textContent = msg;
+    } else {
+      errorMsg.style.display = "none";
+      errorMsg.textContent = "";
+    }
+  }
+
+  function closeCaptchaModal() {
+    modal.classList.remove("show");
+    showError("");
+  }
+
+  // открыть модалку
+  openBtn.addEventListener("click", () => {
+    const captchaPassed = getCookie("captcha_passed") === "true";
+    if (captchaPassed) {
+      window.location.href = "/messenger.php?type=3";
+    } else {
+      generateCaptcha();
+      showError(""); 
+      modal.classList.add("show");
+    }
+  });
+
+  closeBtn.addEventListener("click", closeCaptchaModal);
+
+  modal.addEventListener("click", (e) => {
+    if (!box.contains(e.target)) {
+      closeCaptchaModal();
+    }
+  });
+
+  submit.addEventListener("click", () => {
+    const userAnswer = parseInt(answer.value);
+    if (userAnswer === correctAnswer) {
+      setCookie("captcha_passed", "true", 30);
+      closeCaptchaModal();
+      window.location.href = "/messenger.php?type=3";
+    } else {
+      showError("Невірна відповідь. Спробуйте ще раз.");
+      generateCaptcha(); 
+    }
+  });
+});
+</script>
+
+HTML;
+
     }
 
-    $out .= '</div>';
+        $out .= '</div>';
 
-    return $out;
-}
+        return $out;
+    }
 
 
 function Menu_Left(): string
@@ -1050,3 +1162,24 @@ function kladbcompress($sourcePath, $targetPath, $maxSizeKB = 300, $maxWidth = 1
     return true;
 }
 
+function Captcha(): string
+{
+    $a = rand(1, 9);
+    $b = rand(1, 9);
+    $operators = ['+', '-'];
+    $op = $operators[array_rand($operators)];
+
+    $question = "$a $op $b";
+    $answer = ($op === '+') ? ($a + $b) : ($a - $b);
+
+    $_SESSION['captcha_answer'] = $answer;
+
+    return '
+    <div class="captcha-block">
+        <form method="post" action="">
+            <label>Введіть відповідь: ' . htmlspecialchars($question) . ' = ?</label><br>
+            <input type="number" name="captcha_user_answer" required>
+            <button type="submit" name="check_captcha">Перевірити</button>
+        </form>
+    </div>';
+}
