@@ -5034,3 +5034,41 @@ Stack trace:
 Stack trace:
 #0 {main}
   thrown in /home/bicycleb/public_html/userpage.php on line 11
+[30-Oct-2025 14:52:46 UTC] PHP Fatal error:  Uncaught Error: Class "vendor\vodovra\Dbs" not found in /home/bicycleb/public_html/userpage.php:11
+Stack trace:
+#0 {main}
+  thrown in /home/bicycleb/public_html/userpage.php on line 11
+[30-Oct-2025 17:46:34 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 507
+[30-Oct-2025 17:46:34 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 509
+[30-Oct-2025 17:46:35 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 507
+[30-Oct-2025 17:46:35 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 509
+[30-Oct-2025 17:46:36 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 507
+[30-Oct-2025 17:46:36 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 509
+[30-Oct-2025 17:48:57 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 507
+[30-Oct-2025 17:48:57 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 509
+[30-Oct-2025 17:48:59 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 507
+[30-Oct-2025 17:48:59 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 509
+[30-Oct-2025 17:49:00 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 507
+[30-Oct-2025 17:49:00 UTC] PHP Warning:  Undefined variable $i in /home/bicycleb/public_html/cardout.php on line 509
+[30-Oct-2025 18:02:53 UTC] PHP Warning:  Undefined array key "action" in /home/bicycleb/public_html/cardout.php on line 244
+[30-Oct-2025 18:02:53 UTC] PHP Warning:  Undefined array key "action" in /home/bicycleb/public_html/cardout.php on line 259
+[30-Oct-2025 18:02:53 UTC] PHP Warning:  Undefined array key "action" in /home/bicycleb/public_html/cardout.php on line 304
+[30-Oct-2025 18:02:57 UTC] PHP Warning:  Undefined array key "action" in /home/bicycleb/public_html/cardout.php on line 244
+[30-Oct-2025 18:02:57 UTC] PHP Warning:  Undefined array key "action" in /home/bicycleb/public_html/cardout.php on line 259
+[30-Oct-2025 18:02:57 UTC] PHP Warning:  Undefined array key "action" in /home/bicycleb/public_html/cardout.php on line 304
+[30-Oct-2025 18:05:38 UTC] PHP Warning:  Undefined array key "action" in /home/bicycleb/public_html/cardout.php on line 244
+[30-Oct-2025 18:05:38 UTC] PHP Warning:  Undefined array key "action" in /home/bicycleb/public_html/cardout.php on line 259
+[30-Oct-2025 18:05:38 UTC] PHP Warning:  Undefined array key "action" in /home/bicycleb/public_html/cardout.php on line 304
+[30-Oct-2025 18:11:03 UTC] Ошибка загрузки файла: Array
+(
+)
+
+[30-Oct-2025 18:11:03 UTC] Ошибка базы данных: 
+[30-Oct-2025 18:44:35 UTC] save_photos вызвано
+[30-Oct-2025 18:45:33 UTC] save_photos вызвано
+[30-Oct-2025 18:45:33 UTC] photo1: Google_Favicon_2025.png
+[30-Oct-2025 18:45:33 UTC] photo2: нет файла
+[30-Oct-2025 18:45:33 UTC] photo3: нет файла
+[30-Oct-2025 18:47:51 UTC] Файл не сохранён: /home/bicycleb/public_html/graves/163/photo1_1761850071.png
+[30-Oct-2025 18:51:36 UTC] Файл успешно сохранён: /home/bicycleb/public_html/graves/163/photo1_1761850296.png
+[30-Oct-2025 18:51:53 UTC] Файл успешно сохранён: /home/bicycleb/public_html/graves/163/photo3_1761850313.png

@@ -16,6 +16,7 @@ function DateFormat(?string $date): string
     return date('d.m.Y', $ts);
 }
 
+
 // AJAX для редактирования карточек
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json; charset=utf-8');
@@ -102,8 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $newName = 'photo'.($i+1).'.'.$ext;
                 $target = "$uploadDir/$newName";
 
-                if (function_exists('gravecompress')) {
-                    gravecompress($_FILES['photo']['tmp_name'][$i], $target, 75, 300);
+                if (function_exists('compressCard')) {
+                    compressCard($_FILES['photo']['tmp_name'][$i], $target, 75, 300);
                 } else {
                     move_uploaded_file($_FILES['photo']['tmp_name'][$i], $target);
                 }
@@ -168,8 +169,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $newName = $field.'_'.time().'.'.$ext;
         $target = "$uploadDir/$newName";
 
-        if (function_exists('gravecompress')) {
-            gravecompress($_FILES['photo']['tmp_name'], $target, 75, 300);
+        $resOld = mysqli_query($dblink, "SELECT `$field` FROM grave WHERE idx=$id LIMIT 1");
+        $oldPath = '';
+        if ($resOld && $r = mysqli_fetch_assoc($resOld)) $oldPath = $r[$field];
+
+        if (function_exists('compressCard')) {
+            compressCard($_FILES['photo']['tmp_name'], $target, 75, 300);
         } else {
             move_uploaded_file($_FILES['photo']['tmp_name'], $target);
         }
@@ -180,6 +185,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         $pathRel = "/graves/$id/$newName";
         mysqli_query($dblink, "UPDATE grave SET `$field`='".mysqli_real_escape_string($dblink,$pathRel)."' WHERE idx=$id LIMIT 1");
+
+        if ($oldPath && $oldPath !== $pathRel) {
+            $oldFile = __DIR__ . $oldPath;
+            if (file_exists($oldFile)) unlink($oldFile);
+        }
 
         echo json_encode(['status'=>'ok','url'=>$pathRel]);
         exit;
@@ -216,8 +226,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $newName = "photo{$i}_" . time() . ".$ext";
                 $target = "$uploadDir/$newName";
 
-                if (function_exists('gravecompress')) {
-                    gravecompress($_FILES["photo$i"]['tmp_name'], $target, 75, 300);
+                if (function_exists('compressCard')) {
+                    compressCard($_FILES["photo$i"]['tmp_name'], $target, 75, 300);
                 } else {
                     move_uploaded_file($_FILES["photo$i"]['tmp_name'], $target);
                 }
@@ -232,6 +242,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($updates) {
             mysqli_query($dblink, "UPDATE grave SET " . implode(',', $updates) . " WHERE idx=$idx LIMIT 1");
         }
+
+        $usedPhotos = [];
+        $res = mysqli_query($dblink, "SELECT photo1, photo2, photo3 FROM grave WHERE idx=$idx LIMIT 1");
+        if ($res && $row = mysqli_fetch_assoc($res)) {
+            foreach ($row as $p) if ($p) $usedPhotos[] = basename($p);
+        }
+
+        $allFiles = glob("$uploadDir/*");
+        foreach ($allFiles as $f) {
+            $base = basename($f);
+            if (!in_array($base, $usedPhotos)) {
+                unlink($f);
+            }
+        }
+
 
         echo json_encode(['status'=>'ok']);
         exit;
@@ -289,9 +314,17 @@ function CardInfo(mysqli $dblink, int $idx): string
         $photos[] = '/graves/noimage.jpg';
     }
 
-    // Слайдер
+// Слайдер
     $photoHtml = '<div class="cardout-photo-slider">';
-    $photoHtml .= '<img id="card-photo" src="' . htmlspecialchars($photos[0]) . '" alt="' . htmlspecialchars($fio) . '">';
+    foreach ($photos as $i => $photoPath) {
+        $photoHtml .= '
+        <img 
+            data-photo="' . ($i + 1) . '" 
+            src="' . htmlspecialchars($photoPath) . '" 
+            alt="' . htmlspecialchars($fio) . '" 
+            class="card-photo" 
+            style="' . ($i === 0 ? '' : 'display:none;') . '">';
+    }
     if (count($photos) > 1) {
         $photoHtml .= '
         <button class="photo-prev" onclick="changePhoto(-1)">&#10094;</button>
@@ -305,21 +338,22 @@ function CardInfo(mysqli $dblink, int $idx): string
     <script>
         let photos = ' . json_encode(array_values($photos)) . ';
         let currentPhoto = 0;
-        const imgElement = document.getElementById("card-photo");
-        function updateButtons() {
+        const imgElements = document.querySelectorAll(".card-photo");
+        const updateDisplay = () => {
+            imgElements.forEach((img, i) => img.style.display = (i === currentPhoto ? "block" : "none"));
             document.querySelector(".photo-prev").disabled = (currentPhoto === 0);
             document.querySelector(".photo-next").disabled = (currentPhoto === photos.length - 1);
-        }
+        };
         function changePhoto(dir) {
             const newIndex = currentPhoto + dir;
             if (newIndex < 0 || newIndex >= photos.length) return;
             currentPhoto = newIndex;
-            imgElement.src = photos[currentPhoto];
-            updateButtons();
+            updateDisplay();
         }
-        updateButtons();
+        updateDisplay();
     </script>';
     }
+
 
     $canEdit = (isset($_SESSION['uzver']) && (int)$_SESSION['uzver'] === (int)$r['idxadd']);
 
@@ -431,15 +465,16 @@ function CardInfo(mysqli $dblink, int $idx): string
     const cardIdx = card.dataset.cardIdx;
     let editing = false;
 
-    function ajaxPost(data) {
-        return fetch("{$self}", {
-            method: "POST",
-            body: data
-        }).then(r => {
-            if (!r.ok) throw new Error("Network response not ok: " + r.status);
-            return r.json();
-        });
-    }
+function ajaxPost(data) {
+    return fetch(window.location.href, {
+        method: "POST",
+        body: data
+    }).then(r => {
+        if (!r.ok) throw new Error("Network response not ok: " + r.status);
+        return r.json();
+    });
+}
+
 
     function loadList(type, params = {}) {
         const fd = new FormData();
@@ -457,72 +492,126 @@ function CardInfo(mysqli $dblink, int $idx): string
             return [];
         });
     }
+    
+function openPhotoModal(currentPhotos = [], cardIdx, ajaxPost) {
+    let modal = document.getElementById("photoEditModal");
+    if (modal) modal.remove();
 
-    function openPhotoModal(currentPhotos = []) {
-        let modal = document.getElementById("photoEditModal");
-        if (modal) modal.remove();
+    modal = document.createElement("div");
+    modal.id = "photoEditModal";
+    modal.className = "photo-modal";
 
-        modal = document.createElement("div");
-        modal.id = "photoEditModal";
-        modal.className = "photo-modal";
-        modal.innerHTML = `
-            <div class="photo-modal-backdrop"></div>
-            <div class="photo-modal-content">
-                <h3>Редагування фотографій</h3>
-                <div class="photo-modal-grid">
-                    \${[1,2,3].map(i => `
-                        <div class="photo-slot">
-                            <img src="\${currentPhotos[i-1] || '/graves/noimage.jpg'}" class="photo-slot-img" id="photo-prev-\${i}">
-                            <label class="photo-slot-label">
-                                <input type="file" accept="image/*" id="photo-file-\${i}" data-slot="\${i}">
-                                Змінити
-                            </label>
-                        </div>
-                    `).join('')}
+    const photoGridHTML = [1, 2, 3].map(i => `
+        <div class="photo-slot">
+            <img src="\${currentPhotos[i - 1] || '/graves/noimage.jpg'}"
+                 class="photo-slot-img"
+                 id="photo-prev-\${i}">
+            <label class="photo-slot-label">
+                <input type="file" accept="image/*" id="photo-file-\${i}" data-slot="\${i}">
+                <div class="label-content">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         class="label-icon">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M15 8h.01" />
+                        <path d="M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5" />
+                        <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l4 4" />
+                        <path d="M14 14l1 -1c.67 -.644 1.45 -.824 2.182 -.54" />
+                        <path d="M16 19h6" />
+                        <path d="M19 16v6" />
+                    </svg>
+                    <span>Змінити</span>
                 </div>
-                <div class="photo-modal-actions">
-                    <button id="photoSaveBtn">Зберегти</button>
-                    <button id="photoCancelBtn">Скасувати</button>
-                </div>
+            </label>
+        </div>
+    `).join("");
+
+    modal.innerHTML = `
+        <div class="photo-modal-backdrop"></div>
+        <div class="photo-modal-content">
+            <div class="photo-modal-title-container">
+                <span>Редагування фотографій</span>
+                <span class="photo-modal-close">
+                    <img src="assets/images/closemodal.png" alt="Закрити" class="close-icon">
+                </span>
             </div>
-        `;
-        document.body.appendChild(modal);
 
-        [1,2,3].forEach(i => {
+            <div class="photo-modal-message" id="photo-modal-message" style="display:none;">
+                Фотографії успішно оновлені!
+            </div>
+
+            <div class="photo-modal-grid">
+                \${photoGridHTML}
+            </div>
+
+            <div class="photo-modal-actions">
+                <button id="photoSaveBtn">Зберегти</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add("show"), 10);
+
+    [1, 2, 3].forEach(i => {
+        const fileInput = modal.querySelector(`#photo-file-\${i}`);
+        const imgPrev = modal.querySelector(`#photo-prev-\${i}`);
+
+        fileInput.addEventListener("change", e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            imgPrev.src = URL.createObjectURL(file);
+
+            e.target.blur();
+        });
+    });
+
+    const closeModal = () => { 
+        modal.classList.remove("show"); 
+        setTimeout(() => modal.remove(), 250); 
+    };
+    modal.querySelector(".photo-modal-backdrop").addEventListener("click", closeModal);
+    modal.querySelector(".photo-modal-close").addEventListener("click", closeModal);
+
+    modal.querySelector("#photoSaveBtn").addEventListener("click", () => {
+        const fd = new FormData();
+        fd.append("action", "save_photos");
+        fd.append("idx", cardIdx);
+
+        [1, 2, 3].forEach(i => {
             const fileInput = modal.querySelector(`#photo-file-\${i}`);
-            const imgPrev = modal.querySelector(`#photo-prev-\${i}`);
-            fileInput.addEventListener("change", e => {
-                const file = e.target.files[0];
-                if (file) imgPrev.src = URL.createObjectURL(file);
-            });
+            if (fileInput.files[0]) fd.append("photo" + i, fileInput.files[0]);
         });
 
-        modal.querySelector("#photoCancelBtn").addEventListener("click", () => modal.remove());
+        ajaxPost(fd).then(resp => {
+            if (resp.status === "ok") {
+                const msg = modal.querySelector("#photo-modal-message");
+                msg.style.display = "block";
+                msg.classList.add("show");
 
-        modal.querySelector("#photoSaveBtn").addEventListener("click", () => {
-            const fd = new FormData();
-            fd.append("action", "save_photos");
-            fd.append("idx", cardIdx);
-            [1,2,3].forEach(i => {
-               const fileInput = modal.querySelector('#photo-file-' + i);
-                if (fileInput.files[0]) {
-                    fd.append('photo' + i, fileInput.files[0]); 
-                }
-            });
-            ajaxPost(fd).then(resp => {
-                if (resp.status === "ok") {
-                    modal.remove();
-                    alert("Фото оновлено!");
-                    location.reload();
-                } else {
-                    alert("Помилка: " + (resp.msg || "невідома"));
-                }
-            }).catch(err => {
-                console.error(err);
-                alert("Помилка мережі");
-            });
+                [1, 2, 3].forEach(i => {
+                    const cardImg = document.querySelector(`.card-photo[data-photo='\${i}']`);
+                    if (cardImg && resp.files && resp.files[i]) {
+                        cardImg.src = resp.files[i] + "?t=" + Date.now();
+                    }
+                });
+
+                setTimeout(() => {
+                    msg.classList.remove("show");
+                    setTimeout(() => msg.style.display = "none", 400);
+                }, 3000);
+            } else {
+                alert("Помилка: " + (resp.msg || "невідома"));
+            }
+        }).catch(err => {
+            console.error(err);
+            alert("Помилка мережі");
         });
-    }
+    });
+}
+
+
 
     window.enableEditMode = function() {
         if (editing) return;
@@ -545,7 +634,7 @@ function CardInfo(mysqli $dblink, int $idx): string
 
         card.classList.add("editing");
 
-        const photoContainer = card.querySelector(".cardout-photo");
+        const photoContainer = card.querySelector(".cardout-photo-slider");
         if (photoContainer) {
             const changeBtn = document.createElement("button");
             changeBtn.textContent = "Змінити";
@@ -555,7 +644,7 @@ function CardInfo(mysqli $dblink, int $idx): string
                     const img = photoContainer.querySelector(`[data-photo="\${i}"]`);
                     return img ? img.src : null;
                 });
-                openPhotoModal(currentPhotos);
+                openPhotoModal(currentPhotos, cardIdx, ajaxPost);
             });
             photoContainer.appendChild(changeBtn);
         }
@@ -915,45 +1004,6 @@ $out = '
     <div class="cardout-wrapper">
         ' . CardInfo($dblink, $idx) . '
         ' . advertising() . '
-
-     
-        <div id="photoModal" class="modal hidden" style="display:none;">
-          <div class="modal-content">
-            <h3>Редагування фото</h3>
-            <div class="photo-grid">
-              <div class="photo-item" data-field="photo1">
-                <img src="" alt="Фото 1">
-                <input type="file" accept="image/*">
-              </div>
-              <div class="photo-item" data-field="photo2">
-                <img src="" alt="Фото 2">
-                <input type="file" accept="image/*">
-              </div>
-              <div class="photo-item" data-field="photo3">
-                <img src="" alt="Фото 3">
-                <input type="file" accept="image/*">
-              </div>
-            </div>
-            <button id="closePhotoModal" type="button">Закрити</button>
-          </div>
-        </div>
-
-        <script>
-        (function(){
-            const pm = document.getElementById(\'photoModal\');
-            if (pm) pm.style.display = \'none\';
-            const closeBtn = document.getElementById(\'closePhotoModal\');
-            if (closeBtn) {
-                closeBtn.addEventListener(\'click\', function(e){
-                    e.preventDefault();
-                    if (pm) {
-                        pm.style.display = \'none\';
-                        pm.classList.add(\'hidden\');
-                    }
-                });
-            }
-        })();
-        </script>
 
     </div>
     ' . $lpage . '

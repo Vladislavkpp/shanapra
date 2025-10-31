@@ -1183,3 +1183,88 @@ function Captcha(): string
         </form>
     </div>';
 }
+
+function compressCard($sourcePath, $targetPath, $maxSizeKB = 300, $maxWidth = 1920, $maxHeight = 1080) {
+    $info = getimagesize($sourcePath);
+    if (!$info) return false;
+
+    $mime = $info['mime'];
+    switch ($mime) {
+        case 'image/jpeg':
+            $image = imagecreatefromjpeg($sourcePath);
+            if (function_exists('exif_read_data')) {
+                $exif = @exif_read_data($sourcePath);
+                if (!empty($exif['Orientation'])) {
+                    switch ($exif['Orientation']) {
+                        case 3: $image = imagerotate($image, 180, 0); break;
+                        case 6: $image = imagerotate($image, -90, 0); break;
+                        case 8: $image = imagerotate($image, 90, 0); break;
+                    }
+                }
+            }
+            break;
+        case 'image/png':
+            $image = imagecreatefrompng($sourcePath);
+            break;
+        default:
+            return false;
+    }
+
+    $origWidth = imagesx($image);
+    $origHeight = imagesy($image);
+
+    if ($origWidth > $maxWidth || $origHeight > $maxHeight) {
+        $ratio = min($maxWidth / $origWidth, $maxHeight / $origHeight);
+        $newWidth = intval($origWidth * $ratio);
+        $newHeight = intval($origHeight * $ratio);
+    } else {
+        $newWidth = $origWidth;
+        $newHeight = $origHeight;
+    }
+
+    if ($newWidth != $origWidth || $newHeight != $origHeight) {
+        $resized = imagecreatetruecolor($newWidth, $newHeight);
+
+        if ($mime === 'image/png') {
+            imagealphablending($resized, false);
+            imagesavealpha($resized, true);
+            $transparent = imagecolorallocatealpha($resized, 255, 255, 255, 127);
+            imagefilledrectangle($resized, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $origWidth, $origHeight);
+        imagedestroy($image);
+        $image = $resized;
+    }
+
+    if ($mime === 'image/jpeg') {
+        $quality = 90;
+        imagejpeg($image, $targetPath, $quality);
+        clearstatcache(true, $targetPath);
+        $filesizeKB = filesize($targetPath) / 1024;
+
+        while ($filesizeKB > $maxSizeKB && $quality > 40) {
+            $quality -= 5;
+            imagejpeg($image, $targetPath, $quality);
+            clearstatcache(true, $targetPath);
+            $filesizeKB = filesize($targetPath) / 1024;
+        }
+    }
+
+    elseif ($mime === 'image/png') {
+        $compression = 6;
+        imagepng($image, $targetPath, $compression);
+        clearstatcache(true, $targetPath);
+        $filesizeKB = filesize($targetPath) / 1024;
+
+        while ($filesizeKB > $maxSizeKB && $compression < 9) {
+            $compression++;
+            imagepng($image, $targetPath, $compression);
+            clearstatcache(true, $targetPath);
+            $filesizeKB = filesize($targetPath) / 1024;
+        }
+    }
+
+    imagedestroy($image);
+    return true;
+}
