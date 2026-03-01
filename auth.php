@@ -11,6 +11,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/validator.php";
 //use vendor\vodovra\View;
 //use vendor\vodovra\Dbs;
 
+if (isset($_SESSION['logged']) && $_SESSION['logged'] == 1) {
+    header('Location: /profile.php');
+    exit;
+}
 
 View_Clear();
 View_Add(Page_Up());
@@ -18,11 +22,12 @@ View_Add(Menu_Up());
 View_Add('<div class="out">');
 //View_Add(Menu_Left());
 
-$err = '';
+$authErrorMsg = '';
+$authSuccessMsg = '';
 
 if (($md == 0) || ($md == '')) {
-    View_Add('
-<div class="logform-container">
+        View_Add('
+<div class="logform-container ' . (!empty($authErrorMsg) ? 'has-error' : (!empty($authSuccessMsg) ? 'has-success' : '')) . '">
     <form action="/auth.php" method="post">
         <input type="hidden" name="md" value="5">
 
@@ -30,85 +35,104 @@ if (($md == 0) || ($md == '')) {
 
         <div class="logform-row logform-vertical">
             <div class="logform-input-container">
-                <input class="logform-input" name="emailForLogin" type="email" placeholder=" " required>
+                <input class="logform-input" name="emailForLogin" type="email" value="' . htmlspecialchars($em ?? '') . '" placeholder=" " required>
                 <label>E-mail</label>
             </div>
         </div>
 
         <div class="logform-row logform-vertical">
             <div class="logform-input-container">
-                <input class="logform-input" name="paswForLogin" type="password" placeholder=" " required>
+                <input class="logform-input" name="paswForLogin" type="password" value="' . htmlspecialchars($ep ?? '') . '" placeholder=" " required>
                 <label>Пароль</label>
             </div>
         </div>
 
-        <div class="logform-row logform-vertical">
+        ' . (!empty($authErrorMsg) ? '<div class="regerror1">' . $authErrorMsg . '</div>' : '') . '
+        ' . (!empty($authSuccessMsg) ? '<div class="regsuccess1">' . $authSuccessMsg . '</div>' : '') . '
+
+        <div class="logform-row logform-vertical butt">
             <input class="logform-button" type="submit" value="Увійти">
         </div>
 
-        <div class="logform-row logform-right">
+        <div class="logform-row logform-right a">
             <a class="logform-advanced-link" href="/strepair.php">Забули пароль?</a>
         </div>
 
-        <div class="logform-row logform-center logform-registration-line">
+        <div class="logform-row logform-center logform-registration-line but">
             <span>Ще не зареєстровані? <a class="logform-reg-link" href="/stregs.php">Зареєструватися</a></span>
         </div>
+        
+        <div class="separatorform">
+           <span>або</span>
+        </div>
+
+        <div class="logform-row logform-vertical but">
+           <a class="googlelog" href="/oauth.php">
+    <img src="/assets/images/Google_Favicon_2025.png" alt="Google" class="google-icon">
+    Увійти за допомогою Google
+</a>
+        </div>
+
     </form>
-
-
-
-<div class="authform-container2">
-    <div class="logform-row logform-vertical logform-google-row">
-        <a href="" class="logform-button logform-google">
-            <img src="/assets/images/google-icon.svg" alt="" width="17" height="17">
-            Увійти за допомогою Google
-        </a>
-    </div>
-    
-    </div>
 </div>
-
 ');
+    }
+
+if (!empty($authSuccessMsg)) {
+    echo '<script>
+        setTimeout(function() {
+            window.location.href = "/profile.php";
+        }, 3000);
+    </script>';
 }
 
+
 if ($md == 5) {
-    //проверка емейл в бд, если ок то запись. если не ок выдать ошибку неверный пароль и предложить перейти на страницу сбросить пароль
+
     if (isset($_POST['emailForLogin'])) {
         $em = $_POST['emailForLogin'];
-
     } else {
         $em = '';
     }
+
     if (isset($_POST['paswForLogin'])) {
         $ep = $_POST['paswForLogin'];
-
     } else {
         $ep = '';
     }
 
     $em1 = valide1();
-        $ep1 = valide1();
+    $ep1 = valide1();
 
     $dblink = DbConnect();
-    $sql = 'SELECT * FROM users WHERE ((email="' . $em . '")AND (pasw="' . md5($ep) . '"))';
+    $sql = 'SELECT * FROM users WHERE ((email="' . $em . '") AND (pasw="' . md5($ep) . '"))';
     $res = mysqli_query($dblink, $sql);
-    View_Add('===' . $sql);
+
+
     $cnt = mysqli_num_rows($res);
+
     if ($cnt == 1) {
-        //ok
+        // ok
         $a = mysqli_fetch_assoc($res);
         $_SESSION['logged'] = 1;
         $_SESSION['uzver'] = $a['idx'];
+
+        $authSuccessMsg = "Вхід виконано успішно!";
         $md = 25;
     } else {
+        // если пользователь не найден — пишем ошибку
+        $authErrorMsg = "Користувача з таким e-mail або паролем не знайдено.";
         $md = 7;
     }
 
 
 }
-if ($md == 7) { //Ошибки валидации
+if ($md == 7) {
+
+    $authErrorMsg = "Користувача з таким e-mail або паролем не знайдено.";
+
     View_Add('
-<div class="logform-container">
+<div class="logform-container ' . (!empty($authErrorMsg) ? 'has-error' : (!empty($authSuccessMsg) ? 'has-success' : '')) . '">
     <form action="/auth.php" method="post">
         <input type="hidden" name="md" value="5">
 
@@ -116,60 +140,97 @@ if ($md == 7) { //Ошибки валидации
 
         <div class="logform-row logform-vertical">
             <div class="logform-input-container">
-                <input class="logform-input" name="emailForLogin" type="email" value="' . $em . '" placeholder=" " required>
+                <input class="logform-input" name="emailForLogin" type="email" value="' . htmlspecialchars($em) . '" placeholder=" " required>
                 <label>E-mail</label>
             </div>
         </div>
-        
-        <div class="warn">
-        ' . $em1 . '
-</div>
 
         <div class="logform-row logform-vertical">
             <div class="logform-input-container">
-                <input class="logform-input" name="paswForLogin" type="password" value="' . $ep . '" placeholder=" " required>
+                <input class="logform-input" name="paswForLogin" type="password" value="' . htmlspecialchars($ep) . '" placeholder=" " required>
                 <label>Пароль</label>
             </div>
         </div>
-        
-         <div class="warn">
-        ' . $ep1 . '
-</div>
 
-        <div class="logform-row logform-vertical">
+        ' . (!empty($authErrorMsg) ? '<div class="regerror1">' . $authErrorMsg . '</div>' : '') . '
+        ' . (!empty($authSuccessMsg) ? '<div class="regsuccess1">' . $authSuccessMsg . '</div>' : '') . '
+
+        <div class="logform-row logform-vertical butt">
             <input class="logform-button" type="submit" value="Увійти">
         </div>
 
-        <div class="logform-row logform-right">
+        <div class="logform-row logform-right a">
             <a class="logform-advanced-link" href="/strepair.php">Забули пароль?</a>
         </div>
-        
-        <div class="logform-row logform-center logform-registration-line">
+
+        <div class="logform-row logform-center logform-registration-line but">
             <span>Ще не зареєстровані? <a class="logform-reg-link" href="/stregs.php">Зареєструватися</a></span>
         </div>
-
- 
- <div class="authform-container2">
-<div class="logform-row logform-vertical logform-google-row">
-            <button class="logform-button logform-google" type="button">
-                <img src="/assets/images/google-icon.svg" alt="" width="17" height="17">
-                <a href="<?=htmlspecialchars($login_url)?>">Увійти за допомогою Google</a>
-            </button>
+        
+        <div class="separatorform">
+           <span>або</span>
         </div>
-</div>
+
+        <div class="logform-row logform-vertical but">
+           <a class="googlelog" href="/oauth.php">
+    <img src="/assets/images/Google_Favicon_2025.png" alt="Google" class="google-icon">
+    Увійти за допомогою Google
+</a>
+        </div>
 
     </form>
 </div>
 ');
 }
+
+
 if ($md == 25) {
-    header("refresh: 1; url=http://shanapra.com/profile.php");
-    exit;
+    $_SESSION['last_activity'] = time();
+
+    $authSuccessMsg = "Вхід виконано успішно!";
+    $md = 25;
+
+    View_Add('
+<div class="logform-container has-success">
+    <form action="/auth.php" method="post" novalidate>
+        <input type="hidden" name="md" value="5">
+
+        <div class="logform-title logform-text-center">Вхід в систему</div>
+
+        <div class="logform-row logform-vertical">
+            <div class="logform-input-container">
+                <input class="logform-input" name="emailForLogin" type="email" value="' . htmlspecialchars($em ?? '') . '" placeholder=" ">
+                <label>E-mail</label>
+            </div>
+        </div>
+
+        <div class="logform-row logform-vertical">
+            <div class="logform-input-container">
+                <input class="logform-input" name="paswForLogin" type="password" value="' . htmlspecialchars($ep ?? '') . '" placeholder=" ">
+                <label>Пароль</label>
+            </div>
+        </div>
+
+        <div class="logform-row logform-vertical succ">
+            <div class="loginsuccess" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>' . $authSuccessMsg . '</span>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    setTimeout(function(){
+        window.location.href = "/profile.php";
+    }, 2000);
+</script>
+');
 }
 
+//1qazxcde345tgb
 
+View_Add('</div>'); // .out
 
-View_Add('</div></div>');
 View_Add(Page_Down());
 View_Out();
 View_Clear();

@@ -1,0 +1,1170 @@
+* {
+    margin: 0;
+}
+
+html, body, div, table, td, th, a, img, p, font, ul, pre, input {
+    padding: 0;
+}
+
+div {
+    display:block;
+}
+
+html {
+    scrollbar-shadow-color:black;
+    scrollbar-arrow-color:black;
+    scrollbar-darkshadow-color:white;
+    overflow-y: auto;
+    overflow-x: hidden;
+    line-height:1.47;
+}
+
+img {
+    border: 0;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+
+#wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.outpage {
+    display: flex;
+    justify-content: flex-start;
+    flex: 1 0 auto;
+    align-items: flex-start;
+    #gap: 15px;
+    background: #9f9f9f;
+    #padding: 20px 20px 0px 20px;
+    box-sizing: border-box;
+    width: 100%;
+    #min-height: 80vh;
+}
+
+.cardout {
+    flex: 0 0 auto;
+
+}
+
+.lenta-container {
+    flex: 1 1 0;
+    #max-height: calc(100vh - 105px - 105px);
+    #max-height: 615px;
+    overflow-y: auto;
+    padding: 20px;
+    min-width: 350px;
+    position: relative;
+}
+
+/* Chrome, Edge, Opera */
+.lenta-container::-webkit-scrollbar {
+    width: 10px;
+    background: #f0f0f0;
+    border-radius: 8px;
+}
+.lenta-container::-webkit-scrollbar-thumb {
+    background: #a2c4f8;
+    border-radius: 8px;
+    border: 2px solid #f0f0f0;
+}
+.lenta-container::-webkit-scrollbar-button {
+    display: none;
+    height: 0;
+    width: 0;
+}
+
+.lenta-container::-webkit-scrollbar-thumb:hover {
+    background: #80b2f8;
+}
+
+/*  Firefox */
+.lenta-container {
+    scrollbar-width: thin;
+    scrollbar-color: #b3c6e7 #f0f0f0;
+}
+
+
+.cardout {
+    width: max-content;
+    max-width: 620px;
+    height: max-content;
+    font-family: 'Inter', sans-serif;
+    margin: 20px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+
+.adv {
+    width: -webkit-fill-available;
+    box-sizing: border-box;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 16px;
+    padding: 20px 25px;
+    margin: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #002e5a;
+}
+
+.adv:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.adv h3 {
+    font-size: 18px;
+    color:#002e5a;
+    margin: 0 0 10px 0;
+    font-weight: 600;
+}
+
+.adv p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+    margin: 0 0 12px 0;
+}
+
+.adv a.button {
+    display: inline-block;
+    background: #1877f2;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.3s;
+}
+
+.adv a.button:hover {
+    background: #165fc1;
+}
+
+
+.cardout-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    height: 100%;
+}
+
+
+.cardout-subtitle{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+    margin-top: 0;
+    padding: 0;
+    font-size: 15px;
+    text-align: left;
+    color: #004687;
+    font-weight: 600;
+    border-bottom: 1px solid #ddd;
+}
+
+.cardout-subtitle-3{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+    margin-top: 5px;
+    padding: 0;
+    font-size: 15px;
+    text-align: left;
+    color: #004687;
+    font-weight: 600;
+    border-bottom: 1px solid #ddd;
+}
+
+.cardout-icon{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 1em;
+}
+
+.cardout-icon svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.cardout-top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.cemeteryinfo{
+    #display: flex;
+}
+.cardout-photo{
+    flex: 0 0 190px;
+}
+
+.cardout-photo img {
+    width: 190px;
+    height: 240px;
+    flex: 0 0 190px;
+    /*object-fit: cover;*/
+    border-radius: 10px;
+    background: #eaeaea;
+    border: #e0e0e0 2px solid;
+}
+.cardout-dates {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.date-block {
+    flex: 1;
+    min-width: 160px;
+    background: #eef4ff;
+    box-shadow: 0 0 5px rgba(0, 70, 135, 0.15);
+    border: 1px solid #b5c8f7;
+    border-radius: 12px;
+    text-align: center;
+    padding: 10px 0;
+    transition: all 0.2s ease-in-out;
+}
+
+.date-label {
+    font-size: 12px;
+    color: #004687;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.date-value {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0053a0;
+    letter-spacing: 0.5px;
+}
+
+
+.cardout-data {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.location-data{
+    background: #eef4ff;
+    border: 1px solid #b5c8f7;
+    color: #152057;
+    padding: 5px 5px;
+    margin-top: 10px;
+    max-width: 100%;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: 'Arial', sans-serif;
+}
+
+.grave-info {
+    margin-top: 10px;
+}
+
+.nocem {
+    color: #152057;
+    font-size: 12px;
+}
+
+.cemetery-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #152057;
+    margin-bottom: 10px;
+}
+
+.grave-locations {
+    display: flex;
+    gap: 15px;
+}
+
+.grave-item {
+    min-width: 100px;
+    text-align: center;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    border: 1px solid #ccd6e0;
+    font-size: 14px;
+    color: #002e5a;
+    background-color: #fff;
+    transition: 0.2s;
+}
+
+.grave-item span {
+    display: block;
+    font-size: 13px;
+    color: #004687;
+}
+
+.grave-item strong {
+    display: block;
+    font-size: 15px;
+    color: #002242;
+    font-weight: 600;
+}
+
+
+.cardout-data h2 {
+    margin: 0 0 10px 0;
+    font-size: 1.4em;
+    color: #002e5a;
+}
+
+
+.cardout-bottom {
+    margin-top: 20px;
+    background: #f5f5f5;
+    border-radius: 12px;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cardout-bottom p {
+    margin: 0;
+    font-size: 0.95em;
+    color: #333;
+}
+
+.btn-back {
+    display: inline-block;
+    background: #1e5dbc;
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.btn-back:hover {
+    background: #184e9d;
+}
+
+.cardout-photo-slider {
+    position: relative;
+    overflow: hidden;
+    max-width: 100%;
+}
+
+/* Общий стиль кнопок */
+.cardout-photo-slider button {
+    position: absolute;
+    bottom: 15px;
+    background-color: rgba(0, 15, 54, 0.79);
+    color: white;
+    border: #e0e0e0 1px solid;;
+    border-radius: 4px;
+    font-size: 15px;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.25s ease;
+    z-index: 10;
+}
+
+.cardout-photo-slider .photo-prev {
+    right: 40px;
+}
+
+.cardout-photo-slider .photo-next {
+    right: 10px;
+}
+
+.cardout-photo-slider button:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.7);
+    transform: scale(1.08);
+}
+
+.cardout-photo-slider button:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 480px) {
+    .outpage {
+        display: block;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        min-height: auto;
+    }
+    .cardout {
+        width: -webkit-fill-available;
+        height: max-content;
+        font-family: 'Inter', sans-serif;
+        margin: 0px;
+        padding: 10px 20px 20px 20px;
+        background: #fff;
+        border-radius: 0px 0px 15px 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .cardout-photo img {
+        width: auto;
+        height: 240px;
+        max-height: 400px;
+        /*object-fit: cover;*/
+        border-radius: 10px;
+        background: #eaeaea;
+        border: 2px solid #e0e0e0;
+    }
+
+    .cardout-photo-slider {
+        position: relative;
+        overflow: visible;
+        max-width: 100%;
+    }
+
+    .cardout-photo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+    }
+
+    .cardout-icon svg {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+    }
+
+
+    .nocem {
+        color: #152057;
+        font-size: 12px;
+    }
+
+    .cemetery-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: #152057;
+        margin-bottom: 10px;
+    }
+
+    .cardout-top {
+        display: block;
+        align-items: flex-start;
+    }
+
+    .cardout-subtitle{
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 5px;
+        margin-top: 0;
+        padding: 0;
+        font-size: 12px;
+        text-align: left;
+        color: #004687;
+        font-weight: 600;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .cardout-subtitle.one{
+display: none;
+}
+
+    .cardout-subtitle-3 {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 5px;
+        margin-top: 10px;
+        padding: 0;
+        font-size: 12px;
+        text-align: left;
+        color: #004687;
+        font-weight: 600;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .cardout-data h2 {
+        text-align: center;
+        font-size: 1.3em;
+    }
+    .date-value {
+        font-size: 12px;
+        font-weight: 600;
+        color: #0053a0;
+    }
+
+    .cardout-dates {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+
+    .grave-locations {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .grave-item{
+        min-width: 80px;
+        display: flex;
+        justify-content: space-around;
+    }
+
+    .lenta-container{
+        width: -webkit-fill-available!important;
+        box-sizing: border-box!important;
+    }
+    .lenta-create-post {
+        flex-direction: row!important;
+        align-items: stretch;
+    }
+
+    .lenta-input{
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    .lenta-avatar {
+        margin-bottom: 0px!important;
+    }
+
+    .nomassage {
+        display: flex;
+        flex-direction: column;
+        font-family: 'Arial', sans-serif;
+        align-items: center;
+        background: #fff;
+        border-radius: 14px;
+        padding: 12px 16px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        margin-bottom: 12px;
+        gap: 5px;
+        transition: 0.3s ease;
+    }
+
+    .post-action-btn {
+        display: block!important;
+        align-items: center;
+        gap: 8px;
+        background: none;
+        border: none;
+        color: #555;
+        font-size: 14px;
+        cursor: pointer;
+        padding: 5px 8px;
+        border-radius: 5px;
+        transition: background 0.2s, color 0.2s;
+    }
+
+}
+
+/*стили для режима редактирования карточки*/
+
+.cardout-photo.editing img {
+    height: 255px!important;
+}
+
+.photo-change-btn {
+    width: 70px!important;
+    left: 10px!important;
+
+}
+
+
+.edit-fio{
+    margin: 0 0 10px 0;
+}
+
+.editfio-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-bottom: 10px;
+}
+
+.editfio-field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.editfio-field label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.editfio-input {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: #002e5a;
+    border: 1px solid #ccd6e0;
+    border-radius: 6px;
+    padding: 6px 10px;
+    background: #fff;
+    transition: all 0.2s ease;
+    min-width: 102px;
+    max-width: 102px;
+}
+
+.editfio-input:hover {
+    background: #f0f6ff;
+    border-color: #b0c8ff;
+}
+
+.editfio-input:focus {
+    border-color: #5b8def;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(91,141,239,0.2);
+}
+
+.edit-dates {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 15px;
+    font-family: 'Inter', sans-serif;
+}
+
+.data-block {
+    flex: 1;
+    min-width: 180px;
+    background-color: #f5f9ff;
+    border: 1px dashed #b4cfff;
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    transition: all 0.25s ease;
+}
+
+.data-block:hover {
+    background-color: #eaf2ff;
+    border-color: #90baff;
+}
+
+.data-block label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #3a4b68;
+    margin-bottom: 6px;
+}
+
+.edit-dates input {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #003d80;
+    background: transparent;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 6px 10px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.edit-dates input:hover {
+
+}
+
+.edit-dates input:focus {
+    background: #fff;
+    border-color: #5b8def;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(91, 141, 239, 0.25);
+}
+
+select {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #002e5a;
+    background: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: border 0.2s, background 0.2s;
+    appearance: none;
+}
+
+select:focus {
+    border: 1px solid #a0c4ff;
+    outline: none;
+    background: #f0f4ff;
+}
+
+select:hover {
+    background: #e6ecff;
+}
+.location-card {
+    background: #f9fbff;
+    border: 1px solid #d6e4ff;
+    border-radius: 6px;
+    padding: 12px;
+    max-width: 100%;
+    font-family: "Segoe UI", sans-serif;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.loc-value{
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    border: 1px solid #ccd6e0;
+    font-size: 14px;
+    color: #002e5a;
+    background-color: #fff;
+    transition: 0.2s;
+}
+
+.loc-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    #margin-bottom: 12px;
+}
+
+.loc-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.loc-field label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.loc-field select {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #ccd6e0;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #fff;
+    transition: 0.2s;
+}
+
+.loc-field select:focus {
+    border-color: #5b8def;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(91,141,239,0.2);
+}
+
+.edit-btn {
+    background: #eef4ff;
+    box-shadow: 0 0 5px rgba(0, 70, 135, 0.15);
+    border: 1px solid #b5c8f7;
+    color: #0053a0;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.edit-btn:hover {
+    background-color: #dae4ff;
+    border-color: #9eb8ef;
+}
+
+.edit-btn:hover:not(:disabled) {
+    background-color: #bbdefb;
+}
+
+.edit-btn:disabled {
+    cursor: default;
+    opacity: 0.8;
+    background-color: #e1e1e1;
+    border-color: #ccc;
+}
+
+.edit-btn svg {
+    stroke: #1976d2;
+}
+
+.edit-btn:active {
+    background-color: #d6e0ff;
+}
+
+.edit-btn.right {
+    float: right;
+}
+
+
+.edit-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.cardout-actions{
+    margin-bottom: 10px;
+}
+
+.edit-actions button {
+    flex: 1;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#save-btn {
+    background-color: #1877f2;
+    color: #fff;
+}
+
+#save-btn:hover {
+    background-color: #165fc1;
+    box-shadow: 0 2px 6px rgba(74, 127, 255, 0.3);
+}
+
+#cancel-btn {
+    background-color: #f3f4f6;
+    color: #0053a0;
+    border: 1px #ccc solid;
+}
+
+#cancel-btn:hover {
+    background-color: #e5e7eb;
+}
+
+.cem-select-wrap{
+    font-size: 16px;
+    font-weight: 500;
+    color: #152057;
+    margin-bottom: 10px;
+}
+
+.grave-location-card {
+    background: #f9fbff;
+    border: 1px solid #d6e4ff;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: "Segoe UI", sans-serif;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.grave-location-card .loc-value.nocem {
+    color: #999;
+    font-weight: 400;
+}
+
+
+.grave-item.editable {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.grave-item span {
+    display: block;
+    font-size: 13px;
+    color: #004687;
+    margin-bottom: 2px;
+}
+
+.grave-item strong,
+.grave-item input[type="number"] {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    color: #002242;
+}
+
+.grave-item input[type="number"] {
+    width: 60px;
+    height: 32px;
+    border: 1px solid #c8d6f1;
+    border-radius: 8px;
+    background: #fff;
+    text-align: center;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.grave-item input[type="number"]::-webkit-outer-spin-button,
+.grave-item input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.grave-item input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+.grave-item input[type="number"]:focus {
+    background: #f9fbff;
+    border-color: #5b8def;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(91,141,239,0.2);
+}
+
+.photo-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.photo-modal.show {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.photo-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.64);
+}
+.photo-modal-content {
+    position: relative;
+    z-index: 10001;
+    background: #fff;
+    padding: 20px;
+    border-radius: 14px;
+    width: max-content;
+    max-width: 100%;
+    box-shadow:
+            0 10px 25px rgba(0, 0, 0, 0.1),
+            0 15px 50px rgba(0, 0, 0, 0.15),
+            0 20px 80px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.25s ease, opacity 0.25s ease, height 0.4s ease;
+}
+
+.photo-modal.show .photo-modal-content {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.photo-modal-title-container{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 15px;
+    font-family: 'Arial', sans-serif;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.photo-modal-title-container span {
+    font-weight: 600;
+    font-size: 20px;
+    text-align: center;
+    flex: 1;
+}
+
+.photo-modal-close{
+    position: absolute;
+    right: 0;
+    cursor: pointer;
+}
+
+.photo-modal-message {
+    background: #e6ffed;
+    border: 1px solid #28a745;
+    color: #155724;
+    text-align: center;
+    padding: 12px;
+    margin: 10px 0 18px;
+    font-weight: 500;
+    border-radius: 6px;
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+    transition: opacity 0.4s ease, transform 0.4s ease, box-shadow 0.4s ease;
+    box-shadow: 0 0 0 rgba(40,167,69,0);
+}
+
+.photo-modal-message.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 12px rgba(40,167,69,0.25);
+}
+
+.photo-modal-grid {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.photo-slot {
+    position: relative;
+    width: 160px;
+    height: 200px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.photo-slot-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.photo-slot:hover .photo-slot-img {
+    transform: scale(1.03);
+    filter: brightness(0.6);
+}
+
+.photo-slot-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    opacity: 0;
+    transition: opacity 0.3s ease, background 0.3s ease;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+    text-align: center;
+}
+
+.photo-slot:hover .photo-slot-label {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.photo-slot-label input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 3;
+    pointer-events: auto;
+}
+
+.label-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    z-index: 2;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+    transform: translateY(5px);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.photo-slot:hover .label-content {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.label-icon {
+    width: 30px;
+    height: 30px;
+    stroke: white;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
+}
+
+.photo-slot.loading .photo-slot-label {
+    opacity: 1 !important;
+    background: rgba(0,0,0,0.6) !important;
+    pointer-events: none !important;
+}
+
+
+
+.photo-modal-actions {
+    margin-top: 25px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+#photoSaveBtn,
+#photoCancelBtn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+#photoSaveBtn {
+    background: #1877f2;
+    width: 100%;
+    color: #fff;
+}
+#photoSaveBtn:hover {
+    background: #165fc1;
+}
+
+#photoCancelBtn {
+    background: #f3f4f6;
+    color: #555;
+}
+#photoCancelBtn:hover {
+    background: #e5e7eb;
+}

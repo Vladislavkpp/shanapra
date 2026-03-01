@@ -1,10 +1,47 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 session_start();
+$auth_lifetime = 1800;
+$auth_cookie_name = 'user_auth';
+
+$envFile = $_SERVER['DOCUMENT_ROOT'] . '/.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue; // пропускаем комментарии
+        [$name, $value] = explode('=', $line, 2);
+        $_ENV[trim($name)] = trim($value);
+    }
+}
+//Выход
+if (isset($_GET['exit']) && $_GET['exit'] == 1) {
+    session_unset();
+    session_destroy();
+
+    if (isset($_COOKIE[$auth_cookie_name])) {
+        setcookie($auth_cookie_name, '', time() - 3600, '/');
+        unset($_COOKIE[$auth_cookie_name]);
+    }
+
+    header("Location: /");
+    exit;
+}
+
+if (isset($_SESSION['logged']) && $_SESSION['logged'] == 1) {
+    setcookie($auth_cookie_name, $_SESSION['uzver'], time() + $auth_lifetime, '/');
+}
+
+if ((!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) && isset($_COOKIE[$auth_cookie_name])) {
+    $_SESSION['logged'] = 1;
+    $_SESSION['uzver'] = $_COOKIE[$auth_cookie_name];
+}
+
+
 const xbr = "\n";
 const no_grave_photo = '/graves/no_image_0.png';
 $buf = '';
 $dblink = null;
-//$start = getmicrotime();
+$start = getmicrotime();
 $md = isset($_GET['md']) ? $_GET['md'] : '';
 $md = isset($_POST['md']) ? $_POST['md'] : $md;
 $md = strtolower($md);
@@ -47,21 +84,50 @@ function warn($x = ''): string
 /**Створює підключення до бази даних
  * @return int|null|bool|mysqli
  */
-function DbConnect(): int|null|bool|mysqli
+function DbConnect(): mysqli|bool|null
 {
+    if (!class_exists('Dotenv\Dotenv')) {
+        require_once $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
+    }
 
-    $db = 'bicycleb_shana';
-    $dbuser = 'bicycleb_shanarw';
-    $dbpassword = '@komnata44';
-    $dblink = mysqli_connect("localhost", $dbuser, $dbpassword, $db);
-    mysqli_query($dblink, "set character_set_client='utf8'");
-    mysqli_query($dblink, "set character_set_results='utf8'");
-    mysqli_query($dblink, "set collation_connection='utf8_general_ci'");
+
+    // Загружаем .env
+    if (!isset($_ENV['DB_HOST'])) {
+        $dotenv = Dotenv::createImmutable($_SERVER['DOCUMENT_ROOT']);
+        $dotenv->load();
+    }
+
+    $dbhost = $_ENV['DB_HOST'] ?? 'localhost';
+    $dbuser = $_ENV['DB_USER'] ?? '';
+    $dbpass = $_ENV['DB_PASS'] ?? '';
+    $dbname = $_ENV['DB_NAME'] ?? '';
+
+    $dblink = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
+
+    if (!$dblink) {
+        die('Ошибка подключения к базе данных: ' . mysqli_connect_error());
+    }
+
+    mysqli_query($dblink, "SET NAMES 'utf8'");
+    mysqli_query($dblink, "SET CHARACTER SET 'utf8'");
+    mysqli_query($dblink, "SET SESSION collation_connection = 'utf8_general_ci'");
+
     return $dblink;
 }
 
 function View_Out()
-{
+{global $start;
+/*
+    $end = getmicrotime();
+    $elapsed = $end - $start;
+
+    $seconds = floor($elapsed);
+    $milliseconds = round(($elapsed - $seconds) * 1000);
+
+    echo '<div class="execution-time">';
+    echo 'Сторінку завантажено за: ' . $seconds . ' сек ' . $milliseconds . ' мс';
+    echo '</div>';
+*/
     echo View_Get();
     View_Clear();
 }
@@ -89,31 +155,65 @@ function View_Add(null|string $a = '')
 function Menu_Up(): string {
     $out = '<div class="Menu_Up">';
 
-    // Левая часть (бургер + логотип + название)
     $out .= '<div class="menu-left">';
-    $out .= '<div class="burger"><span></span><span></span><span></span></div>';
-    $out .= '<div class="logo"><img src="/assets/images/logobrand2.png" alt="Логотип"></div>';
-    $out .= '<div class="title">ІПС Шана</div>';
-    $out .= '</div>';
 
-    $out .= '<div class="menu-divider"></div>'; // вертикальная линия
+    // мобильное меню
+    $out .= '
+    <div class="dropdown nav">
+        <input type="checkbox" id="menu-main" class="dropdown-toggle">
+        <label for="menu-main" class="menu-button nav" data-tooltip="Меню">
+            <div class="burger">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+        </label>
+
+        <div class="dropdown-menu nav">
+        <div class="menu-nav">
+                <span class="menu-name">Меню</span>
+            </div>
+            <ul class="menu_ups_mobile">
+                <li><a href="/">Головна</a></li>
+                <li class="has-submenu">
+        <input type="checkbox" id="mobile-work-toggle" class="submenu-toggle">
+        <label for="mobile-work-toggle" class="submenu-label">Робота</label>
+
+        <ul class="submenu-mobile">
+            <li><a href="/clean-cemeteries.php">Прибирання кладовищ</a></li>
+            <li><a href="/prod-monuments.php">Виготовлення пам`ятників</a></li> 
+            <li><a href="/other-job.php">Інші роботи</a></li>
+        </ul>
+    </li>
+                <li><a href="/clients.php">Наші клієнти</a></li>
+                <li><a href="/graveadd.php">Додати поховання</a></li>
+            </ul>
+        </div>
+    </div>
+    ';
+
+    $out .= '<div class="logo"><a href="/"><img src="/assets/images/logobrand3.png" alt="Логотип"></a></div>';
+    $out .= '<a href="/" class="title">ІПС Шана</a>';
+
+    $out .= '</div>'; // menu-left
+
+    $out .= '<div class="menu-divider"></div>';
 
     // Центральное меню
     $out .= '<div class="menu-center">';
     $out .= '<ul class="menu_ups"> 
-        <li><a href="/index.php">Головна</a></li>
-        <li><a href="#">Робота</a> 
+        <li><a href="/">Головна</a></li>
+        <li><a>Послуги</a> 
             <ul class="submenu"> 
-                <li><a href="#">Прибирання</a></li>
-                <li><a href="#">Виготовлення</a></li>
-                <li><a href="#">Платний пошук</a></li>
+                <li><a href="/clean-cemeteries.php">Прибирання кладовищ</a></li>
+                <li><a href="/prod-monuments.php">Виготовлення пам\'ятників</a></li>
+                <li><a href="/other-job.php">Інші роботи</a></li>
             </ul>
         </li>
-        <li><a href="/">Церкви</a></li>
-        <li><a href="/">Наші клієнти</a></li>
-        <li><a href="/graveadd.php">Додати поховання (Тест)</a></li>
-        <li><a href="/docs/zadaniya.php">Завдання</a></li>
-    </ul>';
+        <li><a href="/church.php">Церкви</a></li>
+        <li><a href="/clients.php">Наші клієнти</a></li>
+        <li><a href="/graveadd.php">Додати поховання</a></li>
+        </ul>';
     $out .= '</div>';
 
     // Правая часть — вход / аватар
@@ -127,52 +227,320 @@ function Menu_Up(): string {
             $firstName = $user['fname'];
             $lastName = $user['lname'];
             $lastNameShort = mb_substr($lastName, 0, 1) . '.';
-            $fullname = htmlspecialchars($firstName . ' ' . $lastNameShort);
+            $fullname = ($firstName . ' ' . $lastName);
         }
 
-        $out .= '<div class="login-btn dropdown">';
-        $out .= '<input type="checkbox" id="dropdown-toggle" class="dropdown-checkbox" />';
-        $out .= '<label for="dropdown-toggle" class="avatar-wrapper">';
-        $out .= '<img class="menu-avatar" alt="profile" src="' . $avatar . '">';
-        $out .= '<span>' . $fullname . '</span>';
-        $out .= '</label>';
-        $out .= '<div class="dropdown-menu">';
-        $out .= '<a href="/profile.php"><img src="/assets/images/profileicon.png" class="menu-icon"> Профіль</a>';
-        $out .= '<a href="#"><img src="/assets/images/notification.png" class="menu-icon"> Сповіщення</a>';
-        $out .= '<a href="/profile.php?md=4"><img src="/assets/images/balanceprof.png" class="menu-icon"> Баланс: ₴' . $formattedCash . ' </a>';
-        $out .= '<a href="profile.php?md=2"><img src="/assets/images/setting.png" class="menu-icon"> Налаштування</a>';
-        $out .= '<a href="#"><img src="/assets/images/support.png" class="menu-icon"> Підтримка</a>';
-        $out .= '<hr>';
-        $out .= '<a href="?exit=1" class="logout"><img src="/assets/images/logbtn.png" class="menu-icon"> Вийти</a>';
-        $out .= '</div>';
-        $out .= '<label for="dropdown-toggle" class="page-overlay"></label>';
-        $out .= '</div>';
-    } else {
-        $out .= '<div class="login-btn"><a class="login-link" href="/auth.php">Увійти</a></div>';
+        $out .= '
+<div class="header-right">
+
+ <a href="/messenger.php" class="menu-button" data-tooltip="Чати">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 13.5997 2.37562 15.1116 3.04346 16.4525C3.22094 16.8088 3.28001 17.2161 3.17712 17.6006L2.58151 19.8267C2.32295 20.793 3.20701 21.677 4.17335 21.4185L6.39939 20.8229C6.78393 20.72 7.19121 20.7791 7.54753 20.9565C8.88837 21.6244 10.4003 22 12 22Z" fill="#000000"/>
+            <path d="M15 12C15 12.5523 15.4477 13 16 13C16.5523 13 17 12.5523 17 12C17 11.4477 16.5523 11 16 11C15.4477 11 15 11.4477 15 12Z" fill="white"/>
+            <path d="M11 12C11 12.5523 11.4477 13 12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12Z" fill="white"/>
+            <path d="M7 12C7 12.5523 7.44772 13 8 13C8.55228 13 9 12.5523 9 12C9 11.4477 8.55228 11 8 11C7.44772 11 7 11.4477 7 12Z" fill="white"/>
+        </svg>
+    </a>
+   
+
+    <div class="dropdown">
+        <input type="checkbox" id="menu-left" class="dropdown-toggle">
+        <label for="menu-left" class="menu-button" data-tooltip="Друзі">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="bi bi-people-fill">
+              <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+            </svg>
+        </label>
+
+        <div class="dropdown-menu">
+            <div class="menu-friends">
+                <span class="menu-name">Друзі</span>
+            </div>
+            <div class="menu-separator"></div>
+            <a>Поки що немає друзів</a>
+        </div>
+    </div>
+
+<div class="dropdown" id="support-menu" style="position:absolute; visibility:hidden; pointer-events:none;">
+    <input type="checkbox" id="menu-support" class="dropdown-toggle">
+    <label for="menu-support" class="menu-button" data-tooltip="Підтримка" style="display:none;"></label>
+
+    <div class="dropdown-menu">
+        <div class="menu-friends">
+    <svg id="open-support-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16" style="cursor:pointer;">
+        <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
+    </svg>
+    <span class="menu-name">Підтримка</span>
+</div>
+
+        <div class="menu-separator"></div>
+        
+        <a href="/messenger.php?type=3">
+    <span class="icon-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="dpms-icon bi bi-gear-fill" viewBox="0 0 16 16">
+            <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0m-9 8c0 1 1 1 1 1h5.256A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1 1.544-3.393Q8.844 9.002 8 9c-5 0-6 3-6 4m9.886-3.54c.18-.613 1.048-.613 1.229 0l.043.148a.64.64 0 0 0 .921.382l.136-.074c.561-.306 1.175.308.87.869l-.075.136a.64.64 0 0 0 .382.92l.149.045c.612.18.612 1.048 0 1.229l-.15.043a.64.64 0 0 0-.38.921l.074.136c.305.561-.309 1.175-.87.87l-.136-.075a.64.64 0 0 0-.92.382l-.045.149c-.18.612-1.048.612-1.229 0l-.043-.15a.64.64 0 0 0-.921-.38l-.136.074c-.561.305-1.175-.309-.87-.87l.075-.136a.64.64 0 0 0-.382-.92l-.148-.045c-.613-.18-.613-1.048 0-1.229l.148-.043a.64.64 0 0 0 .382-.921l-.074-.136c-.306-.561.308-1.175.869-.87l.136.075a.64.64 0 0 0 .92-.382zM14 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0"/>
+        </svg>
+    </span>
+    Зв`язатися з розробником
+</a>
+
+        <a href="/messenger.php?type=3">
+    <span class="icon-wrapper">
+         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="dpms-icon bi bi-gear-fill" viewBox="0 0 16 16">
+            <path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414zM0 4.697v7.104l5.803-3.558zM6.761 8.83l-6.57 4.026A2 2 0 0 0 2 14h6.256A4.5 4.5 0 0 1 8 12.5a4.49 4.49 0 0 1 1.606-3.446l-.367-.225L8 9.586zM16 4.697v4.974A4.5 4.5 0 0 0 12.5 8a4.5 4.5 0 0 0-1.965.45l-.338-.207z"/>
+            <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1.5a.5.5 0 0 1-1 0V11a.5.5 0 0 1 1 0m0 3a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+        </svg>
+    </span>
+    Повідомити про проблему
+</a>
+
+    </div>
+</div>
+
+    <div class="dropdown">
+        <input type="checkbox" id="menu-avatar" class="dropdown-toggle">
+        <label for="menu-avatar" class="avatar-button" data-tooltip="Акаунт">
+        <div class="avatar-wrapper">
+            <img src="' . $avatar . '" alt="Аватар" class="header-avatar">
+            <div class="avatar-arrow">
+            <img src="/assets/images/avaarrow.png" alt="Стрелка">
+             </div>
+            </div>
+        </label>
+
+        <div class="dropdown-menu block">
+            <div class="menu-profile" onclick="window.location.href=\'/profile.php\'">
+                <img src="' . $avatar . '" class="menu-avatar">
+                <span class="menu-name">' . $fullname . '</span>
+            </div>
+          
+            <div class="menu-separator"></div>
+
+<a href="/profile.php?md=2">
+    <span class="icon-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="dpm-icon bi bi-gear-fill" viewBox="0 0 16 16">
+          <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+        </svg>
+    </span>
+    Налаштування профілю
+</a>
+
+<a href="/profile.php?md=4">
+    <span class="icon-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="dpm-icon bi bi-credit-card-2-back-fill" viewBox="0 0 16 16">
+          <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5H0zm11.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM0 11v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1z"/>
+        </svg>
+    </span>
+    Баланс: ' . $formattedCash . ' ₴
+</a>
+
+<a href="#" class="open-support">
+   <span class="icon-wrapper">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+           class="dpm-icon bi bi-chat-square-dots-fill" viewBox="0 0 16 16">
+        <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.5a1 1 0 0 0-.8.4l-1.9 2.533a1 1 0 0 1-1.6 0L5.3 12.4a1 1 0 0 0-.8-.4H2a2 2 0 0 1-2-2zm5 4a1 1 0 1 0-2 0 1 1 0 0 0 2 0m4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+      </svg>
+   </span>
+   Підтримка
+</a>
+
+
+<div class="menu-separator"></div>
+
+<a href="/profile.php?exit=1">
+    <span class="icon-wrapper">
+        <img src="/assets/images/logout.png" alt="Вийти" class="dpm-icon">
+    </span>
+    Вийти
+</a>
+
+
+        </div>
+    </div>
+
+</div>
+';
+
+        $out .='<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const toggles = document.querySelectorAll(".dropdown-toggle");
+    const dropdowns = document.querySelectorAll(".dropdown");
+
+    function closeAll() {
+        toggles.forEach(t => t.checked = false);
     }
 
-    $out .= '</div>';
-
-
-    $out .= '
-    <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const burger = document.querySelector(".burger");
-        const menu = document.querySelector(".menu-center");
-
-        if (burger && menu) {
-            burger.addEventListener("click", function () {
-                burger.classList.toggle("active");
-                menu.classList.toggle("active");
-            });
-        }
+    document.addEventListener("click", (e) => {
+        let inside = false;
+        dropdowns.forEach(drop => {
+            if (drop.contains(e.target)) inside = true;
+        });
+        if (!inside) closeAll();
     });
-    </script>
-    ';
 
-    return $out;
-}
+    toggles.forEach(toggle => {
+        toggle.addEventListener("change", () => {
+            if (toggle.checked) {
+                toggles.forEach(t => { if (t !== toggle) t.checked = false; });
+            }
+        });
+    });
 
+    document.querySelectorAll(".open-support").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            closeAll();
+            const sup = document.getElementById("menu-support");
+            if (sup) {
+                sup.checked = true;
+                const dropdown = document.getElementById("support-menu");
+                dropdown.style.visibility = "visible";
+                dropdown.style.pointerEvents = "auto";
+            }
+        });
+    });
+
+    document.getElementById("open-support-arrow").addEventListener("click", (e) => {
+        e.preventDefault();
+        closeAll();
+        const avatar = document.getElementById("menu-avatar");
+        if (avatar) avatar.checked = true;
+    });
+});
+</script>
+';
+    } else {
+        $out .= '
+<div class="support-login-container">
+    <button type="button" class="support-btn" data-tooltip="Технічна Підтримка" id="openSupport" style="padding: 0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+             class="dpm-icon bi bi-chat-square-dots-fill" viewBox="0 0 16 16">
+            <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.5a1 1 0 0 0-.8.4l-1.9 2.533a1 1 0 0 1-1.6 0L5.3 12.4a1 1 0 0 0-.8-.4H2a2 2 0 0 1-2-2zm5 4a1 1 0 1 0-2 0 1 1 0 0 0 2 0m4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+        </svg>
+    </button>
+    <div class="login-btn">
+        <a class="login-link" href="/auth.php">Увійти</a>
+    </div>
+</div>
+
+<!-- каптча -->
+<div class="captcha-modal" id="captchaModal">
+  <div class="captcha-box">
+  
+     <div class="captcha-modal-header">
+      <span class="captcha-modal-title">Підтвердіть, що ви не бот</span>
+       <span class="captcha-close">
+        <img src="/assets/images/closemodal.png" alt="Закрити" class="captcha-close-icon">
+      </span>
+    </div>
+    
+    <p class="captcha-title">Скільки буде <span id="captchaQuestion"></span> ?</p>
+
+    <div class="logform-input-container">
+      <input type="text" id="captchaAnswer" class="logform-input" placeholder="" required>
+      <label for="captchaAnswer">Ваша відповідь</label>
+    </div>
+
+    <div class="captcha-error" style="display:none;"></div>
+    
+    <div class="captcha-actions">
+      <button class="logform-button" id="captchaSubmit">Підтвердити</button>
+    </div>
+   
+  </div>
+</div>
+
+';
+        $out .= <<<HTML
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const openBtn = document.getElementById("openSupport");
+  const modal = document.getElementById("captchaModal");
+  const box = modal.querySelector(".captcha-box");
+  const question = document.getElementById("captchaQuestion");
+  const answer = document.getElementById("captchaAnswer");
+  const submit = document.getElementById("captchaSubmit");
+  const errorMsg = modal.querySelector(".captcha-error");
+  const closeBtn = modal.querySelector(".captcha-close");
+  
+  let correctAnswer = 0;
+
+  function setCookie(name, value, days) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+  }
+
+  function getCookie(name) {
+    return document.cookie.split('; ').reduce((r, v) => {
+      const parts = v.split('=');
+      return parts[0] === name ? decodeURIComponent(parts[1]) : r;
+    }, '');
+  }
+
+  function generateCaptcha() {
+    const a = Math.floor(Math.random() * 5) + 5;
+    const b = Math.floor(Math.random() * 5) + 1;
+    correctAnswer = a + b;
+    question.textContent = a + " + " + b;
+    answer.value = "";
+  }
+
+  function showError(msg) {
+    if(msg) {
+      errorMsg.style.display = "block";
+      errorMsg.textContent = msg;
+    } else {
+      errorMsg.style.display = "none";
+      errorMsg.textContent = "";
+    }
+  }
+
+  function closeCaptchaModal() {
+    modal.classList.remove("show");
+    showError("");
+  }
+
+  // открыть модалку
+  openBtn.addEventListener("click", () => {
+    const captchaPassed = getCookie("captcha_passed") === "true";
+    if (captchaPassed) {
+      window.location.href = "/messenger.php?type=3";
+    } else {
+      generateCaptcha();
+      showError(""); 
+      modal.classList.add("show");
+    }
+  });
+
+  closeBtn.addEventListener("click", closeCaptchaModal);
+
+  modal.addEventListener("click", (e) => {
+    if (!box.contains(e.target)) {
+      closeCaptchaModal();
+    }
+  });
+
+  submit.addEventListener("click", () => {
+    const userAnswer = parseInt(answer.value);
+    if (userAnswer === correctAnswer) {
+      setCookie("captcha_passed", "true", 30);
+      closeCaptchaModal();
+      window.location.href = "/messenger.php?type=3";
+    } else {
+      showError("Невірна відповідь. Спробуйте ще раз.");
+      generateCaptcha(); 
+    }
+  });
+});
+</script>
+
+HTML;
+
+    }
+
+        $out .= '</div>';
+
+        return $out;
+    }
 
 
 function Menu_Left(): string
@@ -191,11 +559,22 @@ function Page_Up($ttl = ''): string
         '<html lang="uk">' . xbr .
         '<head>' . xbr .
         '<title>ІПС Shana | ' . $ttl . '</title>' . xbr .
-        '<meta charset="utf-8">' . xbr .
+        '<base href="http://shanapra.com/">' . xbr .
+        '<link rel="icon" type="image/x-icon" href="/assets/images/logobrand3.png">' . xbr .
+        '<meta charset="utf-8"><link rel="canonical" href="http://shanapra.com/">' . xbr .
         '<meta http-equiv="Content-Type" content="text/html">' . xbr .
         '<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1, shrink-to-fit=yes">' . xbr .
         '<meta name="robots" content="all">' . xbr .
         '<link rel="stylesheet" href="/assets/css/common.css">' . xbr .
+        '<script>
+ 
+  history.pushState(null, "", location.href);
+  window.addEventListener("popstate", function() {
+      window.location.href = "/";
+      //не полностью работает так как надо.
+  });
+</script>
+' . xbr .
         '</head>' . xbr .
         '<body class="bg-dark">' . xbr .
         '<div id="wrapper" class="wrapper">' . xbr;
@@ -204,20 +583,22 @@ function Page_Up($ttl = ''): string
 
 function Page_Down(): string
 {
-    $out = '<div class="Page_Down"><hr class="page-down-hr">';
+    $out = '<div class="Page_Down">';
     $out .= '<ul class="menu_down">
-<li><a href = "/" >About Us</a></li>
-<li><a href = "/" >FAQ</a></li>
-<li><a href = "/" >Contacts</a></li>
-<li><a href = "/" >NpInfo</a></li>
-<li><a href = "/" >Copyright</a></li>
-<li><a href = "/" >Links</a></li>
+<li><a href="/about_us">About Us</a></li>
+<li><a href="/faq">FAQ</a></li>
+<li><a href="/contacts.php">Contacts</a></li>
+<li><a href="/npinfo">NpInfo</a></li>
+<li><a href="/copyright">Copyright</a></li>
+<li><a href="/links">Links</a></li>
 </ul>';
+    $out .= '<hr class="page-down-hr">';
+    $out .= '<div class="copyright">© 2025 shanapra</div>';
     $out .= '</div>' . xbr;
-    $out .= '</div>';
     $out .= '</body></html>';
     return $out;
 }
+
 
 function Contentx(): string
 {
@@ -288,19 +669,22 @@ if (isset($_GET['ajax_districts']) && isset($_GET['region_id'])) {
     $region_id = intval($_GET['region_id']);
     $dblink = DbConnect();
 
-    $res = mysqli_query($dblink, "SELECT title FROM district WHERE region = $region_id ORDER BY title");
+    // Берём id и название
+    $res = mysqli_query($dblink, "SELECT idx, title FROM district WHERE region = $region_id ORDER BY title");
     mysqli_close($dblink);
 
     if ($res && mysqli_num_rows($res) > 0) {
         echo '<option value="">Виберіть район</option>';
         while ($row = mysqli_fetch_assoc($res)) {
-            echo '<option value="' . $row['title'] . '">' . $row['title'] . '</option>';
+            // value = id, текст = название
+            echo '<option value="' . (int)$row['idx'] . '">' . htmlspecialchars($row['title']) . '</option>';
         }
     } else {
         echo '<option value="">Райони не знайдено</option>';
     }
     exit;
 }
+
 
 
 function RegionSelect($n = "region", $c = "")
@@ -321,3 +705,566 @@ function RegionSelect($n = "region", $c = "")
 }
 
 
+function RegionForKladb($n = "region", $c = "")
+{
+    $dblink = DbConnect();
+    $res = mysqli_query($dblink, "SELECT idx, title FROM region ORDER BY title");
+    mysqli_close($dblink);
+
+    $out = '<select name="' . $n . '" id="region" class="' . $c . '" onchange="loadDistricts(this.value)">';
+    $out .= '<option value="" selected hidden>Виберіть область</option>';
+
+    while ($row = mysqli_fetch_assoc($res)) {
+        $out .= '<option value="' . $row['idx'] . '">' . $row['title'] . '</option>';
+    }
+
+    $out .= '</select>';
+    return $out;
+}
+
+function RegionForCem($n = "region", $c = "")
+{
+    $dblink = DbConnect();
+    $res = mysqli_query($dblink, "SELECT idx, title FROM region ORDER BY title");
+    mysqli_close($dblink);
+
+    $out = '<select name="' . $n . '" id="region" class="' . $c . '" required onchange="loadDistricts(this.value)">';
+
+    $out .= '<option value="" selected hidden>Виберіть область</option>';
+
+    while ($row = mysqli_fetch_assoc($res)) {
+        $out .= '<option value="' . $row['idx'] . '">' . $row['title'] . '</option>';
+    }
+
+    $out .= '</select>';
+    return $out;
+}
+
+
+// Районы по области
+function getDistricts($region_id)
+{
+    $dblink = DbConnect();
+    $region_id = (int)$region_id;
+
+    $res = mysqli_query($dblink, "SELECT idx, title FROM district WHERE region = $region_id ORDER BY title");
+
+    $out = '<option value="">Оберіть район</option>';
+    while ($row = mysqli_fetch_assoc($res)) {
+        $out .= '<option value="' . (int)$row['idx'] . '">' . htmlspecialchars($row['title']) . '</option>';
+    }
+
+    mysqli_close($dblink);
+    return $out;
+}
+
+// Населенные пункты по району и области
+function getSettlements($region_id, $district_id)
+{
+    $dblink = DbConnect();
+    $region_id = (int)$region_id;
+    $district_id = (int)$district_id;
+
+    $sql = "SELECT idx, title 
+            FROM misto 
+            WHERE idxregion = $region_id 
+              AND idxdistrict = $district_id 
+            ORDER BY title";
+
+    $res = mysqli_query($dblink, $sql);
+
+    $out = '<option value="">Оберіть нас. пункт</option>';
+    while ($row = mysqli_fetch_assoc($res)) {
+
+        $out .= '<option value="' . (int)$row['idx'] . '">' . htmlspecialchars($row['title']) . '</option>';
+    }
+
+    mysqli_close($dblink);
+    return $out;
+}
+
+
+
+// Добавление нового населённого пункта
+function addSettlement($region_id, $district_id, $name)
+{
+    $dblink = DbConnect();
+    $region_id = (int)$region_id;
+    $district_id = (int)$district_id;
+    $name = mysqli_real_escape_string($dblink, trim($name));
+
+    if ($name === "") {
+        return "Помилка: пуста назва";
+    }
+
+    $sql = "INSERT INTO misto (title, idxdistrict, idxregion) VALUES ('$name', $district_id, $region_id)";
+    if (mysqli_query($dblink, $sql)) {
+        $out = "OK: додано";
+    } else {
+        $out = "Помилка: " . mysqli_error($dblink);
+    }
+
+    mysqli_close($dblink);
+    return $out;
+}
+
+
+
+function Cardsx(
+    int $idx = 0,
+    string $f = '',
+    string $i = '',
+    string $o = '',
+    string $d1 = '',
+    string $d2 = '',
+    string $img = ''
+): string {
+
+    if (!is_file($_SERVER['DOCUMENT_ROOT'].$img)) {
+        $img = '/graves/noimage.jpg';
+    }
+
+    $d1Unknown = empty($d1) || $d1 === '0000-00-00' || $d1 === '0000-00-00';
+    $d2Unknown = empty($d2) || $d2 === '0000-00-00' || $d2 === '0000-00-00';
+
+    if ($d1Unknown && $d2Unknown) {
+        $dates = 'Дати не вказані';
+    } elseif ($d1Unknown) {
+        $dates = 'Дата не вказана - '.DateFormat($d2);
+    } elseif ($d2Unknown) {
+        $dates = DateFormat($d1).' - Дата не вказана';
+    } else {
+        $dates = DateFormat($d1).' - '.DateFormat($d2);
+    }
+
+    $out  = '<div class="cardx">';
+
+    // фото
+    $out .= '  <div class="cardx-img">';
+    $out .= '      <img src="'.$img.'" class="cardx-image" alt="'.$f.' '.$i.' '.$o.'" data-tooltip="'.$f.' '.$i.' '.$o.'">';
+    $out .= '  </div>';
+
+    // блок с данными
+    $out .= '  <div class="cardx-data">';
+    $out .= '      <div class="text2center font-bold font-white height50">';
+    $out .=            $f.' '.$i.' '.$o.'<br>';
+    $out .= '      </div>';
+    $out .= '      <div class="text2center font-white">';
+    $out .=            $dates.'<br>';
+    $out .= '      </div>';
+    $out .= '      <div class="text2right">';
+    $out .= '          <a href="/cardout.php?idx='.$idx.'">Детали</a>';
+    $out .= '      </div>';
+    $out .= '  </div>';
+
+    $out .= '</div>';
+
+    return $out;
+}
+
+function DateFormatUnknown(string $date): string {
+    if (empty($date) || $date === '0000-00-00' || $date === '0000-00-00') {
+        return 'Дата не вказана';
+    }
+    return DateFormat($date);
+}
+
+
+function CardsK(
+    int $idx = 0,
+    string $title = '',
+    string $town = '',
+    string $district = '',
+    string $adress = '',
+    string $scheme = ''
+): string {
+
+    $dblink = DbConnect();
+
+//район
+    if (!empty($district) && ctype_digit((string)$district)) {
+        $res = mysqli_query($dblink, "SELECT title FROM district WHERE idx=".(int)$district." LIMIT 1");
+        if ($res && $row = mysqli_fetch_assoc($res)) {
+            $district = $row['title'];
+        }
+    }
+
+
+    //нас пункт
+    if (!empty($town) && ctype_digit((string)$town)) {
+        $res = mysqli_query($dblink, "SELECT title FROM misto WHERE idx=".(int)$town." LIMIT 1");
+        if ($res && $row = mysqli_fetch_assoc($res)) {
+            $town = $row['title'];
+        }
+    }
+
+    if (!is_file($_SERVER['DOCUMENT_ROOT'].$scheme) || empty($scheme)) {
+        $scheme = '/cemeteries/noscheme.png';
+    }
+
+    $out  = '<div class="cardk">';
+
+    // фото
+    $out .= '  <div class="cardk-img">';
+    $out .= '      <img src="'.$scheme.'" class="cardk-image" alt="'.htmlspecialchars($title).'" data-tooltip="'.htmlspecialchars($title).'">';
+    $out .= '  </div>';
+
+    // блок с данными
+    $out .= '  <div class="cardk-data">';
+
+    // Заголовок
+    $out .= '      <div class="cardk-title font-bold">'.$title.'</div>';
+
+
+    if ($town !== '') {
+        $out .= '      <div class="cardk-town"><b>Місто:</b> '.$town.'</div>';
+    }
+
+    // Район
+    if ($district !== '') {
+        $out .= '      <div class="cardk-district"><b>Район:</b> '.$district.'</div>';
+    }
+
+    // Адрес
+    if ($adress !== '') {
+        $out .= '      <div class="cardk-adress"><b>Адреса:</b> '.$adress.'</div>';
+    }
+
+
+    $out .= '  </div>'; // .cardk-data
+    $out .= '  <div class="cardk-footer">';
+    $out .= '      <a href="/cemetery.php?idx='.$idx.'" class="cardk-link">Деталі</a>';
+    $out .= '  </div>';
+    $out .= '</div>';   // .cardk
+
+    return $out;
+}
+
+
+
+class Paginatex
+{
+    public static function Showx(int $current, int $total, int $perpage): string
+    {
+        $countPages = ceil($total / $perpage);
+        if ($countPages <= 1) return '';
+
+        $prevIcon = '
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
+    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <path d="M15 18l-6-6 6-6"/>
+</svg>';
+
+        $nextIcon = '
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
+    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <path d="M9 18l6-6-6-6"/>
+</svg>';
+
+        $firstIcon = '
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
+    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <path d="M11 19l-7-7 7-7M18 5v14"/>
+</svg>';
+
+        $lastIcon = '
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
+    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <path d="M13 5l7 7-7 7M6 19V5"/>
+</svg>';
+
+
+        $html = '<ul>';
+
+        // для текущего путя.
+        $baseUrl = strtok($_SERVER["REQUEST_URI"], '?');
+
+        $query = $_GET;
+        unset($query['page']);
+        $zapr = http_build_query($query);
+        $zapr = $zapr ? "&$zapr" : "";
+
+        // В начало
+        if ($current > 1) {
+            $html .= '<li><a href="' . $baseUrl . '?page=1' . $zapr . '">' . $firstIcon . '</a></li>';
+        } else {
+            $html .= '<li><span class="disabled">' . $firstIcon . '</span></li>';
+        }
+
+        // Назад
+        if ($current > 1) {
+            $html .= '<li><a href="' . $baseUrl . '?page=' . ($current - 1) . $zapr . '">' . $prevIcon . '</a></li>';
+        } else {
+            $html .= '<li><span class="disabled">' . $prevIcon . '</span></li>';
+        }
+
+        // Номера страниц
+        $start = max(1, $current);
+        $end = min($start + 2, $countPages);
+        if ($end - $start < 2 && $start > 1) {
+            $start = max(1, $end - 2);
+        }
+
+        for ($i = $start; $i <= $end; $i++) {
+            if ($i == $current) {
+                $html .= '<li><span class="current">' . $i . '</span></li>';
+            } else {
+                $html .= '<li><a href="' . $baseUrl . '?page=' . $i . $zapr . '">' . $i . '</a></li>';
+            }
+        }
+
+        // Вперед
+        if ($current < $countPages) {
+            $html .= '<li><a href="' . $baseUrl . '?page=' . ($current + 1) . $zapr . '">' . $nextIcon . '</a></li>';
+        } else {
+            $html .= '<li><span class="disabled">' . $nextIcon . '</span></li>';
+        }
+
+        // В конец
+        if ($current < $countPages) {
+            $html .= '<li><a href="' . $baseUrl . '?page=' . $countPages . $zapr . '">' . $lastIcon . '</a></li>';
+        } else {
+            $html .= '<li><span class="disabled">' . $lastIcon . '</span></li>';
+        }
+
+        $html .= '</ul>';
+        return $html;
+    }
+}
+
+function CemeterySelect($districtId = 0, $selectedId = null) {
+    $out = '<option value="">Виберіть кладовище</option>';
+
+    if ($districtId > 0) {
+        $dblink = DbConnect();
+        $districtId = intval($districtId);
+
+        $sql = "SELECT idx, title FROM cemetery WHERE district = $districtId ORDER BY title ASC";
+        $res = mysqli_query($dblink, $sql);
+
+        if ($res) {
+            while ($row = mysqli_fetch_assoc($res)) {
+                $sel = ($selectedId && $selectedId == $row['idx']) ? ' selected' : '';
+                $out .= '<option value="' . $row['idx'] . '"' . $sel . '>' . htmlspecialchars($row['title']) . '</option>';
+            }
+        }
+    }
+
+    return $out;
+}
+
+function gravecompress($sourcePath, $targetPath, $maxSizeKB = 300, $maxWidth = 1920, $maxHeight = 1080, $quality = 85) {
+    $info = getimagesize($sourcePath);
+    if (!$info) return false;
+
+    $mime = $info['mime'];
+    switch ($mime) {
+        case 'image/jpeg': $image = imagecreatefromjpeg($sourcePath); break;
+        case 'image/png': $image = imagecreatefrompng($sourcePath); break;
+        case 'image/gif': $image = imagecreatefromgif($sourcePath); break;
+        default: return false;
+    }
+
+    $origWidth = imagesx($image);
+    $origHeight = imagesy($image);
+
+    $ratio = min($maxWidth / $origWidth, $maxHeight / $origHeight, 1);
+    $newWidth = intval($origWidth * $ratio);
+    $newHeight = intval($origHeight * $ratio);
+
+    if ($ratio < 1) {
+        $resized = imagecreatetruecolor($newWidth, $newHeight);
+
+        if ($mime == 'image/png') {
+            imagealphablending($resized, false);
+            imagesavealpha($resized, true);
+            $transparent = imagecolorallocatealpha($resized, 255, 255, 255, 127);
+            imagefilledrectangle($resized, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+
+        if ($mime == 'image/gif') {
+            $transparent_index = imagecolortransparent($image);
+            if ($transparent_index >= 0) {
+                $transparent_color = imagecolorsforindex($image, $transparent_index);
+                $transparent_index_new = imagecolorallocate($resized, $transparent_color['red'], $transparent_color['green'], $transparent_color['blue']);
+                imagefill($resized, 0, 0, $transparent_index_new);
+                imagecolortransparent($resized, $transparent_index_new);
+            }
+        }
+
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $origWidth, $origHeight);
+        imagedestroy($image);
+        $image = $resized;
+    }
+
+    if ($mime == 'image/jpeg') {
+        imagejpeg($image, $targetPath, $quality);
+    } elseif ($mime == 'image/png') {
+        $pngQuality = 9 - round($quality / 10);
+        imagepng($image, $targetPath, $pngQuality);
+    } elseif ($mime == 'image/gif') {
+        imagegif($image, $targetPath);
+    }
+
+    $filesizeKB = filesize($targetPath) / 1024;
+    if ($filesizeKB > $maxSizeKB && ($mime == 'image/jpeg' || $mime == 'image/png')) {
+
+        $currentQuality = $quality;
+        while ($filesizeKB > $maxSizeKB && $currentQuality > 30) {
+            $currentQuality -= 5;
+            if ($mime == 'image/jpeg') imagejpeg($image, $targetPath, $currentQuality);
+            if ($mime == 'image/png') {
+                $pngQuality = 9 - round($currentQuality / 10);
+                imagepng($image, $targetPath, $pngQuality);
+            }
+            $filesizeKB = filesize($targetPath) / 1024;
+        }
+    }
+
+    imagedestroy($image);
+    return true;
+}
+
+function kladbcompress($sourcePath, $targetPath, $maxSizeKB = 300, $maxWidth = 1920, $maxHeight = 1080, $quality = 85) {
+    $info = getimagesize($sourcePath);
+    if (!$info) return false;
+
+    $mime = $info['mime'];
+    switch ($mime) {
+        case 'image/jpeg': $image = imagecreatefromjpeg($sourcePath); break;
+        case 'image/png': $image = imagecreatefrompng($sourcePath); break;
+        case 'image/gif': $image = imagecreatefromgif($sourcePath); break;
+        default: return false;
+    }
+
+    copy($sourcePath, $targetPath);
+
+    $filesizeKB = filesize($targetPath) / 1024;
+
+    if ($filesizeKB <= $maxSizeKB) {
+        imagedestroy($image);
+        return true;
+    }
+
+    $currentQuality = $quality;
+    while ($filesizeKB > $maxSizeKB && $currentQuality > 30) {
+        $currentQuality -= 5;
+        if ($mime == 'image/jpeg') {
+            imagejpeg($image, $targetPath, $currentQuality);
+        } elseif ($mime == 'image/png') {
+            $pngQuality = 9 - round($currentQuality / 10);
+            imagepng($image, $targetPath, $pngQuality);
+        }
+        $filesizeKB = filesize($targetPath) / 1024;
+    }
+
+    imagedestroy($image);
+    return true;
+}
+
+function Captcha(): string
+{
+    $a = rand(1, 9);
+    $b = rand(1, 9);
+    $operators = ['+', '-'];
+    $op = $operators[array_rand($operators)];
+
+    $question = "$a $op $b";
+    $answer = ($op === '+') ? ($a + $b) : ($a - $b);
+
+    $_SESSION['captcha_answer'] = $answer;
+
+    return '
+    <div class="captcha-block">
+        <form method="post" action="">
+            <label>Введіть відповідь: ' . htmlspecialchars($question) . ' = ?</label><br>
+            <input type="number" name="captcha_user_answer" required>
+            <button type="submit" name="check_captcha">Перевірити</button>
+        </form>
+    </div>';
+}
+
+function compressCard($sourcePath, $targetPath, $maxSizeKB = 300, $maxWidth = 1920, $maxHeight = 1080) {
+    $info = getimagesize($sourcePath);
+    if (!$info) return false;
+
+    $mime = $info['mime'];
+    switch ($mime) {
+        case 'image/jpeg':
+            $image = imagecreatefromjpeg($sourcePath);
+            if (function_exists('exif_read_data')) {
+                $exif = @exif_read_data($sourcePath);
+                if (!empty($exif['Orientation'])) {
+                    switch ($exif['Orientation']) {
+                        case 3: $image = imagerotate($image, 180, 0); break;
+                        case 6: $image = imagerotate($image, -90, 0); break;
+                        case 8: $image = imagerotate($image, 90, 0); break;
+                    }
+                }
+            }
+            break;
+        case 'image/png':
+            $image = imagecreatefrompng($sourcePath);
+            break;
+        default:
+            return false;
+    }
+
+    $origWidth = imagesx($image);
+    $origHeight = imagesy($image);
+
+    if ($origWidth > $maxWidth || $origHeight > $maxHeight) {
+        $ratio = min($maxWidth / $origWidth, $maxHeight / $origHeight);
+        $newWidth = intval($origWidth * $ratio);
+        $newHeight = intval($origHeight * $ratio);
+    } else {
+        $newWidth = $origWidth;
+        $newHeight = $origHeight;
+    }
+
+    if ($newWidth != $origWidth || $newHeight != $origHeight) {
+        $resized = imagecreatetruecolor($newWidth, $newHeight);
+
+        if ($mime === 'image/png') {
+            imagealphablending($resized, false);
+            imagesavealpha($resized, true);
+            $transparent = imagecolorallocatealpha($resized, 255, 255, 255, 127);
+            imagefilledrectangle($resized, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $origWidth, $origHeight);
+        imagedestroy($image);
+        $image = $resized;
+    }
+
+    if ($mime === 'image/jpeg') {
+        $quality = 90;
+        imagejpeg($image, $targetPath, $quality);
+        clearstatcache(true, $targetPath);
+        $filesizeKB = filesize($targetPath) / 1024;
+
+        while ($filesizeKB > $maxSizeKB && $quality > 40) {
+            $quality -= 5;
+            imagejpeg($image, $targetPath, $quality);
+            clearstatcache(true, $targetPath);
+            $filesizeKB = filesize($targetPath) / 1024;
+        }
+    }
+
+    elseif ($mime === 'image/png') {
+        $compression = 6;
+        imagepng($image, $targetPath, $compression);
+        clearstatcache(true, $targetPath);
+        $filesizeKB = filesize($targetPath) / 1024;
+
+        while ($filesizeKB > $maxSizeKB && $compression < 9) {
+            $compression++;
+            imagepng($image, $targetPath, $compression);
+            clearstatcache(true, $targetPath);
+            $filesizeKB = filesize($targetPath) / 1024;
+        }
+    }
+
+    imagedestroy($image);
+    return true;
+}
