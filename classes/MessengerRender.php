@@ -16,14 +16,25 @@ class MessengerRender {
         if ($isMobile) {
             $out .= '<div class="mobile-chat-container">';
 
-            // Список чатов
-            $out .= '<div class="mobile-chat-list'.(!$chat_id ? ' active' : '').'">';
+            // Список чатов — изначально активен на мобильном
+            $out .= '<div class="mobile-chat-list active">';
             $out .= $this->renderChatList($user_id, $userChats, $chat_id, $type);
             $out .= '</div>';
 
             // Окно чата
-            $out .= '<div class="mobile-chat-window'.($chat_id ? ' active' : '').'">';
+            $out .= '<div class="mobile-chat-window">';
             $out .= $this->renderChatWindow($user_id, $currentChat, $messages, $chat_id, $type);
+            $out .= '</div>';
+
+            // Панель информации о чате
+            $out .= '<div class="mobile-chat-info">';
+            $out .= '<div class="mobile-chat-info-header">';
+            $out .= '<button type="button" class="mobile-info-back-btn" aria-label="Назад до чату">';
+            $out .= '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
+            $out .= '</button>';
+            $out .= '<span class="mobile-chat-info-title">Інформація про чат</span>';
+            $out .= '</div>';
+            $out .= '<div class="mobile-chat-info-content">' . $this->renderChatInfo($user_id, $currentChat) . '</div>';
             $out .= '</div>';
 
             $out .= '</div>';
@@ -36,6 +47,16 @@ class MessengerRender {
             $out .= $this->renderChatInfo($user_id, $currentChat);
             $out .= '</div>';
         }
+
+        $out .= '<div id="chatImageLightbox" class="chat-lightbox" aria-hidden="true" role="dialog" aria-label="Перегляд зображення">
+            <div class="chat-lightbox-backdrop"></div>
+            <button type="button" class="chat-lightbox-close" aria-label="Закрити">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <div class="chat-lightbox-content">
+                <img src="" alt="" class="chat-lightbox-img">
+            </div>
+        </div>';
 
         $out .= $this->renderScripts($user_id, $chat_id);
         return $out;
@@ -129,31 +150,45 @@ class MessengerRender {
     }
 
 
-    public function renderChatWindow($user_id, $currentChat, $messages, $chat_id, $type) {
+    public function renderChatWindow($user_id, $currentChat, $messages, $chat_id, $type)
+    {
         $out = '<div class="chat-window">';
+
         if (!$currentChat) {
-            return $out.'<div class="chat-empty"><p>Виберіть чат, щоб почати переписку</p></div></div>';
+            return $out . '<div class="chat-empty"><p>Виберіть чат, щоб почати переписку</p></div></div>';
         }
 
-        $otherUser = ($currentChat['user_one'] == $user_id) ? $currentChat['user_two'] : $currentChat['user_one'];
-        $res = mysqli_query($this->dblink, "SELECT fname, lname, avatar FROM users WHERE idx=".(int)$otherUser);
+        $otherUser = ($currentChat['user_one'] == $user_id)
+            ? $currentChat['user_two']
+            : $currentChat['user_one'];
+
+        $res = mysqli_query($this->dblink, "SELECT fname, lname, avatar FROM users WHERE idx=" . (int)$otherUser);
         $u = $res ? mysqli_fetch_assoc($res) : null;
-        $name = $u ? htmlspecialchars($u['fname'].' '.$u['lname']) : 'Користувач';
+
+        $name = $u ? htmlspecialchars($u['fname'] . ' ' . $u['lname']) : 'Користувач';
         $avatar = (!empty($u['avatar'])) ? $u['avatar'] : '/avatars/ava.png';
 
-        // Шапка
+        // Шапка: кнопка назад (мобильный), аватар, имя, кнопка инфо
         $out .= '
-    <div class="chat-header">
-        <div class="chat-header-left" style="display:flex; align-items:center; gap:10px;">
-            <img src="'.htmlspecialchars($avatar).'" alt="Аватар" class="chat-header-avatar" style="width:40px;height:40px;border-radius:50%;">
-            <span>'.$name.'</span>
+        <div class="chat-header">
+            <div class="chat-header-left" style="display:flex; align-items:center; gap:10px;">
+                <button type="button" class="chat-back-btn mobile-only" aria-label="Назад до списку чатів" title="Назад">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </button>
+                <img src="' . htmlspecialchars($avatar) . '" alt="Аватар" class="chat-header-avatar" style="width:40px;height:40px;border-radius:50%;">
+                <span>' . $name . '</span>
+            </div>
+            <div class="chat-header-right">
+                <button type="button" class="info-toggle-btn mobile-only" aria-label="Інформація про чат" title="Інформація" data-tooltip="Інформація">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                </button>
+            </div>
         </div>
-        <div class="chat-header-right"></div>
-    </div>
     ';
 
         // Сообщения
-        $out .= '<div class="chat-messages" id="chatMessages" data-chat-id="'.(int)$chat_id.'">';
+        $out .= '<div class="chat-messages" id="chatMessages" data-chat-id="' . (int)$chat_id . '">';
+
         $lastDate = null;
         $today = date('Y-m-d');
         $yesterday = date('Y-m-d', strtotime('-1 day'));
@@ -161,37 +196,67 @@ class MessengerRender {
         foreach ($messages as $msg) {
             $time = date('H:i', strtotime($msg['idtadd']));
             $date = date('Y-m-d', strtotime($msg['idtadd']));
-            $dateLabel = ($date == $today) ? 'Сьогодні' : (($date == $yesterday) ? 'Вчора' : date('d.m.Y', strtotime($msg['idtadd'])));
+            $dateLabel = ($date == $today)
+                ? 'Сьогодні'
+                : (($date == $yesterday)
+                    ? 'Вчора'
+                    : date('d.m.Y', strtotime($msg['idtadd'])));
+
             if ($lastDate !== $date) {
-                $out .= '<div class="date-divider"><span>'.$dateLabel.'</span></div>';
+                $out .= '<div class="date-divider"><span>' . $dateLabel . '</span></div>';
                 $lastDate = $date;
             }
 
             // Класс для сообщения
-            $isJoin = ((int)$msg['sender_idx'] === -1 && $msg['message'] === "Спеціаліст приєднався до чату");
-            $cls = $isJoin ? 'system join' : (((int)$msg['sender_idx'] === (int)$user_id) ? 'me' : 'other');
+            $isJoin = (
+                (int)$msg['sender_idx'] === -1 &&
+                (
+                    $msg['message'] === "Спеціаліст приєднався до чату" ||
+                    $msg['message'] === "Спеціаліст завершив чат"
+                )
+            );
 
+            $cls = $isJoin
+                ? 'system join'
+                : (((int)$msg['sender_idx'] === (int)$user_id) ? 'me' : 'other');
+
+            $msgText = trim($msg['message'] ?? '');
+            $msgTextHtml = $msgText !== '' ? '<div class="msg-text">' . nl2br(htmlspecialchars($msgText)) . '</div>' : '';
+            $msgImg = '';
+            if (!empty($msg['img'])) {
+                $imgSrc = htmlspecialchars($msg['img']);
+                $msgImg = '<div class="msg-img-wrap"><a href="' . $imgSrc . '" class="msg-img-link" data-full-img="' . $imgSrc . '"><img src="' . $imgSrc . '" alt="" class="msg-img"></a></div>';
+            }
             $out .= '
-        <div class="message '.$cls.'" data-idx="'.(int)$msg['idx'].'">
-            <div class="msg-text">'.nl2br(htmlspecialchars($msg['message'])).'</div>
-            <div class="msg-time">'.$time.'</div>
-        </div>';
+            <div class="message ' . $cls . '" data-idx="' . (int)$msg['idx'] . '">
+                ' . $msgImg . '
+                ' . $msgTextHtml . '
+                <div class="msg-time">' . $time . '</div>
+            </div>
+        ';
         }
+
         $out .= '</div>';
 
         if ((int)$currentChat['user_two'] === -1 && $type === 3 && $user_id === -1) {
             $hasJoin = false;
+
             foreach ($messages as $msg) {
-                if ((int)$msg['sender_idx'] === -1 && $msg['message'] === "Спеціаліст приєднався до чату") {
+                if (
+                    (int)$msg['sender_idx'] === -1 &&
+                    $msg['message'] === "Спеціаліст приєднався до чату"
+                ) {
                     $hasJoin = true;
                     break;
                 }
             }
 
             if (!$hasJoin) {
-                $out .= '<div class="chat-join-container">
-                <button id="joinChatBtn" class="join-chat-btn">Приєднатися до чату</button>
-            </div>';
+                $out .= '
+                <div class="chat-join-container">
+                    <button id="joinChatBtn" class="join-chat-btn">Приєднатися до чату</button>
+                </div>
+            ';
             } else {
                 $out .= $this->renderInputField($chat_id);
             }
@@ -199,18 +264,24 @@ class MessengerRender {
             $out .= $this->renderInputField($chat_id);
         }
 
-        return $out.'</div>';
+        return $out . '</div>';
     }
+
 
     private function renderInputField($chat_id) {
         return '
-    <form class="chat-input" id="chatForm" method="post">
+    <form class="chat-input" id="chatForm" method="post" enctype="multipart/form-data">
         <input type="hidden" name="chat_idx" value="'.(int)$chat_id.'">
         <div class="input-top">
             <div id="charCounter">0/2000</div>
+            <div class="chat-image-preview" id="chatImagePreview" aria-hidden="true"></div>
         </div>
         <div class="input-area">
-            <textarea name="message" id="chatMessage" placeholder="Повідомлення..." required></textarea>
+            <label class="chat-attach-img" for="chatImgInput" title="Додати зображення">
+                <input type="file" name="img" id="chatImgInput" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </label>
+            <textarea name="message" id="chatMessage" placeholder="Повідомлення..." rows="1"></textarea>
             <button type="submit" id="sendBtn" disabled>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                      fill="currentColor" viewBox="0 0 16 16">
@@ -224,7 +295,7 @@ class MessengerRender {
 
 
 
-    private function renderChatInfo($user_id, $currentChat) {
+    public function renderChatInfo($user_id, $currentChat) {
         $out = '<div class="chat-info">';
 
         if (!$currentChat) return $out.'<p>Виберіть чат</p></div>';
@@ -266,9 +337,9 @@ class MessengerRender {
                 // Нижние кнопки для поддержки
                 $out .= '</div>
                     <div class="chat-info-bottom">
-                        <button class="btn btn-danger full-width">Завершити чат</button>
+                        <button class="btn btn-danger full-width btn-end-chat">Завершити чат</button>
                         <button class="btn btn-danger full-width">Заблокувати</button>
-                        <button class="btn btn-danger full-width">Видалити чат</button>
+                        <button class="btn btn-danger full-width" id="deleteChatBtn">Видалити чат</button>
                     </div>';
             }
 
@@ -308,6 +379,37 @@ class MessengerRender {
                 const urlParams = new URLSearchParams(window.location.search);
                 let chatId = chatContainer ? parseInt(chatContainer.dataset.chatId || 0) : (urlParams.get("chat") ? parseInt(urlParams.get("chat")) : 0);
 
+                // Лайтбокс для зображень у чаті
+                const lightbox = document.getElementById("chatImageLightbox");
+                if (lightbox) {
+                    const lightboxImg = lightbox.querySelector(".chat-lightbox-img");
+                    const openLightbox = function(src) {
+                        if (lightboxImg && src) {
+                            lightboxImg.src = src;
+                            lightbox.classList.add("open");
+                            lightbox.setAttribute("aria-hidden", "false");
+                            document.body.style.overflow = "hidden";
+                        }
+                    };
+                    const closeLightbox = function() {
+                        lightbox.classList.remove("open");
+                        lightbox.setAttribute("aria-hidden", "true");
+                        document.body.style.overflow = "";
+                        if (lightboxImg) lightboxImg.removeAttribute("src");
+                    };
+                    document.body.addEventListener("click", function(e) {
+                        const link = e.target.closest(".msg-img-link");
+                        if (link) {
+                            e.preventDefault();
+                            openLightbox(link.dataset.fullImg || link.getAttribute("href") || "");
+                        }
+                    });
+                    lightbox.querySelector(".chat-lightbox-backdrop").addEventListener("click", closeLightbox);
+                    lightbox.querySelector(".chat-lightbox-close").addEventListener("click", closeLightbox);
+                    document.addEventListener("keydown", function(e) {
+                        if (e.key === "Escape" && lightbox.classList.contains("open")) closeLightbox();
+                    });
+                }
 
                 // ===
                 const joinBtn = document.getElementById("joinChatBtn");
@@ -341,29 +443,88 @@ class MessengerRender {
 
                 function appendMessage(msg) {
                     if (!chatContainer) return;
-                    if (chatContainer.querySelector(`.message[data-idx="${msg.idx}"]`)) return;
 
-                    const isJoinSystem = msg.message.includes("приєднався до чату");
+                    if (chatContainer.querySelector(`.message[data-idx="${String(msg.idx)}"]`)) return;
+
+                    const isJoinSystem = msg.sender_idx === -1 && (
+                        msg.message.includes("приєднався до чату") ||
+                        msg.message.includes("завершив чат")
+                    );
+
                     const cls = isJoinSystem
                         ? "system join"
-                        : ((parseInt(msg.sender_idx) === userId) ? "me" : "other");
+                        : ((parseInt(msg.sender_idx) === userId && userId !== -1) ? "me" : "other");
 
                     const div = document.createElement("div");
                     div.className = "message " + cls;
-                    div.dataset.idx = msg.idx;
+                    div.dataset.idx = String(msg.idx);
 
                     if (isJoinSystem) {
                         div.innerHTML = `<div class="msg-text">${escapeHTML(msg.message)}</div>`;
                     } else {
-                        const time = msg.idtadd ? new Date(msg.idtadd).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
-                        div.innerHTML = `<div class="msg-text">${escapeHTML(msg.message)}</div>` + (time ? `<div class="msg-time">${time}</div>` : '');
+                        const time = msg.idtadd
+                            ? new Date(msg.idtadd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : '';
+                        const imgPart = (msg.img) ? `<div class="msg-img-wrap"><a href="${escapeHTML(msg.img)}" class="msg-img-link" data-full-img="${escapeHTML(msg.img)}"><img src="${escapeHTML(msg.img)}" alt="" class="msg-img"></a></div>` : '';
+                        const textPart = (msg.message && String(msg.message).trim()) ? `<div class="msg-text">${escapeHTML(msg.message)}</div>` : '';
+                        div.innerHTML =
+                            imgPart +
+                            textPart +
+                            (time ? `<div class="msg-time">${time}</div>` : '');
                     }
 
                     chatContainer.appendChild(div);
                     chatContainer.scrollTop = chatContainer.scrollHeight;
 
                     updateChatListWithMessage(chatId, msg);
+
+                    if (msg.sender_idx === -1 && msg.message.includes("завершив чат")) {
+                        const inputForm = document.getElementById("chatForm");
+                        if (inputForm) inputForm.remove();
+
+                        const joinHTML = `
+            <div class="chat-join-container">
+                <button id="joinChatBtn" class="join-chat-btn">Приєднатися до чату</button>
+            </div>`;
+                        chatContainer.insertAdjacentHTML('afterend', joinHTML);
+
+                        const joinBtn = document.getElementById("joinChatBtn");
+                        if (joinBtn) {
+                            joinBtn.addEventListener("click", async function() {
+                                if (!chatId) return;
+                                try {
+                                    const formData = new FormData();
+                                    formData.append("chat_idx", chatId);
+                                    formData.append("message", "Спеціаліст приєднався до чату");
+
+                                    const res = await fetch("messenger.php?action=send_message", {
+                                        method: "POST",
+                                        body: formData
+                                    });
+                                    const data = await res.json();
+
+                                    if (data.status === "ok") {
+                                        joinBtn.parentElement.remove();
+
+                                        const inputHTML = `<?php echo addslashes($this->renderInputField($chat_id)); ?>`;
+                                        const chatWrapper = document.querySelector(".chat-window");
+                                        chatWrapper.insertAdjacentHTML('beforeend', inputHTML);
+
+                                        const newForm = document.getElementById("chatForm");
+                                        if (newForm) bindFormHandlers(newForm);
+
+                                        if (Array.isArray(data.messages)) {
+                                            data.messages.forEach(m => appendMessage(m));
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                            });
+                        }
+                    }
                 }
+
 
                 // ====
 
@@ -380,7 +541,6 @@ class MessengerRender {
                 const mobileWindowWrap = document.querySelector(".mobile-chat-window");
                 const mobileInfoWrap = document.querySelector(".mobile-chat-info");
 
-                // Функция обновления записи в списке чатов
                 function updateChatListWithMessage(chatIdParam, msg) {
                     try {
                         const id = String(chatIdParam || 0);
@@ -391,7 +551,6 @@ class MessengerRender {
                         const item = chatList.querySelector(`.chat-item[data-chat-id="${id}"]`);
                         if (!item) return;
 
-                        // Обновляем текст последнего сообщения
                         const textEl = item.querySelector('.chat-item-lastmsg .message-text');
                         let text = (msg && msg.message) ? String(msg.message) : '';
                         text = text.replace(/\s+/g, ' ').trim();
@@ -449,11 +608,21 @@ class MessengerRender {
 
 
 
+                function updateBodyScrollLock() {
+                    if (window.innerWidth <= 600 && (mobileWindowWrap?.classList.contains("active") || mobileInfoWrap?.classList.contains("active"))) {
+                        document.body.classList.add("messenger-chat-noscroll");
+                        document.documentElement.classList.add("messenger-chat-noscroll");
+                    } else {
+                        document.body.classList.remove("messenger-chat-noscroll");
+                        document.documentElement.classList.remove("messenger-chat-noscroll");
+                    }
+                }
                 function showChatList() {
                     if (window.innerWidth <= 600) {
                         mobileListWrap?.classList.add("active");
                         mobileWindowWrap?.classList.remove("active");
                         mobileInfoWrap?.classList.remove("active");
+                        updateBodyScrollLock();
                     } else {
                         chatList?.classList.add("active");
                         chatWindow?.classList.remove("active");
@@ -465,6 +634,7 @@ class MessengerRender {
                         mobileListWrap?.classList.remove("active");
                         mobileWindowWrap?.classList.add("active");
                         mobileInfoWrap?.classList.remove("active");
+                        updateBodyScrollLock();
                     } else {
                         chatList?.classList.remove("active");
                         chatWindow?.classList.add("active");
@@ -476,6 +646,7 @@ class MessengerRender {
                         mobileListWrap?.classList.remove("active");
                         mobileWindowWrap?.classList.remove("active");
                         mobileInfoWrap?.classList.add("active");
+                        updateBodyScrollLock();
                     } else {
                         chatList?.classList.remove("active");
                         chatWindow?.classList.remove("active");
@@ -524,26 +695,33 @@ class MessengerRender {
                 async function fetchNewMessages() {
                     if (fetching || !chatId || !chatContainer) return;
                     fetching = true;
+
                     try {
                         const res = await fetch(`messenger.php?action=get_new_messages&chat=${chatId}&last_msg_id=${lastMsgId}`);
                         if (!res.ok) throw new Error("Network error");
+
                         const data = await res.json();
 
                         if (data.status === "ok" && Array.isArray(data.messages) && data.messages.length > 0) {
                             const oldBottom = isNearBottom(chatContainer, 50);
 
                             data.messages.forEach(msg => {
-                                const msgId = parseInt(msg.idx) || 0;
+                                const msgId = msg.idx;
 
+                                if (msgId === window.__lastSystemMsg) return;
                                 if (chatContainer.querySelector(`.message[data-idx="${msgId}"]`)) {
-                                    lastMsgId = Math.max(lastMsgId, msgId);
+                                    if (!isNaN(msgId)) lastMsgId = Math.max(lastMsgId, msgId);
                                     return;
                                 }
 
-                                const isJoinSystem = msg.message.includes("приєднався до чату");
+                                const isJoinSystem = msg.sender_idx === -1 && (
+                                    msg.message.includes("приєднався до чату") ||
+                                    msg.message.includes("завершив чат")
+                                );
+
                                 const cls = isJoinSystem
                                     ? "system join"
-                                    : ((parseInt(msg.sender_idx) === userId) ? "me" : "other");
+                                    : ((parseInt(msg.sender_idx) === userId && userId !== -1) ? "me" : "other");
 
                                 const div = document.createElement("div");
                                 div.className = "message " + cls;
@@ -552,14 +730,19 @@ class MessengerRender {
                                 if (isJoinSystem) {
                                     div.innerHTML = `<div class="msg-text">${escapeHTML(msg.message)}</div>`;
                                 } else {
-                                    const time = new Date(msg.idtadd).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-                                    div.innerHTML = `<div class="msg-text">${escapeHTML(msg.message)}</div><div class="msg-time">${time}</div>`;
+                                    const time = msg.idtadd
+                                        ? new Date(msg.idtadd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                        : '';
+                                    const imgPart = (msg.img) ? `<div class="msg-img-wrap"><a href="${escapeHTML(msg.img)}" class="msg-img-link" data-full-img="${escapeHTML(msg.img)}"><img src="${escapeHTML(msg.img)}" alt="" class="msg-img"></a></div>` : '';
+                                    const textPart = (msg.message && String(msg.message).trim()) ? `<div class="msg-text">${escapeHTML(msg.message)}</div>` : '';
+                                    div.innerHTML =
+                                        imgPart +
+                                        textPart +
+                                        (time ? `<div class="msg-time">${time}</div>` : '');
                                 }
 
                                 chatContainer.appendChild(div);
-                                lastMsgId = Math.max(lastMsgId, msgId);
-
-                                // Обновляем строку чата в списке
+                                if (!isNaN(msgId)) lastMsgId = Math.max(lastMsgId, msgId);
                                 updateChatListWithMessage(chatId, msg);
                             });
 
@@ -568,6 +751,7 @@ class MessengerRender {
                     } catch (e) {
                         console.error("Fetch error:", e);
                     }
+
                     fetching = false;
                 }
 
@@ -579,13 +763,20 @@ class MessengerRender {
                     const textarea = formEl.querySelector("textarea");
                     const sendBtn = formEl.querySelector("button[type='submit']");
                     const counter = document.getElementById("charCounter");
+                    const fileInput = formEl.querySelector('input[type="file"][name="img"]');
+                    const previewBox = document.getElementById("chatImagePreview");
                     const maxLen = 2000;
                     const minHeight = 41;
                     const maxHeight = 150;
 
+                    function hasImage() {
+                        return fileInput && fileInput.files && fileInput.files.length > 0;
+                    }
+
                     function updateButtonState() {
-                        const len = textarea.value.length;
-                        if (sendBtn) sendBtn.disabled = (len === 0 || len > maxLen);
+                        const len = (textarea && textarea.value) ? textarea.value.length : 0;
+                        const canSend = (len > 0 && len <= maxLen) || hasImage();
+                        if (sendBtn) sendBtn.disabled = !canSend;
                         if (counter) {
                             counter.textContent = `${len}/${maxLen}`;
                             counter.style.color = len > maxLen ? "red" : "";
@@ -611,14 +802,50 @@ class MessengerRender {
 
                     textarea.addEventListener("input", () => { autoResize(); updateButtonState(); });
 
+                    if (fileInput) {
+                        fileInput.addEventListener("change", () => {
+                            if (previewBox) {
+                                previewBox.innerHTML = "";
+                                previewBox.removeAttribute("aria-hidden");
+                                if (fileInput.files && fileInput.files[0]) {
+                                    const fr = new FileReader();
+                                    fr.onload = () => {
+                                        const img = document.createElement("img");
+                                        img.src = fr.result;
+                                        img.alt = "";
+                                        img.className = "chat-image-preview-img";
+                                        const removeBtn = document.createElement("button");
+                                        removeBtn.type = "button";
+                                        removeBtn.className = "chat-image-preview-remove";
+                                        removeBtn.innerHTML = "×";
+                                        removeBtn.title = "Прибрати зображення";
+                                        removeBtn.addEventListener("click", () => {
+                                            fileInput.value = "";
+                                            previewBox.innerHTML = "";
+                                            previewBox.setAttribute("aria-hidden", "true");
+                                            updateButtonState();
+                                        });
+                                        previewBox.appendChild(img);
+                                        previewBox.appendChild(removeBtn);
+                                    };
+                                    fr.readAsDataURL(fileInput.files[0]);
+                                } else {
+                                    previewBox.setAttribute("aria-hidden", "true");
+                                }
+                            }
+                            updateButtonState();
+                        });
+                    }
+
                     textarea.style.height = minHeight + "px";
                     updateButtonState();
 
                     formEl.addEventListener("submit", async e => {
                         e.preventDefault();
                         if (formEl._sending) return;
-                        const message = textarea.value.trim();
-                        if (!message || message.length > maxLen) return;
+                        const message = (textarea.value || "").trim();
+                        if (!message && !hasImage()) return;
+                        if (message.length > maxLen) return;
 
                         formEl._sending = true;
                         if (sendBtn) sendBtn.disabled = true;
@@ -636,17 +863,23 @@ class MessengerRender {
                                     }
                                     const cls = (parseInt(msg.sender_idx) === userId) ? 'me' : 'other';
                                     const time = new Date(msg.idtadd).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+                                    const imgPart = (msg.img) ? `<div class="msg-img-wrap"><a href="${escapeHTML(msg.img)}" class="msg-img-link" data-full-img="${escapeHTML(msg.img)}"><img src="${escapeHTML(msg.img)}" alt="" class="msg-img"></a></div>` : '';
+                                    const textPart = (msg.message && String(msg.message).trim()) ? `<div class="msg-text">${escapeHTML(msg.message)}</div>` : '';
                                     const div = document.createElement('div');
                                     div.className = 'message ' + cls;
                                     div.dataset.idx = msgId;
-                                    div.innerHTML = `<div class="msg-text">${escapeHTML(msg.message)}</div><div class="msg-time">${time}</div>`;
+                                    div.innerHTML = imgPart + textPart + `<div class="msg-time">${time}</div>`;
                                     chatContainer.appendChild(div);
                                     lastMsgId = Math.max(lastMsgId, msgId);
 
-                                    // Обновляем строку чата в списке после отправки сообщения
                                     updateChatListWithMessage(chatId, msg);
                                 });
                                 textarea.value = "";
+                                if (fileInput) fileInput.value = "";
+                                if (previewBox) {
+                                    previewBox.innerHTML = "";
+                                    previewBox.setAttribute("aria-hidden", "true");
+                                }
                                 autoResize();
                                 updateButtonState();
                                 if (chatContainer && !isNearBottom(chatContainer, 50)) {
@@ -671,6 +904,17 @@ class MessengerRender {
                     if (html !== undefined && html !== null) {
                         if (window.innerWidth <= 600 && mobileWindowWrap) {
                             mobileWindowWrap.innerHTML = html;
+                            const type = new URLSearchParams(window.location.search).get("type") || 1;
+                            fetch(`messenger.php?action=get_chat_info&type=${type}&chat=${chatId}`)
+                                .then(r => r.text())
+                                .then(infoHtml => {
+                                    const content = mobileInfoWrap?.querySelector(".mobile-chat-info-content");
+                                    if (content) {
+                                        content.innerHTML = infoHtml;
+                                        bindChatInfoButtons();
+                                    }
+                                })
+                                .catch(() => {});
                         } else {
                             const desktopWrapper = document.querySelector(".chat-window");
                             if (desktopWrapper) desktopWrapper.innerHTML = html;
@@ -726,7 +970,10 @@ class MessengerRender {
                             userIsScrolling = !isNearBottom(chatContainer, 50);
                             saveScrollPosition();
                             clearTimeout(scrollTimer);
-                            scrollTimer = setTimeout(() => { userIsScrolling = false; }, 3000);
+                            scrollTimer = setTimeout(() => {
+                                userIsScrolling = false;
+                            }, 3000);
+
                             if (document.activeElement !== (chatForm ? chatForm.querySelector("textarea") : null)) {
                                 const sb = document.querySelector(".scroll-down-btn");
                                 if (sb) sb.style.display = isNearBottom(chatContainer, 50) ? "none" : "block";
@@ -735,9 +982,146 @@ class MessengerRender {
                     }
 
                     if (chatForm) bindFormHandlers(chatForm);
+
                     if (pollingTimer) clearInterval(pollingTimer);
                     pollingTimer = setInterval(fetchNewMessages, pollingInterval);
+
+                    bindChatInfoButtons();
+
                 }
+                function bindChatInfoButtons() {
+                    const deleteBtn = document.getElementById("deleteChatBtn");
+                    if (deleteBtn && !deleteBtn._hasClick) {
+                        deleteBtn._hasClick = true;
+
+                        const modal = document.getElementById("deleteChatModal");
+                        const modalTitle = modal.querySelector(".modal-header h3");
+                        const modalBody = modal.querySelector(".modal-body");
+                        const modalFooter = modal.querySelector(".modal-footer");
+                        const confirmBtn = document.getElementById("confirmDeleteBtn");
+                        const cancelBtn = document.getElementById("cancelDeleteBtn");
+
+                        const showModal = (title, body, showButtons = true) => {
+                            modalTitle.textContent = title;
+                            modalBody.textContent = body;
+                            if (showButtons) {
+                                modalFooter.classList.remove("hidden");
+                            } else {
+                                modalFooter.classList.add("hidden");
+                            }
+                            modal.classList.add("show");
+                        };
+
+                        const hideModal = () => {
+                            modal.classList.remove("show");
+                            setTimeout(() => {
+                                modalTitle.textContent = "Підтвердження видалення";
+                                modalBody.textContent = "Ви впевнені, що хочете видалити цей чат?";
+                                modalFooter.classList.remove("hidden");
+                            }, 250);
+                        };
+
+                        deleteBtn.addEventListener("click", () => {
+                            if (!chatId) return;
+                            showModal("Підтвердження видалення", "Ви впевнені, що хочете видалити цей чат?");
+                        });
+
+                        cancelBtn.addEventListener("click", hideModal);
+                        modal.querySelector(".modal-backdrop").addEventListener("click", hideModal);
+
+                        confirmBtn.addEventListener("click", async () => {
+                            modalBody.textContent = "Видалення...";
+                            modalFooter.classList.add("hidden");
+                            try {
+                                const res = await fetch("messenger.php", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                                    body: new URLSearchParams({ action: "delete_chat", chat_id: chatId })
+                                });
+
+                                const text = await res.text();
+                                let data;
+                                try {
+                                    data = JSON.parse(text);
+                                } catch (e) {
+                                    console.error("Invalid JSON from server:", text);
+                                    showModal("Помилка", "Помилка сервера: неправильний формат відповіді", false);
+                                    setTimeout(hideModal, 1500);
+                                    return;
+                                }
+
+                                if (data.status === "ok") {
+                                    showModal("Успіх", "Чат успішно видалено!", false);
+                                    const item = document.querySelector(`.chat-item[data-chat-id="${chatId}"]`);
+                                    if (item) {
+                                        item.style.transition = "opacity 0.3s";
+                                        item.style.opacity = "0";
+                                        setTimeout(() => item.remove(), 300);
+                                    }
+
+                                    const messengerContainer = document.querySelector(".messenger-container");
+                                    if (messengerContainer) messengerContainer.classList.add("no-chat-selected");
+
+                                    const chatWindow = document.querySelector(".chat-window");
+                                    if (chatWindow)
+                                        chatWindow.innerHTML = "<div class='chat-empty'>Виберіть чат, щоб почати переписку</div>";
+
+                                    const userInfo = document.querySelector(".chat-info");
+                                    if (userInfo) userInfo.innerHTML = "";
+
+                                    chatId = 0;
+                                    stopPolling();
+                                    showChatList();
+                                    setTimeout(hideModal, 1500);
+                                } else {
+                                    console.error("Server error:", data.sql_error || data.msg);
+                                    showModal("Помилка", "Помилка при видаленні чату", false);
+                                    setTimeout(hideModal, 1500);
+                                }
+                            } catch (err) {
+                                console.error("Delete error:", err);
+                                showModal("Помилка", "Помилка зв’язку з сервером", false);
+                                setTimeout(hideModal, 1500);
+                            }
+                        });
+                    }
+
+                    const endBtn = document.querySelector(".chat-info-bottom .btn-end-chat");
+                    if (endBtn && !endBtn._hasClick) {
+                        endBtn._hasClick = true;
+
+                        endBtn.addEventListener("click", async () => {
+                            if (!chatId) return;
+                            const msgIdx = "sys-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
+
+                            try {
+                                const res = await fetch("messenger.php", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                                    body: new URLSearchParams({
+                                        action: "end_chat",
+                                        chat_id: chatId,
+                                        msg_idx: msgIdx
+                                    })
+                                });
+
+                                const data = await res.json();
+
+                                if (data.status === "ok") {
+                                    window.__lastSystemMsg = msgIdx;
+                                } else if (data.status === "no_join_message") {
+                                    alert("Неможливо завершити чат — спеціаліст ще не приєднався.");
+                                } else {
+                                    alert("Помилка при завершенні чату");
+                                }
+                            } catch (e) {
+                                console.error(e);
+                                alert("Помилка зв’язку з сервером");
+                            }
+                        });
+                    }
+                }
+
 
                 function attachChatItemHandlers() {
                     document.querySelectorAll(".chat-item").forEach(item => {
@@ -766,6 +1150,8 @@ class MessengerRender {
                                 const res = await fetch(`messenger.php?action=get_chat_html&type=${type}&chat=${id}`);
                                 const html = await res.text();
                                 initChatFor(id, html);
+                                attachBackButton();
+                                attachInfoButton();
                             } catch (err) {
                                 console.error("Ошибка загрузки чата:", err);
                             }
@@ -773,8 +1159,30 @@ class MessengerRender {
                     });
                 }
 
+                function attachBackButton() {
+                    const backBtn = document.querySelector(".chat-back-btn");
+                    if (backBtn && !backBtn._hasClick) {
+                        backBtn._hasClick = true;
+                        backBtn.addEventListener("click", () => {
+                            if (window.innerWidth <= 600) {
+                                const urlParams = new URLSearchParams(window.location.search);
+                                const type = urlParams.get("type") || "1";
+                                history.pushState(null, "", "messenger.php?type=" + type);
+                                showChatList();
+                            }
+                        });
+                    }
+                    const infoBackBtn = document.querySelector(".mobile-info-back-btn");
+                    if (infoBackBtn && !infoBackBtn._hasClick) {
+                        infoBackBtn._hasClick = true;
+                        infoBackBtn.addEventListener("click", () => {
+                            if (window.innerWidth <= 600) showChatWindow();
+                        });
+                    }
+                }
+
                 function attachInfoButton() {
-                    const infoButton = document.querySelector(".chat-header-right button");
+                    const infoButton = document.querySelector(".chat-header-right .info-toggle-btn");
                     if (infoButton && !infoButton._hasClick) {
                         infoButton._hasClick = true;
                         infoButton.addEventListener("click", () => {
@@ -784,7 +1192,8 @@ class MessengerRender {
                 }
 
                 if (window.innerWidth <= 600) {
-                    chatId ? showChatWindow() : showChatList();
+                    showChatList(); // на мобильном изначально всегда список чатов
+                    updateBodyScrollLock();
                 } else {
                     chatList?.classList.add("active");
                     chatWindow?.classList.add("active");
@@ -792,6 +1201,7 @@ class MessengerRender {
                 }
 
                 attachChatItemHandlers();
+                attachBackButton();
                 attachInfoButton();
 
                 if (chatId) {
@@ -803,6 +1213,7 @@ class MessengerRender {
                                 const res = await fetch(`messenger.php?action=get_chat_html&chat=${chatId}`);
                                 const html = await res.text();
                                 initChatFor(chatId, html);
+                                attachBackButton();
                                 attachInfoButton();
                             } catch (err) {
                                 console.error("Ошибка загрузки начального чата:", err);
@@ -824,17 +1235,20 @@ class MessengerRender {
                         chatList?.classList.add("active");
                         chatWindow?.classList.add("active");
                         chatInfo?.classList.add("active");
+                        updateBodyScrollLock();
                     } else {
                         const urlParams2 = new URLSearchParams(window.location.search);
                         const currentChatId = urlParams2.get("chat");
                         currentChatId ? showChatWindow() : showChatList();
                     }
                     attachChatItemHandlers();
+                    attachBackButton();
                     attachInfoButton();
                 });
 
                 setTimeout(() => {
                     attachChatItemHandlers();
+                    attachBackButton();
                     attachInfoButton();
                     chatForm = document.getElementById("chatForm");
                     if (chatForm) bindFormHandlers(chatForm);

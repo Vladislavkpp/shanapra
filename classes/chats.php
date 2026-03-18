@@ -25,6 +25,7 @@ class Chats
                     'chat_idx' => (int)$r['chat_idx'],
                     'sender_idx' => (int)$r['sender_idx'],
                     'message' => $r['message'],
+                    'img' => isset($r['img']) ? $r['img'] : '',
                     'idtadd' => $r['idtadd'],
                 ];
             }
@@ -62,6 +63,7 @@ class Chats
                     'chat_idx' => (int)$r['chat_idx'],
                     'sender_idx' => (int)$r['sender_idx'],
                     'message' => $r['message'],
+                    'img' => isset($r['img']) ? $r['img'] : '',
                     'idtadd' => $r['idtadd'],
                 ];
             }
@@ -258,14 +260,27 @@ class Chats
 
     /**
      * Добавить сообщение в чат
+     * @param int $chat_idx
+     * @param int $sender_idx
+     * @param string $message
+     * @param string|null $email
+     * @param string|null $img путь к изображению в сообщении
      */
-    public function addMessage($chat_idx, $sender_idx, $message, $email = null)
+    public function addMessage($chat_idx, $sender_idx, $message, $email = null, $img = null)
     {
         $chat_idx = (int)$chat_idx;
         $sender_idx = (int)$sender_idx;
         $message = mysqli_real_escape_string($this->dblink, $message);
         $email = $email ? mysqli_real_escape_string($this->dblink, $email) : '';
+        $img = ($img !== null && $img !== '') ? mysqli_real_escape_string($this->dblink, $img) : '';
 
+        if ($img !== '') {
+            return mysqli_query(
+                $this->dblink,
+                "INSERT INTO chatsmsg (chat_idx, sender_idx, message, img, idtadd)
+                 VALUES ($chat_idx, $sender_idx, '$message', '$img', NOW())"
+            );
+        }
         return mysqli_query(
             $this->dblink,
             "INSERT INTO chatsmsg (chat_idx, sender_idx, message, idtadd)

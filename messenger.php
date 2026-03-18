@@ -16,11 +16,13 @@ function sendJson($data) {
     exit;
 }
 
-$isAjax = isset($_GET['action']) || ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['chat_idx']));
+$isAjax = isset($_GET['action'])
+    || ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['chat_idx']))
+    || ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']));
 $type = isset($_GET['type']) ? (int)$_GET['type'] : 0;
 
 if (!$isAjax && !isset($_GET['type'])) {
-    header("Location: /messenger.php?type=1");
+    header('Location: ' . PublicUrl('/messenger.php?type=1'));
     exit;
 }
 
@@ -46,8 +48,70 @@ $chats = new Chats($dblink);
 $renderer = new MessengerRender($dblink);
 
 if ($user_id === null && $type !== 3 && !$isAjax) {
-    header("Location: /auth.php");
+    header('Location: ' . PublicUrl('/auth.php'));
     exit;
+}
+
+if (($_POST['action'] ?? '') === 'delete_chat') {
+    $chat_id = (int)($_POST['chat_id'] ?? 0);
+    $resp = ['status' => 'error'];
+
+    if ($chat_id > 0) {
+        $res1 = mysqli_query($dblink, "DELETE FROM chatsmsg WHERE chat_idx = $chat_id");
+        if (!$res1) $resp['sql_error'] = mysqli_error($dblink);
+
+        $res2 = mysqli_query($dblink, "DELETE FROM chats WHERE idx = $chat_id");
+        if (!$res2) $resp['sql_error'] = mysqli_error($dblink);
+
+        if ($res1 && $res2) $resp['status'] = 'ok';
+    }
+
+    sendJson($resp);
+}
+
+if (($_POST['action'] ?? '') === 'end_chat') {
+    $chat_id = (int)($_POST['chat_id'] ?? 0);
+    $resp = ['status' => 'error'];
+
+    if ($chat_id > 0) {
+        $resCheck = mysqli_query($dblink, "
+            SELECT idx FROM chatsmsg 
+            WHERE chat_idx = $chat_id 
+              AND message LIKE '%приєднався до чату%'
+            LIMIT 1
+        ");
+
+        if ($resCheck && mysqli_num_rows($resCheck) > 0) {
+            $msg_idx = mysqli_real_escape_string($dblink, $_POST['msg_idx'] ?? "sys-" . time() . "-" . rand(0,999));
+            $msg_text = "Спеціаліст завершив чат";
+
+            $resExist = mysqli_query($dblink, "
+                SELECT idx FROM chatsmsg 
+                WHERE chat_idx = $chat_id 
+                  AND idx = '$msg_idx'
+                LIMIT 1
+            ");
+
+            if (!$resExist || mysqli_num_rows($resExist) === 0) {
+                $ok = $chats->addMessage($chat_id, -1, $msg_text, $msg_idx);
+            } else {
+                $ok = true;
+            }
+
+            if ($ok) {
+                $resp = [
+                    'status' => 'ok',
+                    'msg_idx' => $msg_idx,
+                    'message' => $msg_text,
+                    'sender_idx' => -1
+                ];
+            }
+        } else {
+            $resp['status'] = 'no_join_message';
+        }
+    }
+
+    sendJson($resp);
 }
 
 if (isset($_GET['action'])) {
@@ -56,7 +120,15 @@ if (isset($_GET['action'])) {
     if ($_GET['action'] === 'get_chat_html' && isset($_GET['chat'])) {
         $chatId = (int)$_GET['chat'];
         $messages = $chats->getMessages($chatId);
-        echo $renderer->renderChatWindow($currentUser, $chats->getChatById($chatId), $messages, $chatId, $type);
+        echo NormalizePublicMarkup($renderer->renderChatWindow($currentUser, $chats->getChatById($chatId), $messages, $chatId, $type));
+        exit;
+    }
+
+    // Получение информации о чате (для мобильной панели)
+    if ($_GET['action'] === 'get_chat_info' && isset($_GET['chat'])) {
+        $chatId = (int)$_GET['chat'];
+        $chat = $chats->getChatById($chatId);
+        echo NormalizePublicMarkup($renderer->renderChatInfo($currentUser, $chat));
         exit;
     }
 
@@ -72,8 +144,39 @@ if (isset($_GET['action'])) {
     if ($_GET['action'] === 'send_message' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $chat_idx = (int)($_POST['chat_idx'] ?? 0);
         $message = trim($_POST['message'] ?? '');
+        $imgPath = '';
 
-        if ($message === '') sendJson(['status' => 'error', 'msg' => 'Порожнє повідомлення']);
+        // Загрузка изображения в сообщение
+        if (!empty($_FILES['img']['name']) && $_FILES['img']['error'] === UPLOAD_ERR_OK) {
+            $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            $maxSize = 5 * 1024 * 1024; // 5 MB
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $_FILES['img']['tmp_name']);
+            finfo_close($finfo);
+
+            if (!in_array($mime, $allowed)) {
+                sendJson(['status' => 'error', 'msg' => 'Дозволені формати: JPG, PNG, GIF, WebP']);
+            }
+            if ($_FILES['img']['size'] > $maxSize) {
+                sendJson(['status' => 'error', 'msg' => 'Розмір файлу не більше 5 МБ']);
+            }
+
+            $ext = strtolower(pathinfo($_FILES['img']['name'], PATHINFO_EXTENSION));
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) $ext = 'jpg';
+            $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/chat_images/';
+            if (!is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0755, true);
+            }
+            $filename = $chat_idx . '_' . time() . '_' . mt_rand(1000, 9999) . '.' . $ext;
+            $fullPath = $uploadDir . $filename;
+            if (move_uploaded_file($_FILES['img']['tmp_name'], $fullPath)) {
+                $imgPath = '/chat_images/' . $filename;
+            }
+        }
+
+        if ($message === '' && $imgPath === '') {
+            sendJson(['status' => 'error', 'msg' => 'Порожнє повідомлення']);
+        }
 
         // Проверка каптчи
         if ($type === 3 && $user_id === null) {
@@ -83,7 +186,7 @@ if (isset($_GET['action'])) {
         }
 
         $senderId = $currentUser;
-        $success = $chats->addMessage($chat_idx, $senderId, $message);
+        $success = $chats->addMessage($chat_idx, $senderId, $message, null, $imgPath !== '' ? $imgPath : null);
 
         // Автоответ от поддержки
         $currentChatData = $chats->getChatById($chat_idx);
@@ -108,6 +211,7 @@ if (isset($_GET['action'])) {
     }
 
 }
+
 
 
 
@@ -185,9 +289,30 @@ if ($type === 3) {
     $messages = $chat_id ? $chats->getMessages($chat_id) : [];
 }
 
+
+
 View_Add(Page_Up($pageTitle));
 View_Add(Menu_Up());
 View_Add('<div class="outmsg">');
 View_Add($renderer->renderContainer($currentUser, $userChats, $currentChat, $messages, $chat_id, $type));
 View_Add('</div>');
+View_Add('
+<div id="deleteChatModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Підтвердження видалення</h3>
+        </div>
+        <div class="modal-body">
+            Ви впевнені, що хочете видалити цей чат?
+        </div>
+        <div class="modal-footer">
+        <button id="confirmDeleteBtn" class="btn-confirm">Видалити</button>
+            <button id="cancelDeleteBtn" class="btn-cancel">Скасувати</button>
+          
+        </div>
+    </div>
+</div>
+');
+
 View_Out();

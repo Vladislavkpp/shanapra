@@ -7,4 +7,23 @@ php_value memory_limit 512M
 php_value max_execution_time 300
 php_value max_input_time 300
 
-Errordocument 404 /404.php
+RewriteCond %{REQUEST_METHOD} =GET
+RewriteCond %{HTTP:Accept} text/html [NC]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{THE_REQUEST} \s/+index(?:\.php)?(?:[\s?]|$) [NC]
+RewriteRule ^index(?:\.php)?$ / [R=301,L,NE]
+
+RewriteCond %{REQUEST_METHOD} =GET
+RewriteCond %{HTTP:Accept} text/html [NC]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{THE_REQUEST} \s/+(.+?)\.php(?:[\s?]|$) [NC]
+RewriteRule ^(.+?)\.php$ /$1 [R=301,L,NE]
+
+RewriteRule ^cardouttest/editgraveform/?$ cardouttest.php?view=edit [L,QSA]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+?)/?$ $1.php [L,QSA]
+
+ErrorDocument 404 /404.php

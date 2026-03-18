@@ -43,7 +43,7 @@
   <priority>0.64</priority>
 </url>
 <url>
-  <loc>http://shanapra.com/stregs.php</loc>
+  <loc>http://shanapra.com/auth.php?mode=register</loc>
   <lastmod>2025-08-12T11:12:09+00:00</lastmod>
   <priority>0.64</priority>
 </url>

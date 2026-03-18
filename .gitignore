@@ -4,3 +4,22 @@
 /vendor
 .env
 oauth.php
+
+# Local IDE and machine-specific files
+/.idea/
+/.ftpquota
+/error_log
+/local_history.patch
+
+# Temporary office files
+/docs/~$*
+
+# Runtime uploads and generated media
+/chat_images/
+/fotouploads/
+/avatars/[0-9]*/
+/cemeteries/[0-9]*/
+/graves/[0-9]*/
+
+# Backups and local admin bundles
+/ziip/
