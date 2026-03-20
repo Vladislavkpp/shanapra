@@ -2779,113 +2779,174 @@ function CemeterySelect($districtId = 0, $selectedId = null) {
     return $out;
 }
 
-function gravecompress($sourcePath, $targetPath, $maxSizeKB = 300, $maxWidth = 1920, $maxHeight = 1080, $quality = 85) {
-    $info = getimagesize($sourcePath);
-    if (!$info) return false;
-
-    $mime = $info['mime'];
+function uploadImageCreateResource(string $sourcePath, string $mime)
+{
     switch ($mime) {
-        case 'image/jpeg': $image = imagecreatefromjpeg($sourcePath); break;
-        case 'image/png': $image = imagecreatefrompng($sourcePath); break;
-        case 'image/gif': $image = imagecreatefromgif($sourcePath); break;
-        default: return false;
+        case 'image/jpeg':
+            return imagecreatefromjpeg($sourcePath);
+        case 'image/png':
+            return imagecreatefrompng($sourcePath);
+        case 'image/gif':
+            return imagecreatefromgif($sourcePath);
+        default:
+            return false;
     }
-
-    $origWidth = imagesx($image);
-    $origHeight = imagesy($image);
-
-    $ratio = min($maxWidth / $origWidth, $maxHeight / $origHeight, 1);
-    $newWidth = intval($origWidth * $ratio);
-    $newHeight = intval($origHeight * $ratio);
-
-    if ($ratio < 1) {
-        $resized = imagecreatetruecolor($newWidth, $newHeight);
-
-        if ($mime == 'image/png') {
-            imagealphablending($resized, false);
-            imagesavealpha($resized, true);
-            $transparent = imagecolorallocatealpha($resized, 255, 255, 255, 127);
-            imagefilledrectangle($resized, 0, 0, $newWidth, $newHeight, $transparent);
-        }
-
-        if ($mime == 'image/gif') {
-            $transparent_index = imagecolortransparent($image);
-            if ($transparent_index >= 0) {
-                $transparent_color = imagecolorsforindex($image, $transparent_index);
-                $transparent_index_new = imagecolorallocate($resized, $transparent_color['red'], $transparent_color['green'], $transparent_color['blue']);
-                imagefill($resized, 0, 0, $transparent_index_new);
-                imagecolortransparent($resized, $transparent_index_new);
-            }
-        }
-
-        imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $origWidth, $origHeight);
-        imagedestroy($image);
-        $image = $resized;
-    }
-
-    if ($mime == 'image/jpeg') {
-        imagejpeg($image, $targetPath, $quality);
-    } elseif ($mime == 'image/png') {
-        $pngQuality = 9 - round($quality / 10);
-        imagepng($image, $targetPath, $pngQuality);
-    } elseif ($mime == 'image/gif') {
-        imagegif($image, $targetPath);
-    }
-
-    $filesizeKB = filesize($targetPath) / 1024;
-    if ($filesizeKB > $maxSizeKB && ($mime == 'image/jpeg' || $mime == 'image/png')) {
-
-        $currentQuality = $quality;
-        while ($filesizeKB > $maxSizeKB && $currentQuality > 30) {
-            $currentQuality -= 5;
-            if ($mime == 'image/jpeg') imagejpeg($image, $targetPath, $currentQuality);
-            if ($mime == 'image/png') {
-                $pngQuality = 9 - round($currentQuality / 10);
-                imagepng($image, $targetPath, $pngQuality);
-            }
-            $filesizeKB = filesize($targetPath) / 1024;
-        }
-    }
-
-    imagedestroy($image);
-    return true;
 }
 
-function kladbcompress($sourcePath, $targetPath, $maxSizeKB = 300, $maxWidth = 1920, $maxHeight = 1080, $quality = 85) {
-    $info = getimagesize($sourcePath);
-    if (!$info) return false;
+function uploadImageResizeResource($image, int $targetWidth, int $targetHeight, string $mime)
+{
+    $sourceWidth = imagesx($image);
+    $sourceHeight = imagesy($image);
 
-    $mime = $info['mime'];
-    switch ($mime) {
-        case 'image/jpeg': $image = imagecreatefromjpeg($sourcePath); break;
-        case 'image/png': $image = imagecreatefrompng($sourcePath); break;
-        case 'image/gif': $image = imagecreatefromgif($sourcePath); break;
-        default: return false;
+    if ($sourceWidth === $targetWidth && $sourceHeight === $targetHeight) {
+        return $image;
     }
 
-    copy($sourcePath, $targetPath);
+    $resized = imagecreatetruecolor($targetWidth, $targetHeight);
 
-    $filesizeKB = filesize($targetPath) / 1024;
-
-    if ($filesizeKB <= $maxSizeKB) {
-        imagedestroy($image);
-        return true;
-    }
-
-    $currentQuality = $quality;
-    while ($filesizeKB > $maxSizeKB && $currentQuality > 30) {
-        $currentQuality -= 5;
-        if ($mime == 'image/jpeg') {
-            imagejpeg($image, $targetPath, $currentQuality);
-        } elseif ($mime == 'image/png') {
-            $pngQuality = 9 - round($currentQuality / 10);
-            imagepng($image, $targetPath, $pngQuality);
+    if ($mime === 'image/png') {
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
+        $transparent = imagecolorallocatealpha($resized, 255, 255, 255, 127);
+        imagefilledrectangle($resized, 0, 0, $targetWidth, $targetHeight, $transparent);
+    } elseif ($mime === 'image/gif') {
+        $transparentIndex = imagecolortransparent($image);
+        if ($transparentIndex >= 0) {
+            $transparentColor = imagecolorsforindex($image, $transparentIndex);
+            $transparentIndexNew = imagecolorallocate($resized, $transparentColor['red'], $transparentColor['green'], $transparentColor['blue']);
+            imagefill($resized, 0, 0, $transparentIndexNew);
+            imagecolortransparent($resized, $transparentIndexNew);
         }
-        $filesizeKB = filesize($targetPath) / 1024;
     }
 
-    imagedestroy($image);
-    return true;
+    imagecopyresampled($resized, $image, 0, 0, 0, 0, $targetWidth, $targetHeight, $sourceWidth, $sourceHeight);
+
+    return $resized;
+}
+
+function uploadImageWriteResource($image, string $targetPath, string $mime, int $quality): bool
+{
+    if ($mime === 'image/jpeg') {
+        return imagejpeg($image, $targetPath, max(30, min(95, $quality)));
+    }
+
+    if ($mime === 'image/png') {
+        return imagepng($image, $targetPath, 9);
+    }
+
+    if ($mime === 'image/gif') {
+        return imagegif($image, $targetPath);
+    }
+
+    return false;
+}
+
+function uploadImageCompressSmart($sourcePath, $targetPath, $maxSizeKB = 2048, $maxWidth = 1600, $maxHeight = 1600, $quality = 90): bool
+{
+    $info = getimagesize($sourcePath);
+    if (!$info || empty($info['mime'])) {
+        return false;
+    }
+
+    $mime = (string)$info['mime'];
+    $allowedMimes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!in_array($mime, $allowedMimes, true)) {
+        return false;
+    }
+
+    $sourceSize = @filesize($sourcePath);
+    $origWidth = isset($info[0]) ? (int)$info[0] : 0;
+    $origHeight = isset($info[1]) ? (int)$info[1] : 0;
+
+    if ($sourceSize !== false
+        && $sourceSize <= ($maxSizeKB * 1024)
+        && $origWidth > 0
+        && $origHeight > 0
+        && $origWidth <= $maxWidth
+        && $origHeight <= $maxHeight
+    ) {
+        return copy($sourcePath, $targetPath);
+    }
+
+    $image = uploadImageCreateResource($sourcePath, $mime);
+    if (!$image) {
+        return false;
+    }
+
+    $currentWidth = imagesx($image);
+    $currentHeight = imagesy($image);
+    if ($currentWidth <= 0 || $currentHeight <= 0) {
+        imagedestroy($image);
+        return false;
+    }
+
+    $ratio = min($maxWidth / $currentWidth, $maxHeight / $currentHeight, 1);
+    $targetWidth = max(1, (int)round($currentWidth * $ratio));
+    $targetHeight = max(1, (int)round($currentHeight * $ratio));
+    $needsResize = $targetWidth !== $currentWidth || $targetHeight !== $currentHeight;
+
+    $workingImage = uploadImageResizeResource($image, $targetWidth, $targetHeight, $mime);
+    if ($workingImage !== $image) {
+        imagedestroy($image);
+    }
+
+    $maxSizeBytes = $maxSizeKB * 1024;
+    $currentQuality = max(82, min(92, (int)$quality));
+    $minQuality = 82;
+    $resizeFactor = 0.9;
+    $minSide = 1000;
+    $writeOk = false;
+
+    while (true) {
+        $writeOk = uploadImageWriteResource($workingImage, $targetPath, $mime, $currentQuality);
+        if (!$writeOk || !file_exists($targetPath)) {
+            break;
+        }
+
+        clearstatcache(true, $targetPath);
+        $currentSize = @filesize($targetPath);
+        if ($currentSize !== false && $currentSize <= $maxSizeBytes) {
+            break;
+        }
+
+        if ($mime === 'image/jpeg' && $currentQuality > $minQuality) {
+            $currentQuality -= 2;
+            continue;
+        }
+
+        $nextWidth = max(1, (int)floor(imagesx($workingImage) * $resizeFactor));
+        $nextHeight = max(1, (int)floor(imagesy($workingImage) * $resizeFactor));
+        if (max($nextWidth, $nextHeight) < $minSide) {
+            break;
+        }
+
+        $resized = uploadImageResizeResource($workingImage, $nextWidth, $nextHeight, $mime);
+        if ($resized === $workingImage) {
+            break;
+        }
+
+        imagedestroy($workingImage);
+        $workingImage = $resized;
+    }
+
+    if ($writeOk && !$needsResize && $sourceSize !== false) {
+        clearstatcache(true, $targetPath);
+        $resultSize = @filesize($targetPath);
+        if ($resultSize !== false && $resultSize > $sourceSize) {
+            $writeOk = copy($sourcePath, $targetPath);
+        }
+    }
+
+    imagedestroy($workingImage);
+    return $writeOk;
+}
+
+function gravecompress($sourcePath, $targetPath, $maxSizeKB = 2048, $maxWidth = 1600, $maxHeight = 1600, $quality = 90) {
+    return uploadImageCompressSmart($sourcePath, $targetPath, $maxSizeKB, $maxWidth, $maxHeight, $quality);
+}
+
+function kladbcompress($sourcePath, $targetPath, $maxSizeKB = 2048, $maxWidth = 1600, $maxHeight = 1600, $quality = 90) {
+    return uploadImageCompressSmart($sourcePath, $targetPath, $maxSizeKB, $maxWidth, $maxHeight, $quality);
 }
 
 function Captcha(): string

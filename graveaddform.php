@@ -156,7 +156,7 @@ if (
 
                     $safeName = $field . '.' . $ext;
                     $targetPath = $uploadDir . '/' . $safeName;
-                    $ok = gravecompress($_FILES[$field]['tmp_name'], $targetPath, 75, 300);
+                    $ok = gravecompress($_FILES[$field]['tmp_name'], $targetPath);
 
                     if ($ok && file_exists($targetPath)) {
                         $uploaded[$field] = '/graves/' . $newId . '/' . $safeName;
@@ -442,7 +442,7 @@ if (!$isAuthorized) {
                                         <select id="agf-cemetery" name="idxkladb" data-selected="<?= $safeCemetery ?>" required>
                                             <?= graveAddCemeteryOptions($formData['district'], $formData['idxkladb']) ?>
                                         </select>
-                                        <a href="/addcemetery.php" class="acm-add-settlement-btn agf-add-link" data-tooltip="Додати кладовище" aria-label="Додати кладовище">
+                                        <a href="/searchcem/addcemetery" class="acm-add-settlement-btn agf-add-link" data-tooltip="Додати кладовище" aria-label="Додати кладовище">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                                                 <path d="M12 5l0 14"></path>

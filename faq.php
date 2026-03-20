@@ -10,14 +10,16 @@ function faqpage() {
 
     $out .= '<div class="faq-page">';
     $out .= '<div class="faq-container">';
+    $out .= '<section class="faq-hero">';
     $out .= '<h1 class="faq-title">Запитання й відповіді</h1>';
+    $out .= '</section>';
 
     $faqLinks = [
         'login'         => ['url' => '/auth.php', 'text' => '"Увійти"'],
         'register'      => ['url' => '/auth.php?mode=register', 'text' => '"Ще не зареєстровані? Зареєструватися"'],
         'support'       => ['url' => '/messenger.php?type=3', 'text' => '"Підтримка"'],
         'profile'       => ['url' => '/profile.php', 'text' => 'Профілю'],
-        'settings'      => ['url' => '/profile.php?md=2', 'text' => '"Налаштування профілю"'],
+        'settings'      => ['url' => '/profile.php?md=1803', 'text' => '"Налаштування профілю"'],
         'cleaners'      => ['url' => '/clean-cemeteries.php', 'text' => '"Прибирання кладовищ"'],
         'password_reset'=> ['url' => '/strepair.php', 'text' => '"Забули пароль?"'],
         'cabinet'       => ['url' => '/profile.php?md=10', 'text' => '"Кабінет прибиральника"'],
@@ -60,7 +62,7 @@ function faqpage() {
         foreach ($faqs as $faq) {
             $out .= '<div class="faq-item">';
             $out .= '<div class="faq-question">'.htmlspecialchars($faq['question']).'</div>';
-            $out .= '<div class="faq-answer">' . $replaceLinks($faq['answer']) . '</div>';
+            $out .= '<div class="faq-answer"><div class="faq-answer__inner">' . $replaceLinks($faq['answer']) . '</div></div>';
             $out .= '</div>';
         }
         $out .= '</div>';
@@ -71,23 +73,37 @@ function faqpage() {
 
     $out .= <<<JS
 <script>
+function syncFaqAnswerHeight(item) {
+    var answer = item.querySelector('.faq-answer');
+    if (!answer) return;
+
+    if (item.classList.contains('active')) {
+        answer.style.maxHeight = (answer.scrollHeight + 8) + "px";
+    } else {
+        answer.style.maxHeight = null;
+    }
+}
+
 document.querySelectorAll('.faq-question').forEach(function(question){
     question.addEventListener('click', function(){
         var item = this.parentElement;
-        var answer = this.nextElementSibling;
 
         if(item.classList.contains('active')) {
-            answer.style.maxHeight = null;
             item.classList.remove('active');
+            syncFaqAnswerHeight(item);
         } else {
             document.querySelectorAll('.faq-item.active').forEach(function(activeItem){
                 activeItem.classList.remove('active');
-                activeItem.querySelector('.faq-answer').style.maxHeight = null;
+                syncFaqAnswerHeight(activeItem);
             });
             item.classList.add('active');
-            answer.style.maxHeight = answer.scrollHeight + "px";
+            syncFaqAnswerHeight(item);
         }
     });
+});
+
+window.addEventListener('resize', function () {
+    document.querySelectorAll('.faq-item.active').forEach(syncFaqAnswerHeight);
 });
 </script>
 JS;

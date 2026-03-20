@@ -193,6 +193,72 @@
     display: block;
 }
 
+.cemdet-media-image[data-gallery-image] {
+    cursor: pointer;
+}
+
+.cemdet-media-image[data-gallery-image]:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.35);
+    outline-offset: -3px;
+}
+
+.cemdet-media-zoom {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    width: 40px;
+    height: 40px;
+    padding: 0 11px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: rgba(15, 33, 56, 0.76);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    backdrop-filter: blur(10px);
+    pointer-events: none;
+    box-shadow: 0 10px 24px rgba(15, 33, 56, 0.2);
+    overflow: hidden;
+    white-space: nowrap;
+    transition: width 0.22s ease, padding 0.22s ease, background-color 0.22s ease;
+}
+
+.cemdet-media-zoom svg {
+    display: block;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+}
+
+.cemdet-media-zoom-text {
+    display: inline-block;
+    width: 0;
+    margin-left: 0;
+    overflow: hidden;
+    flex: 0 0 auto;
+    opacity: 0;
+    transition: width 0.22s ease, margin-left 0.22s ease, opacity 0.18s ease;
+}
+
+.cemdet-media:hover .cemdet-media-zoom,
+.cemdet-media:focus-within .cemdet-media-zoom {
+    width: 132px;
+    padding: 0 14px 0 11px;
+    background: rgba(15, 33, 56, 0.84);
+}
+
+.cemdet-media:hover .cemdet-media-zoom-text,
+.cemdet-media:focus-within .cemdet-media-zoom-text {
+    width: 70px;
+    margin-left: 8px;
+    opacity: 1;
+}
+
 .cemdet-media--empty .cemdet-media-note {
     position: absolute;
     left: 0;
@@ -207,6 +273,215 @@
     letter-spacing: 0.03em;
     text-align: center;
     text-transform: uppercase;
+}
+
+html.grvdet-modal-open,
+body.grvdet-modal-open {
+    overflow: hidden;
+}
+
+.grvdet-close-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    border: 1px solid rgba(214, 226, 239, 0.9);
+    background: rgba(255, 255, 255, 0.92);
+    color: #3b536c;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.grvdet-close-btn:hover {
+    background: #f3f7fb;
+    border-color: #c6d6e8;
+    transform: translateY(-1px);
+}
+
+.grvdet-photo-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+
+.grvdet-photo-modal.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.grvdet-photo-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(9, 18, 31, 0.82);
+    backdrop-filter: blur(8px);
+}
+
+.grvdet-photo-modal__dialog {
+    position: relative;
+    z-index: 1;
+    width: min(1120px, 100%);
+}
+
+.grvdet-photo-modal__layout {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 14px;
+    align-items: stretch;
+}
+
+.grvdet-photo-modal.is-single .grvdet-photo-modal__layout {
+    grid-template-columns: 1fr;
+}
+
+.grvdet-photo-modal.is-single .grvdet-photo-modal__thumbs {
+    display: none;
+}
+
+.grvdet-photo-modal__thumbs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 18px;
+    background: rgba(15, 23, 36, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    align-self: flex-start;
+    height: fit-content;
+    max-height: calc(100vh - 80px);
+    overflow: auto;
+}
+
+.grvdet-photo-modal__thumb {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: transform 0.15s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.grvdet-photo-modal__thumb img {
+    display: block;
+    width: 100%;
+    height: 78px;
+    object-fit: cover;
+}
+
+.grvdet-photo-modal__thumb:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+}
+
+.grvdet-photo-modal__thumb.is-active {
+    border-color: #8fb4e6;
+    opacity: 1;
+    box-shadow: 0 0 0 2px rgba(143, 180, 230, 0.45);
+}
+
+.grvdet-photo-modal__stage {
+    position: relative;
+    border-radius: 22px;
+    overflow: hidden;
+    background: #0b1220;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+}
+
+.grvdet-photo-modal__frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    background: #0b1220;
+    pointer-events: none;
+}
+
+.grvdet-photo-modal__frame::before {
+    content: "";
+    position: absolute;
+    inset: -12%;
+    background-image: var(--modal-photo);
+    background-size: cover;
+    background-position: center;
+    filter: blur(26px);
+    transform: scale(1.12);
+    opacity: 0.9;
+}
+
+.grvdet-photo-modal__frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 14, 22, 0.25);
+}
+
+.grvdet-photo-modal__image {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    max-height: calc(100vh - 84px);
+    object-fit: contain;
+    background: transparent;
+}
+
+.grvdet-photo-modal__nav {
+    position: absolute;
+    top: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    margin-top: -24px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #eef5ff;
+    cursor: pointer;
+    font-size: 22px;
+    transition: transform 0.15s ease, background 0.2s ease, opacity 0.2s ease;
+    backdrop-filter: blur(6px);
+    z-index: 3;
+}
+
+.grvdet-photo-modal__nav:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.grvdet-photo-modal__nav:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.grvdet-photo-modal__nav--prev {
+    left: 14px;
+}
+
+.grvdet-photo-modal__nav--next {
+    right: 14px;
+}
+
+.grvdet-photo-modal__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
 }
 
 .cemdet-main {
@@ -642,6 +917,11 @@
         grid-template-columns: 1fr;
     }
 
+    .cemdet-media-zoom {
+        left: 10px;
+        bottom: 10px;
+    }
+
     .cemdet-pager-btn--nav {
         min-width: 78px;
     }
@@ -726,5 +1006,72 @@
         width: 34px;
         height: 34px;
         border-radius: 10px;
+    }
+}
+
+@media (max-width: 900px) {
+    .grvdet-photo-modal__layout {
+        grid-template-columns: 1fr;
+    }
+
+    .grvdet-photo-modal__thumbs {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-height: none;
+    }
+
+    .grvdet-photo-modal__thumb img {
+        height: 64px;
+    }
+}
+
+@media (max-width: 640px) {
+    .grvdet-photo-modal {
+        padding: 12px;
+    }
+
+    .grvdet-photo-modal__dialog {
+        width: 100%;
+    }
+
+    .grvdet-photo-modal__layout {
+        gap: 10px;
+    }
+
+    .grvdet-photo-modal__thumbs {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        max-height: none;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 6px;
+    }
+
+    .grvdet-photo-modal__thumb img {
+        height: 56px;
+    }
+
+    .grvdet-photo-modal__stage {
+        border-radius: 18px;
+    }
+
+    .grvdet-photo-modal__image {
+        max-height: 68vh;
+    }
+
+    .grvdet-photo-modal__nav {
+        width: 38px;
+        height: 38px;
+        margin-top: -19px;
+    }
+
+    .grvdet-photo-modal__nav--prev {
+        left: 10px;
+    }
+
+    .grvdet-photo-modal__nav--next {
+        right: 10px;
     }
 }

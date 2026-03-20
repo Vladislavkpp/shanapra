@@ -19,7 +19,21 @@ RewriteCond %{REQUEST_FILENAME} -f
 RewriteCond %{THE_REQUEST} \s/+(.+?)\.php(?:[\s?]|$) [NC]
 RewriteRule ^(.+?)\.php$ /$1 [R=301,L,NE]
 
-RewriteRule ^cardouttest/editgraveform/?$ cardouttest.php?view=edit [L,QSA]
+RewriteRule ^kladbsearch/?$ /searchcem [R=301,L,NE,QSA]
+RewriteRule ^kladbupdate/?$ /cemetery/editcemform [R=301,L,NE,QSA]
+RewriteRule ^addcemetery/?$ /searchcem/addcemetery [R=301,L,NE,QSA]
+RewriteRule ^editcemform/?$ /cemetery/editcemform [R=301,L,NE,QSA]
+RewriteRule ^cardout/editgraveform/?$ cardout.php?view=edit [L,QSA]
+RewriteRule ^cemeteries/?$ /searchcem [R=301,L,NE,QSA]
+RewriteRule ^cemeteries/addcemetery/?$ /searchcem/addcemetery [R=301,L,NE,QSA]
+RewriteRule ^searchcem/?$ searchcem.php [L,QSA]
+RewriteRule ^searchcem/addcemetery/?$ searchcem.php?view=add [L,QSA]
+RewriteRule ^cemetery/editcemform/?$ cemetery.php?view=edit [L,QSA]
+RewriteRule ^accounting/?$ profile.php?md=12&tool=accounting [L,QSA]
+RewriteRule ^accounting/stats/?$ profile.php?md=12&tool=stats [L,QSA]
+RewriteRule ^profile/admin-tools/?$ profile.php?md=12&tool=accounting [L,QSA]
+RewriteRule ^profile/admin-tools/accounting/?$ profile.php?md=12&tool=accounting [L,QSA]
+RewriteRule ^profile/admin-tools/stats/?$ profile.php?md=12&tool=stats [L,QSA]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

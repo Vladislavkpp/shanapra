@@ -553,6 +553,12 @@ function cardOutTestRenderGallery(array $photos, string $alt): string
     }
 
     $out .= '<div class="grvdet-gallery-overlay">';
+    if (!$isPlaceholderOnly) {
+        $out .= '<span class="grvdet-gallery-zoom" aria-hidden="true">';
+        $out .= '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-zoom-in"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M7 10l6 0" /><path d="M10 7l0 6" /><path d="M21 21l-6 -6" /></svg>';
+        $out .= '<span class="grvdet-gallery-zoom-text">Повне фото</span>';
+        $out .= '</span>';
+    }
     if ($count > 1) {
         $out .= '<div class="grvdet-gallery-nav">';
         $out .= '<button type="button" class="grvdet-gallery-btn" data-gallery-prev aria-label="Попереднє фото">&#10094;</button>';
@@ -817,7 +823,7 @@ if ($view === 'edit' && $_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST
 
                         $safeName = $field . '_' . time() . '.' . $ext;
                         $targetPath = $uploadDir . '/' . $safeName;
-                        $ok = gravecompress($_FILES[$field]['tmp_name'], $targetPath, 75, 300);
+                        $ok = gravecompress($_FILES[$field]['tmp_name'], $targetPath);
                         if (!$ok) {
                             move_uploaded_file($_FILES[$field]['tmp_name'], $targetPath);
                         }
@@ -903,7 +909,7 @@ if ($editMessageText !== '') {
 View_Clear();
 View_Add(Page_Up($pageTitle));
 View_Add(Menu_Up());
-View_Add('<link rel="stylesheet" href="/assets/css/cardout.css?v=2">');
+View_Add('<link rel="stylesheet" href="/assets/css/cardout.css?v=3">');
 View_Add('<link rel="stylesheet" href="/assets/css/lenta-grave.css?v=1">');
 View_Add('<script src="/assets/js/lenta-grave.js?v=1" defer></script>');
 if ($view === 'edit') {
@@ -1060,7 +1066,7 @@ ob_start();
                                                 <select id="agf-cemetery" name="idxkladb" data-selected="<?= $safeCemetery ?>" required>
                                                     <?= cardOutTestCemeteryOptions($editFormData['district'], $editFormData['idxkladb']) ?>
                                                 </select>
-                                                <a href="/addcemetery.php" class="acm-add-settlement-btn agf-add-link" data-tooltip="Додати кладовище" aria-label="Додати кладовище">
+                                                <a href="/searchcem/addcemetery" class="acm-add-settlement-btn agf-add-link" data-tooltip="Додати кладовище" aria-label="Додати кладовище">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                                                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                                                         <path d="M12 5l0 14"></path>
@@ -2301,7 +2307,7 @@ ob_start();
                             </a>
                         <?php endif; ?>
                         <?php if ($canEdit): ?>
-                            <a href="/cardouttest/editgraveform?idx=<?= (int)$grave['idx'] ?>" class="grvdet-btn grvdet-btn--ghost">
+                            <a href="/cardout/editgraveform?idx=<?= (int)$grave['idx'] ?>" class="grvdet-btn grvdet-btn--ghost">
                                 <span class="grvdet-btn-icon">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg>
                                 </span>
@@ -2842,10 +2848,6 @@ View_Add($pageHtml);
 View_Add(Page_Down());
 View_Out();
 View_Clear();
-
-
-
-
 
 
 

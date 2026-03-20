@@ -1348,7 +1348,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             continue;
                         }
                         $targetPath = $uploadDir . '/' . $field . '.' . $ext;
-                        $ok = gravecompress($_FILES[$field]['tmp_name'], $targetPath, 75, 300);
+                        $ok = gravecompress($_FILES[$field]['tmp_name'], $targetPath);
                         if ($ok && file_exists($targetPath)) {
                             $uploaded[$field] = '/graves/' . $editId . '/' . $field . '.' . $ext;
                         }
@@ -1411,7 +1411,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $ext = strtolower((string)pathinfo($_FILES['scheme']['name'], PATHINFO_EXTENSION));
                         if (in_array($ext, ['jpg', 'jpeg', 'png'], true)) {
                             $targetPath = $uploadDir . '/scheme.' . $ext;
-                            $ok = kladbcompress($_FILES['scheme']['tmp_name'], $targetPath, 75, 300);
+                            $ok = kladbcompress($_FILES['scheme']['tmp_name'], $targetPath);
                             if ($ok && file_exists($targetPath)) {
                                 $schemePath = '/cemeteries/' . $editId . '/scheme.' . $ext;
                                 $schemeEscaped = mysqli_real_escape_string($dblink, $schemePath);

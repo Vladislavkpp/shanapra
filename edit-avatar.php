@@ -130,7 +130,7 @@ function updateAvatar($dblink, $userId, $file = null, $delete = false) {
         mysqli_query($dblink, "UPDATE users SET avatar='' WHERE idx={$userId}");
         $_SESSION['message'] = "Аватар успешно удалён";
         $_SESSION['messageType'] = "success";
-        header("Location: /profile.php?md=2");
+        header("Location: /profile.php?md=1803");
         exit;
     }
 
@@ -147,7 +147,7 @@ function updateAvatar($dblink, $userId, $file = null, $delete = false) {
         if ($width > $maxWidth || $height > $maxHeight) {
             $_SESSION['message'] = "Занадто велике розширення зображення. Максимум {$maxWidth}x{$maxHeight} пікселів";
             $_SESSION['messageType'] = "error";
-            header("Location: /profile.php?md=2");
+            header("Location: /profile.php?md=1803");
             exit;
         }
 
@@ -161,7 +161,7 @@ function updateAvatar($dblink, $userId, $file = null, $delete = false) {
         if (!in_array($ext, $allowed)) {
             $_SESSION['message'] = "Недопустимый формат файла";
             $_SESSION['messageType'] = "error";
-            header("Location: /profile.php?md=2");
+            header("Location: /profile.php?md=1803");
             exit;
         }
 
@@ -178,12 +178,12 @@ function updateAvatar($dblink, $userId, $file = null, $delete = false) {
                 );
                 $_SESSION['message'] = "Аватар успешно обновлён (файл был сжат для оптимизации размера)";
                 $_SESSION['messageType'] = "success";
-                header("Location: /profile.php?md=2");
+                header("Location: /profile.php?md=1803");
                 exit;
             } else {
                 $_SESSION['message'] = "Ошибка при сжатии изображения";
                 $_SESSION['messageType'] = "error";
-                header("Location: /profile.php?md=2");
+                header("Location: /profile.php?md=1803");
                 exit;
             }
         } else {
@@ -195,19 +195,19 @@ function updateAvatar($dblink, $userId, $file = null, $delete = false) {
                 );
                 $_SESSION['message'] = "Аватар успешно обновлён";
                 $_SESSION['messageType'] = "success";
-                header("Location: /profile.php?md=2");
+                header("Location: /profile.php?md=1803");
                 exit;
             } else {
                 $_SESSION['message'] = "Ошибка загрузки файла";
                 $_SESSION['messageType'] = "error";
-                header("Location: /profile.php?md=2");
+                header("Location: /profile.php?md=1803");
                 exit;
             }
         }
     }
 
     // Если файл не был загружен
-    header("Location: /profile.php?md=2");
+    header("Location: /profile.php?md=1803");
     exit;
 }
 
@@ -217,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (isset($_FILES['avatar'])) {
         updateAvatar($dblink, $userId, $_FILES['avatar']);
     } else {
-        header("Location: /profile.php?md=2");
+        header("Location: /profile.php?md=1803");
         exit;
     }
 }

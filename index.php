@@ -85,7 +85,7 @@ View_Add('
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-search"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h1.5" /><path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M20.2 20.2l1.8 1.8" /></svg>
                         <span>Шукати поховання</span>
                     </a>
-                    <a href="/kladbsearch.php" class="itp-btn itp-btn--soft">
+                    <a href="/searchcem" class="itp-btn itp-btn--soft">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-map-search"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M11 18l-2 -1l-6 3v-13l6 -3l6 3l6 -3v7.5" /><path d="M9 4v13" /><path d="M15 7v5" /><path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M20.2 20.2l1.8 1.8" /></svg>
                         <span>Шукати кладовища</span>
                     </a>
@@ -149,7 +149,7 @@ View_Add('
                         </button>
                     </form>
 
-                    <form class="itp-panel" data-panel="cemetery" action="/kladbsearch.php" method="get">
+                    <form class="itp-panel" data-panel="cemetery" action="/searchcem" method="get">
                         <input type="hidden" name="page" value="1">
                         <div class="itp-panel-body">
                             <div class="itp-row itp-row--stack">
@@ -226,7 +226,7 @@ View_Add('
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-narrow-right"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l14 0" /><path d="M15 16l4 -4" /><path d="M15 8l4 4" /></svg>
                     </span>
                 </a>
-                <a class="itp-card" href="/kladbsearch.php">
+                <a class="itp-card" href="/searchcem">
                     <h3>База даних кладовищ</h3>
                     <p class="itp-card-text itp-card-text--desktop">Перегляд карток кладовищ із геоданими, схемами та зв\'язаними похованнями.</p>
                     <p class="itp-card-text itp-card-text--mobile">Картки кладовищ із геоданими та похованнями.</p>
@@ -244,7 +244,7 @@ View_Add('
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-narrow-right"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l14 0" /><path d="M15 16l4 -4" /><path d="M15 8l4 4" /></svg>
                     </span>
                 </a>
-                <a class="itp-card" href="/addcemetery.php">
+                <a class="itp-card" href="/searchcem/addcemetery">
                     <h3>Додавання кладовища</h3>
                     <p class="itp-card-text itp-card-text--desktop">Створення нових кладовищ з координатами і прив\'язкою до локації.</p>
                     <p class="itp-card-text itp-card-text--mobile">Додавання кладовища з координатами.</p>

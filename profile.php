@@ -12,20 +12,33 @@ require_once "validator.php";
 require_once "classes/chats.php";
 showMessage();
 
-View_Clear();
-View_Add(Page_Up('Профіль'));
-View_Add(Menu_Up());
-View_Add(Menu_Profile_Mobile());
-
-View_Add('<div class="layout">');
-
-View_Add('<aside class="sidebar">');
-View_Add(Menu_Profile());
-View_Add('</aside>');
-
-View_Add('<main class="content-profile">');
-View_Add('<div class="content-inner">');
-View_Add('<div class="out-profile">');
+function profileResolvePageTitle(string $mdParam, string $toolParam = 'accounting'): string
+{
+    switch ($mdParam) {
+        case '':
+        case '0':
+            return 'Профіль';
+        case '11':
+            return 'Повідомлення';
+        case '2':
+            return 'Налаштування';
+        case '4':
+        case '010':
+            return 'Фінансова інформація';
+        case '5':
+            return 'Бухгалтерія';
+        case '6':
+            return 'Безпека';
+        case '10':
+            return 'Кабінет прибиральника';
+        case '12':
+            return $toolParam === 'stats' ? 'Статистика' : 'Бухгалтерія';
+        case '73':
+            return 'Скидання пароля';
+        default:
+            return 'Профіль';
+    }
+}
 
 
 
@@ -44,6 +57,25 @@ $dblink = DbConnect();
 if ($md === '010') {
     $md = '4';
 }
+
+$pageMdParam = isset($md) ? (string)$md : ((string)($_GET['md'] ?? '0'));
+$pageToolParam = strtolower(trim((string)($_GET['tool'] ?? 'accounting')));
+$pageTitle = profileResolvePageTitle($pageMdParam, $pageToolParam);
+
+View_Clear();
+View_Add(Page_Up($pageTitle));
+View_Add(Menu_Up());
+View_Add(Menu_Profile_Mobile());
+
+View_Add('<div class="layout">');
+
+View_Add('<aside class="sidebar">');
+View_Add(Menu_Profile());
+View_Add('</aside>');
+
+View_Add('<main class="content-profile">');
+View_Add('<div class="content-inner">');
+View_Add('<div class="out-profile">');
 
 // Смена фамилии
 if ($md == 22 && isset($_POST['lname'])) {
@@ -122,6 +154,58 @@ function profilePublicationModerationMeta(?string $status): array
         'key' => $statusKey,
         'label' => $labels[$statusKey],
     ];
+}
+
+function profileCanAccessAdminTools(int $status): bool
+{
+    return hasAnyRole($status, [ROLE_ACCOUNTANT, ROLE_CREATOR, ROLE_WEBMASTER]);
+}
+
+function profileAdminToolsUrl(string $tool = 'accounting'): string
+{
+    $normalizedTool = strtolower(trim($tool));
+    if (!in_array($normalizedTool, ['accounting', 'stats'], true)) {
+        $normalizedTool = 'accounting';
+    }
+
+    if ($normalizedTool === 'stats') {
+        return '/accounting/stats';
+    }
+
+    return '/accounting';
+}
+
+function profileAdminToolsTableExists(mysqli $dblink, string $tableName): bool
+{
+    $safeTableName = mysqli_real_escape_string($dblink, $tableName);
+    $sql = "
+        SELECT 1
+        FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = '" . $safeTableName . "'
+        LIMIT 1
+    ";
+
+    $result = mysqli_query($dblink, $sql);
+
+    return $result instanceof mysqli_result && mysqli_num_rows($result) > 0;
+}
+
+function profileRenderAdminToolsNav(string $currentTool): string
+{
+    $tools = [
+        'accounting' => 'Бухгалтерія',
+        'stats' => 'Статистика',
+    ];
+
+    $out = '<nav class="admin-tools-nav" aria-label="Фінансовий модуль">';
+    foreach ($tools as $tool => $label) {
+        $activeClass = $tool === $currentTool ? ' is-active' : '';
+        $out .= '<a class="admin-tools-nav-link' . $activeClass . '" href="' . htmlspecialchars(profileAdminToolsUrl($tool), ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+    }
+    $out .= '</nav>';
+
+    return $out;
 }
 
 
@@ -3550,6 +3634,570 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
     ');
 }
 
+// Admin Tools (md=12)
+if ($md == 12 && $_SESSION['logged'] == 1) {
+    View_Add('<link rel="stylesheet" href="/assets/css/profile.css">');
+
+    $status = (int)($_SESSION['status'] ?? ROLE_GUEST);
+    if (!profileCanAccessAdminTools($status)) {
+        http_response_code(403);
+        View_Add('
+        <section class="admin-tools-page">
+            <div class="admin-tools-shell">
+                <div class="admin-tools-hero">
+                    <div>
+                        <div class="admin-tools-kicker">Фінансовий модуль</div>
+                        <h1 class="admin-tools-title">Доступ обмежено</h1>
+                        <p class="admin-tools-subtitle">Цей розділ доступний лише ролям Бухгалтер, Креатор та Вебмайстер.</p>
+                    </div>
+                </div>
+            </div>
+        </section>');
+    } else {
+        $tool = strtolower(trim((string)($_GET['tool'] ?? 'accounting')));
+        if (!in_array($tool, ['accounting', 'stats'], true)) {
+            $tool = 'accounting';
+        }
+
+        if ($tool === 'stats') {
+            View_Add('<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>');
+        }
+
+        $hasWalletsTable = $dblink ? profileAdminToolsTableExists($dblink, 'wallets') : false;
+        $hasWalletTransactionsTable = $dblink ? profileAdminToolsTableExists($dblink, 'wallet_transactions') : false;
+        $hasUsersTable = $dblink ? profileAdminToolsTableExists($dblink, 'users') : false;
+
+        $today = new DateTimeImmutable('today');
+        $currentMonthStart = $today->modify('first day of this month')->setTime(0, 0, 0);
+        $windowStart = $today->modify('-13 days')->setTime(0, 0, 0);
+        $currentMonthStartSql = $currentMonthStart->format('Y-m-d H:i:s');
+        $windowStartSql = $windowStart->format('Y-m-d H:i:s');
+
+        $formatAmount = static function (float $amount): string {
+            return number_format($amount, 0, '.', ' ');
+        };
+        $formatCount = static function (int $value): string {
+            return number_format($value, 0, '.', ' ');
+        };
+
+        $systemInternalBalance = 0.0;
+        $systemMainBalance = 0.0;
+        $walletCount = 0;
+        $transactionsCountMonth = 0;
+        $monthInternalIncome = 0.0;
+        $monthInternalExpense = 0.0;
+        $monthUahIncome = 0.0;
+        $monthUahExpense = 0.0;
+        $currencyTurnover = [
+            'INTERNAL' => 0.0,
+            'UAH' => 0.0,
+        ];
+        $roleBreakdown = [
+            'Бухгалтери' => 0,
+            'Креатори' => 0,
+            'Вебмайстри' => 0,
+        ];
+        $journalRows = [];
+        $flowMap = [];
+        $chartLabels = [];
+        $chartInternalIncome = [];
+        $chartInternalExpense = [];
+        $chartUahIncome = [];
+        $chartUahExpense = [];
+
+        if ($dblink && $hasWalletsTable) {
+            $walletSummaryRes = mysqli_query(
+                $dblink,
+                "SELECT COUNT(*) AS cnt, COALESCE(SUM(internal_balance), 0) AS internal_total FROM wallets"
+            );
+            if ($walletSummaryRes && ($walletSummaryRow = mysqli_fetch_assoc($walletSummaryRes))) {
+                $walletCount = (int)($walletSummaryRow['cnt'] ?? 0);
+                $systemInternalBalance = (float)($walletSummaryRow['internal_total'] ?? 0);
+            }
+        }
+
+        if ($dblink && $hasWalletTransactionsTable) {
+            $safeMonthStart = mysqli_real_escape_string($dblink, $currentMonthStartSql);
+            $safeWindowStart = mysqli_real_escape_string($dblink, $windowStartSql);
+
+            $summaryRes = mysqli_query(
+                $dblink,
+                "SELECT
+                    COALESCE(SUM(CASE WHEN currency = 'UAH' AND direction = 'in' THEN amount ELSE 0 END), 0) -
+                    COALESCE(SUM(CASE WHEN currency = 'UAH' AND direction = 'out' THEN amount ELSE 0 END), 0) AS system_main_balance,
+                    COALESCE(SUM(CASE WHEN currency = 'INTERNAL' AND created_at >= '" . $safeMonthStart . "' AND direction = 'in' THEN amount ELSE 0 END), 0) AS month_internal_income,
+                    COALESCE(SUM(CASE WHEN currency = 'INTERNAL' AND created_at >= '" . $safeMonthStart . "' AND direction = 'out' THEN amount ELSE 0 END), 0) AS month_internal_expense,
+                    COALESCE(SUM(CASE WHEN currency = 'UAH' AND created_at >= '" . $safeMonthStart . "' AND direction = 'in' THEN amount ELSE 0 END), 0) AS month_uah_income,
+                    COALESCE(SUM(CASE WHEN currency = 'UAH' AND created_at >= '" . $safeMonthStart . "' AND direction = 'out' THEN amount ELSE 0 END), 0) AS month_uah_expense,
+                    COALESCE(SUM(CASE WHEN currency = 'INTERNAL' THEN amount ELSE 0 END), 0) AS internal_turnover_total,
+                    COALESCE(SUM(CASE WHEN currency = 'UAH' THEN amount ELSE 0 END), 0) AS uah_turnover_total,
+                    SUM(CASE WHEN created_at >= '" . $safeMonthStart . "' THEN 1 ELSE 0 END) AS tx_count_month
+                 FROM wallet_transactions"
+            );
+            if ($summaryRes && ($summaryRow = mysqli_fetch_assoc($summaryRes))) {
+                $systemMainBalance = (float)($summaryRow['system_main_balance'] ?? 0);
+                $monthInternalIncome = (float)($summaryRow['month_internal_income'] ?? 0);
+                $monthInternalExpense = (float)($summaryRow['month_internal_expense'] ?? 0);
+                $monthUahIncome = (float)($summaryRow['month_uah_income'] ?? 0);
+                $monthUahExpense = (float)($summaryRow['month_uah_expense'] ?? 0);
+                $currencyTurnover['INTERNAL'] = (float)($summaryRow['internal_turnover_total'] ?? 0);
+                $currencyTurnover['UAH'] = (float)($summaryRow['uah_turnover_total'] ?? 0);
+                $transactionsCountMonth = (int)($summaryRow['tx_count_month'] ?? 0);
+            }
+
+            $flowRes = mysqli_query(
+                $dblink,
+                "SELECT DATE(created_at) AS tx_date,
+                        currency,
+                        COALESCE(SUM(CASE WHEN direction = 'in' THEN amount ELSE 0 END), 0) AS income_total,
+                        COALESCE(SUM(CASE WHEN direction = 'out' THEN amount ELSE 0 END), 0) AS expense_total
+                 FROM wallet_transactions
+                 WHERE created_at >= '" . $safeWindowStart . "'
+                 GROUP BY DATE(created_at), currency
+                 ORDER BY tx_date ASC"
+            );
+            if ($flowRes) {
+                while ($flowRow = mysqli_fetch_assoc($flowRes)) {
+                    $txDate = (string)($flowRow['tx_date'] ?? '');
+                    $currency = strtoupper(trim((string)($flowRow['currency'] ?? 'INTERNAL')));
+                    if ($txDate === '') {
+                        continue;
+                    }
+                    if (!isset($flowMap[$txDate])) {
+                        $flowMap[$txDate] = [
+                            'INTERNAL' => ['in' => 0.0, 'out' => 0.0],
+                            'UAH' => ['in' => 0.0, 'out' => 0.0],
+                        ];
+                    }
+                    if (!isset($flowMap[$txDate][$currency])) {
+                        $flowMap[$txDate][$currency] = ['in' => 0.0, 'out' => 0.0];
+                    }
+                    $flowMap[$txDate][$currency]['in'] = (float)($flowRow['income_total'] ?? 0);
+                    $flowMap[$txDate][$currency]['out'] = (float)($flowRow['expense_total'] ?? 0);
+                }
+            }
+
+            $journalRes = mysqli_query(
+                $dblink,
+                "SELECT
+                    wt.direction,
+                    wt.amount,
+                    wt.currency,
+                    wt.title,
+                    wt.meta,
+                    wt.source_type,
+                    wt.created_at,
+                    u.idx AS user_id,
+                    u.fname,
+                    u.lname
+                 FROM wallet_transactions wt
+                 LEFT JOIN wallets w ON w.id = wt.wallet_id
+                 LEFT JOIN users u ON u.idx = w.user_id
+                 ORDER BY wt.created_at DESC
+                 LIMIT 40"
+            );
+            if ($journalRes) {
+                while ($journalRow = mysqli_fetch_assoc($journalRes)) {
+                    $journalRows[] = $journalRow;
+                }
+            }
+        }
+
+        if ($dblink && $hasUsersTable) {
+            $usersRes = mysqli_query(
+                $dblink,
+                "SELECT
+                    SUM(CASE WHEN (status & " . ROLE_ACCOUNTANT . ") = " . ROLE_ACCOUNTANT . " THEN 1 ELSE 0 END) AS accountants_count,
+                    SUM(CASE WHEN (status & " . ROLE_CREATOR . ") = " . ROLE_CREATOR . " THEN 1 ELSE 0 END) AS creators_count,
+                    SUM(CASE WHEN (status & " . ROLE_WEBMASTER . ") = " . ROLE_WEBMASTER . " THEN 1 ELSE 0 END) AS webmasters_count
+                 FROM users"
+            );
+            if ($usersRes && ($usersRow = mysqli_fetch_assoc($usersRes))) {
+                $roleBreakdown['Бухгалтери'] = (int)($usersRow['accountants_count'] ?? 0);
+                $roleBreakdown['Креатори'] = (int)($usersRow['creators_count'] ?? 0);
+                $roleBreakdown['Вебмайстри'] = (int)($usersRow['webmasters_count'] ?? 0);
+            }
+        }
+
+        for ($dayCursor = $windowStart; $dayCursor <= $today; $dayCursor = $dayCursor->modify('+1 day')) {
+            $dayKey = $dayCursor->format('Y-m-d');
+            $chartLabels[] = $dayCursor->format('d.m');
+            $chartInternalIncome[] = round((float)($flowMap[$dayKey]['INTERNAL']['in'] ?? 0), 2);
+            $chartInternalExpense[] = round((float)($flowMap[$dayKey]['INTERNAL']['out'] ?? 0), 2);
+            $chartUahIncome[] = round((float)($flowMap[$dayKey]['UAH']['in'] ?? 0), 2);
+            $chartUahExpense[] = round((float)($flowMap[$dayKey]['UAH']['out'] ?? 0), 2);
+        }
+
+        $statsChartData = [
+            'labels' => $chartLabels,
+            'internal_income' => $chartInternalIncome,
+            'internal_expense' => $chartInternalExpense,
+            'uah_income' => $chartUahIncome,
+            'uah_expense' => $chartUahExpense,
+            'currency_labels' => ['Внутрішня валюта', 'Основна валюта'],
+            'currency_series' => [
+                round($currencyTurnover['INTERNAL'], 2),
+                round($currencyTurnover['UAH'], 2),
+            ],
+            'role_labels' => array_keys($roleBreakdown),
+            'role_series' => array_values($roleBreakdown),
+        ];
+        $statsChartJson = htmlspecialchars(json_encode($statsChartData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+
+        $journalHtml = '';
+        if (empty($journalRows)) {
+            $journalHtml = '<div class="admin-tools-empty">Журнал переказів поки порожній.</div>';
+        } else {
+            $journalHtml .= '
+            <div class="admin-tools-table-wrap">
+                <table class="admin-tools-table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Користувач</th>
+                            <th>Операція</th>
+                            <th>Тип</th>
+                            <th>Валюта</th>
+                            <th>Сума</th>
+                            <th>Коментар</th>
+                        </tr>
+                    </thead>
+                    <tbody>';
+
+            foreach ($journalRows as $journalRow) {
+                $direction = (string)($journalRow['direction'] ?? 'in');
+                $currency = strtoupper(trim((string)($journalRow['currency'] ?? 'INTERNAL')));
+                $sourceType = trim((string)($journalRow['source_type'] ?? 'manual'));
+                $title = trim((string)($journalRow['title'] ?? '')) ?: 'Операція';
+                $meta = trim((string)($journalRow['meta'] ?? ''));
+                $amount = (float)($journalRow['amount'] ?? 0);
+                $amountLabel = ($direction === 'out' ? '-' : '+') . $formatAmount($amount);
+                $createdAtRaw = trim((string)($journalRow['created_at'] ?? ''));
+                $createdAtLabel = $createdAtRaw !== '' ? date('d.m.Y H:i', strtotime($createdAtRaw)) : '-';
+                $userName = trim((string)($journalRow['lname'] ?? '') . ' ' . (string)($journalRow['fname'] ?? ''));
+                if ($userName === '') {
+                    $userId = (int)($journalRow['user_id'] ?? 0);
+                    $userName = $userId > 0 ? 'Користувач #' . $userId : 'Системна операція';
+                }
+
+                $journalHtml .= '
+                        <tr>
+                            <td>' . htmlspecialchars($createdAtLabel, ENT_QUOTES, 'UTF-8') . '</td>
+                            <td>' . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . '</td>
+                            <td><div class="admin-tools-table-title">' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</div></td>
+                            <td><span class="admin-tools-badge admin-tools-badge--' . ($direction === 'out' ? 'out' : 'in') . '">' . htmlspecialchars($sourceType, ENT_QUOTES, 'UTF-8') . '</span></td>
+                            <td><span class="admin-tools-currency admin-tools-currency--' . strtolower($currency) . '">' . htmlspecialchars($currency, ENT_QUOTES, 'UTF-8') . '</span></td>
+                            <td class="admin-tools-table-amount admin-tools-table-amount--' . ($direction === 'out' ? 'out' : 'in') . '">' . htmlspecialchars($amountLabel, ENT_QUOTES, 'UTF-8') . '</td>
+                            <td>' . htmlspecialchars($meta !== '' ? $meta : '—', ENT_QUOTES, 'UTF-8') . '</td>
+                        </tr>';
+            }
+
+            $journalHtml .= '
+                    </tbody>
+                </table>
+            </div>';
+        }
+
+        $pageContent = '';
+        if ($tool === 'stats') {
+            $monthInternalNet = $monthInternalIncome - $monthInternalExpense;
+            $monthUahNet = $monthUahIncome - $monthUahExpense;
+            $pageContent = '
+            <div class="admin-tools-summary-grid">
+                <article class="admin-tools-stat-card admin-tools-stat-card--accent">
+                    <div class="admin-tools-stat-label">Основний баланс системи</div>
+                    <div class="admin-tools-stat-value">' . $formatAmount($systemMainBalance) . '</div>
+                    <div class="admin-tools-stat-foot">Розрахунок по руху UAH у системі</div>
+                </article>
+                <article class="admin-tools-stat-card admin-tools-stat-card--accent-soft">
+                    <div class="admin-tools-stat-label">Внутрішній баланс системи</div>
+                    <div class="admin-tools-stat-value">' . $formatAmount($systemInternalBalance) . '</div>
+                    <div class="admin-tools-stat-foot">Сума всіх internal_balance у гаманцях</div>
+                </article>
+                <article class="admin-tools-stat-card">
+                    <div class="admin-tools-stat-label">Гаманців у системі</div>
+                    <div class="admin-tools-stat-value">' . $formatCount($walletCount) . '</div>
+                    <div class="admin-tools-stat-foot">Активний реєстр гаманців</div>
+                </article>
+                <article class="admin-tools-stat-card">
+                    <div class="admin-tools-stat-label">Операцій за місяць</div>
+                    <div class="admin-tools-stat-value">' . $formatCount($transactionsCountMonth) . '</div>
+                    <div class="admin-tools-stat-foot">Поточний календарний місяць</div>
+                </article>
+            </div>
+
+            <section class="admin-tools-banner">
+                <div class="admin-tools-banner-main">
+                    <div class="admin-tools-banner-copy">
+                        <div class="admin-tools-banner-text">Статистика бухгалтерії</div>
+                        <div class="admin-tools-banner-subtext">Огляд фінансового контуру системи: баланси, рух коштів, робочі ролі та журнал останніх переказів.</div>
+                    </div>
+                </div>
+                <div class="admin-tools-summary-row">
+                    <div class="admin-tools-summary-pill admin-tools-summary-pill--positive">Внутрішні надходження: +' . $formatAmount($monthInternalIncome) . '</div>
+                    <div class="admin-tools-summary-pill admin-tools-summary-pill--negative">Внутрішні витрати: -' . $formatAmount($monthInternalExpense) . '</div>
+                    <div class="admin-tools-summary-pill">Внутрішній результат: ' . $formatAmount($monthInternalNet) . '</div>
+                    <div class="admin-tools-summary-pill admin-tools-summary-pill--positive">UAH надходження: +' . $formatAmount($monthUahIncome) . '</div>
+                    <div class="admin-tools-summary-pill admin-tools-summary-pill--negative">UAH витрати: -' . $formatAmount($monthUahExpense) . '</div>
+                    <div class="admin-tools-summary-pill">UAH результат: ' . $formatAmount($monthUahNet) . '</div>
+                </div>
+            </section>
+
+            <div class="admin-tools-charts-grid">
+                <section class="admin-tools-panel">
+                    <div class="admin-tools-panel-head">
+                        <div>
+                            <h2 class="admin-tools-panel-title">Динаміка операцій</h2>
+                            <p class="admin-tools-panel-subtitle">Останні 14 днів по внутрішній та основній валюті</p>
+                        </div>
+                    </div>
+                    <div id="adminToolsFlowChart" class="admin-tools-chart"></div>
+                </section>
+                <section class="admin-tools-panel">
+                    <div class="admin-tools-panel-head">
+                        <div>
+                            <h2 class="admin-tools-panel-title">Оборот за валютами</h2>
+                            <p class="admin-tools-panel-subtitle">Сумарний оборот усіх транзакцій у системі</p>
+                        </div>
+                    </div>
+                    <div id="adminToolsCurrencyChart" class="admin-tools-chart admin-tools-chart--donut"></div>
+                </section>
+                <section class="admin-tools-panel">
+                    <div class="admin-tools-panel-head">
+                        <div>
+                            <h2 class="admin-tools-panel-title">Робочі ролі</h2>
+                            <p class="admin-tools-panel-subtitle">Розподіл ключових ролей, які впливають на операційні процеси</p>
+                        </div>
+                    </div>
+                    <div id="adminToolsRolesChart" class="admin-tools-chart admin-tools-chart--bars"></div>
+                </section>
+                <section class="admin-tools-panel">
+                    <div class="admin-tools-panel-head">
+                        <div>
+                            <h2 class="admin-tools-panel-title">Ключові акценти</h2>
+                            <p class="admin-tools-panel-subtitle">Поля контролю для щоденного огляду</p>
+                        </div>
+                    </div>
+                    <div class="admin-tools-insights">
+                        <div class="admin-tools-insight-card">
+                            <strong>' . $formatAmount($systemInternalBalance) . '</strong>
+                            <span>Загальний внутрішній залишок на всіх гаманцях</span>
+                        </div>
+                        <div class="admin-tools-insight-card">
+                            <strong>' . $formatAmount($systemMainBalance) . '</strong>
+                            <span>Системний залишок по UAH після входів і виходів</span>
+                        </div>
+                        <div class="admin-tools-insight-card">
+                            <strong>' . $formatCount($transactionsCountMonth) . '</strong>
+                            <span>Операцій цього місяця для оперативного контролю</span>
+                        </div>
+                        <div class="admin-tools-insight-card">
+                            <strong>' . $formatCount($roleBreakdown['Бухгалтери'] + $roleBreakdown['Креатори'] + $roleBreakdown['Вебмайстри']) . '</strong>
+                            <span>Адміністративних ролей зараз працює в системі</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <section class="admin-tools-panel">
+                <div class="admin-tools-panel-head">
+                    <div>
+                        <h2 class="admin-tools-panel-title">Журнал переказів</h2>
+                        <p class="admin-tools-panel-subtitle">Останні 40 операцій з користувачем, типом і валютою</p>
+                    </div>
+                </div>
+                ' . $journalHtml . '
+            </section>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    const root = document.getElementById("admin-tools-stats-root");
+                    if (!root || typeof ApexCharts === "undefined") {
+                        return;
+                    }
+
+                    let chartData = null;
+                    try {
+                        chartData = JSON.parse(root.dataset.chart || "{}");
+                    } catch (e) {
+                        chartData = null;
+                    }
+
+                    if (!chartData) {
+                        return;
+                    }
+
+                    const flowChartEl = document.querySelector("#adminToolsFlowChart");
+                    if (flowChartEl) {
+                        new ApexCharts(flowChartEl, {
+                            chart: {
+                                type: "area",
+                                height: 340,
+                                toolbar: { show: false },
+                                fontFamily: "Manrope, Segoe UI, sans-serif"
+                            },
+                            states: {
+                                hover: { filter: { type: "none" } },
+                                active: {
+                                    allowMultipleDataPointsSelection: false,
+                                    filter: { type: "none" }
+                                }
+                            },
+                            series: [
+                                { name: "Внутрішні надходження", data: chartData.internal_income || [] },
+                                { name: "Внутрішні витрати", data: chartData.internal_expense || [] },
+                                { name: "UAH надходження", data: chartData.uah_income || [] },
+                                { name: "UAH витрати", data: chartData.uah_expense || [] }
+                            ],
+                            colors: ["#177245", "#bf3f4d", "#1e5aa7", "#7c8aa5"],
+                            stroke: { curve: "smooth", width: 3 },
+                            fill: {
+                                type: "gradient",
+                                gradient: {
+                                    shadeIntensity: 1,
+                                    opacityFrom: 0.28,
+                                    opacityTo: 0.05,
+                                    stops: [0, 95, 100]
+                                }
+                            },
+                            dataLabels: { enabled: false },
+                            xaxis: {
+                                categories: chartData.labels || [],
+                                labels: { style: { colors: "#5f7286" } }
+                            },
+                            yaxis: {
+                                labels: { style: { colors: "#5f7286" } }
+                            },
+                            grid: {
+                                borderColor: "#d9e4ee",
+                                strokeDashArray: 4
+                            },
+                            legend: {
+                                position: "top",
+                                horizontalAlign: "left"
+                            },
+                            tooltip: {
+                                shared: true,
+                                intersect: false
+                            }
+                        }).render();
+                    }
+
+                    const currencyChartEl = document.querySelector("#adminToolsCurrencyChart");
+                    if (currencyChartEl) {
+                        new ApexCharts(currencyChartEl, {
+                            chart: {
+                                type: "donut",
+                                height: 320,
+                                toolbar: { show: false },
+                                fontFamily: "Manrope, Segoe UI, sans-serif"
+                            },
+                            states: {
+                                hover: { filter: { type: "none" } },
+                                active: {
+                                    allowMultipleDataPointsSelection: false,
+                                    filter: { type: "none" }
+                                }
+                            },
+                            series: chartData.currency_series || [],
+                            labels: chartData.currency_labels || [],
+                            plotOptions: {
+                                pie: {
+                                    expandOnClick: false
+                                }
+                            },
+                            colors: ["#184879", "#4f7db8"],
+                            legend: { position: "bottom" },
+                            dataLabels: { enabled: true },
+                            stroke: { colors: ["#ffffff"] }
+                        }).render();
+                    }
+
+                    const rolesChartEl = document.querySelector("#adminToolsRolesChart");
+                    if (rolesChartEl) {
+                        new ApexCharts(rolesChartEl, {
+                            chart: {
+                                type: "bar",
+                                height: 320,
+                                toolbar: { show: false },
+                                fontFamily: "Manrope, Segoe UI, sans-serif"
+                            },
+                            states: {
+                                hover: { filter: { type: "none" } },
+                                active: {
+                                    allowMultipleDataPointsSelection: false,
+                                    filter: { type: "none" }
+                                }
+                            },
+                            series: [{
+                                name: "Кількість",
+                                data: chartData.role_series || []
+                            }],
+                            xaxis: {
+                                categories: chartData.role_labels || [],
+                                labels: { style: { colors: "#5f7286" } }
+                            },
+                            yaxis: {
+                                labels: { style: { colors: "#5f7286" } }
+                            },
+                            plotOptions: {
+                                bar: {
+                                    borderRadius: 8,
+                                    columnWidth: "48%"
+                                }
+                            },
+                            colors: ["#173d64"],
+                            dataLabels: { enabled: false },
+                            grid: {
+                                borderColor: "#d9e4ee",
+                                strokeDashArray: 4
+                            }
+                        }).render();
+                    }
+                });
+            </script>';
+        } else {
+            $pageContent = '
+            <div class="admin-tools-intro-grid">
+                <section class="admin-tools-intro-card">
+                    <div class="admin-tools-intro-kicker">Що це</div>
+                    <h2 class="admin-tools-intro-title">Бухгалтерія</h2>
+                    <p class="admin-tools-intro-text">Це окремий розділ профілю для майбутніх бухгалтерських інструментів, звітів, перевірок і керування фінансовими процесами системи.</p>
+                    <a class="admin-tools-panel-link" href="' . htmlspecialchars(profileAdminToolsUrl('stats'), ENT_QUOTES, 'UTF-8') . '">Перейти до статистики</a>
+                </section>
+                <section class="admin-tools-plan-card">
+                    <div class="admin-tools-plan-badge">Планування</div>
+                    <h2 class="admin-tools-plan-title">Сторінка в плануванні</h2>
+                    <p class="admin-tools-plan-text">Основний функціонал для бухгалтерії ще проектується. Зараз активною є сторінка статистики, де вже можна відслідковувати стан системи, баланси та журнал переказів.</p>
+                </section>
+            </div>';
+        }
+
+        $statsAttrs = $tool === 'stats' ? ' id="admin-tools-stats-root" data-chart="' . $statsChartJson . '"' : '';
+
+        View_Add('
+        <section class="admin-tools-page"' . $statsAttrs . '>
+            <div class="admin-tools-shell">
+                <div class="admin-tools-hero">
+                    <div>
+                        <div class="admin-tools-kicker">Фінансовий модуль</div>
+                        <h1 class="admin-tools-title">' . ($tool === 'stats' ? 'Статистика' : 'Бухгалтерія') . '</h1>
+                        <p class="admin-tools-subtitle">' . ($tool === 'stats'
+                            ? 'Аналітична сторінка для контролю балансів системи, динаміки операцій і журналу переказів.'
+                            : 'Розділ для майбутніх бухгалтерських інструментів, сценаріїв перевірки та фінансового супроводу системи.') . '</p>
+                    </div>
+                    <div class="admin-tools-hero-meta">
+                        <div class="admin-tools-hero-badge">' . ($tool === 'stats' ? 'Баланс системи, аналітика та журнал переказів' : 'Огляд напряму, призначення розділу та подальше планування') . '</div>
+                        <div class="admin-tools-hero-badge">' . ($tool === 'stats' ? 'Оновлення побудовані на даних гаманців і транзакцій' : 'Функціональні сценарії для бухгалтерії будуть додані окремими етапами') . '</div>
+                    </div>
+                </div>
+                ' . profileRenderAdminToolsNav($tool) . '
+                ' . $pageContent . '
+            </div>
+        </section>');
+    }
+}
+
 // Безпека - Активні сесії
 if ($md == 6 && $_SESSION['logged'] == 1) {
     $dblink = DbConnect();
@@ -3690,6 +4338,7 @@ function Menu_Profile(): string
         4 => 'Фінансова інформація',
         5 => 'Бухгалтерія',
         10 => 'Кабінет прибиральника',
+        12 => 'Бухгалтерія',
        // 6 => 'Безпека'
     ];
 
@@ -3700,6 +4349,7 @@ function Menu_Profile(): string
         4 => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pr-icon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12" /><path d="M20 12v4h-4a2 2 0 0 1 0 -4h4" /></svg>',
         5 => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pr-icon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12h18" /><path d="M3 6h18" /><path d="M5 18h14" /><path d="M7 14h10" /></svg>',
         10 => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pr-icon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 9a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -9" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" /><path d="M12 12l0 .01" /><path d="M3 13a20 20 0 0 0 18 0" /></svg>',
+        12 => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pr-icon icon icon-tabler icons-tabler-outline icon-tabler-database-dollar"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 6c0 1.657 3.582 3 8 3s8 -1.343 8 -3s-3.582 -3 -8 -3s-8 1.343 -8 3" /><path d="M4 6v6c0 1.657 3.582 3 8 3c.415 0 .822 -.012 1.22 -.035" /><path d="M20 10v-4" /><path d="M4 12v6c0 1.657 3.582 3 8 3c.352 0 .698 -.009 1.037 -.025" /><path d="M21 15h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5" /><path d="M19 21v1m0 -8v1" /></svg>',
     ];
 
     $out = '<div class="Menu_Profile">';
@@ -3714,12 +4364,17 @@ function Menu_Profile(): string
             continue;
         }
 
+        if ($md === 12 && !profileCanAccessAdminTools($status)) {
+            continue;
+        }
+
         $activeClass = ($md === $currentMd) ? 'active' : '';
         $icon = $icons[$md] ?? '';
         $badge = ($md === 11 && $unreadCount > 0)
             ? '<span class="profile-menu-badge">' . (int)$unreadCount . '</span>'
             : '';
-        $out .= '<a href="profile.php?md='.$md.'" class="menu-link '.$activeClass.'">'
+        $href = $md === 12 ? profileAdminToolsUrl('accounting') : 'profile.php?md=' . $md;
+        $out .= '<a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '" class="menu-link '.$activeClass.'">'
             . $icon . htmlspecialchars($title) . $badge
             . '</a>';
 
@@ -3769,6 +4424,10 @@ function Menu_Profile_Mobile(): void
 
     if (hasRole($status, ROLE_CLEANER)) {
         View_Add('<a class="profile-menu-item" href="profile.php?md=10">Кабінет прибиральника</a>');
+    }
+
+    if (profileCanAccessAdminTools((int)$status)) {
+        View_Add('<a class="profile-menu-item" href="' . htmlspecialchars(profileAdminToolsUrl('accounting'), ENT_QUOTES, 'UTF-8') . '">Бухгалтерія</a>');
     }
 
     View_Add('

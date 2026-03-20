@@ -166,7 +166,7 @@
 }
 
 .grvdet-gallery-image[data-gallery-image] {
-    cursor: zoom-in;
+    cursor: pointer;
 }
 
 .grvdet-gallery-image.is-active {
@@ -181,9 +181,62 @@
     bottom: 14px;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 12px;
     pointer-events: none;
+}
+
+.grvdet-gallery-zoom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    width: 40px;
+    height: 40px;
+    padding: 0 11px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: rgba(15, 33, 56, 0.76);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 24px rgba(15, 33, 56, 0.2);
+    overflow: hidden;
+    white-space: nowrap;
+    transition: width 0.22s ease, padding 0.22s ease, background-color 0.22s ease;
+}
+
+.grvdet-gallery-zoom svg {
+    display: block;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+}
+
+.grvdet-gallery-zoom-text {
+    display: inline-block;
+    width: 0;
+    margin-left: 0;
+    overflow: hidden;
+    flex: 0 0 auto;
+    opacity: 0;
+    transition: width 0.22s ease, margin-left 0.22s ease, opacity 0.18s ease;
+}
+
+.grvdet-gallery-stage:hover .grvdet-gallery-zoom,
+.grvdet-gallery-stage:focus-within .grvdet-gallery-zoom {
+    width: 132px;
+    padding: 0 14px 0 11px;
+    background: rgba(15, 33, 56, 0.84);
+}
+
+.grvdet-gallery-stage:hover .grvdet-gallery-zoom-text,
+.grvdet-gallery-stage:focus-within .grvdet-gallery-zoom-text {
+    width: 70px;
+    margin-left: 8px;
+    opacity: 1;
 }
 
 .grvdet-gallery-counter {

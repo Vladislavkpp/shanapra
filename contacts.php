@@ -15,13 +15,13 @@ function ContactPage(): string
     $iconEmail = '<svg class="contact-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10" /><path d="M3 7l9 6l9 -6" /></svg>';
 
     $out = '';
-    $out .= '<div class="faq-page contact-page">';
+    $out .= '<div class="contact-page">';
     $out .= '<div class="contact-container">';
 
-    $out .= '<header class="contact-header">';
+    $out .= '<section class="contact-hero">';
     $out .= '<h1 class="contact-title">Контактна інформація</h1>';
-    $out .= '<p class="contact-lead">ІПС «Шана» — платформа пам\'яті та догляду за похованнями. Питання, пропозиції та технічна підтримка.</p>';
-    $out .= '</header>';
+    $out .= '<p class="contact-lead">Питання, пропозиції та технічна підтримка в одному місці.</p>';
+    $out .= '</section>';
 
     $out .= '<div class="contact-grid">';
 
@@ -58,7 +58,6 @@ function ContactPage(): string
 
     $out .= '</div>';
     $out .= '</div>';
-    $out .= '</div>';
     return $out;
 }
 
@@ -69,8 +68,7 @@ View_Add(Menu_Up());
 View_Add('<div class="out">');
 
 View_Add(ContactPage());
-View_Add(Page_Down());
-
 View_Add('</div>');
+View_Add(Page_Down());
 View_Out();
 View_Clear();
