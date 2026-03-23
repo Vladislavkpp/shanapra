@@ -18,6 +18,9 @@ $formData = [
     'dt2' => '',
     'dt1_unknown' => '0',
     'dt2_unknown' => '0',
+    'pos1_unknown' => '0',
+    'pos2_unknown' => '0',
+    'pos3_unknown' => '0',
     'pos1' => '',
     'pos2' => '',
     'pos3' => '',
@@ -68,12 +71,18 @@ if (
     $formData['dt2'] = trim((string)($_POST['dt2'] ?? ''));
     $formData['dt1_unknown'] = (string)($_POST['dt1_unknown'] ?? '0');
     $formData['dt2_unknown'] = (string)($_POST['dt2_unknown'] ?? '0');
+    $formData['pos1_unknown'] = (string)($_POST['pos1_unknown'] ?? '0');
+    $formData['pos2_unknown'] = (string)($_POST['pos2_unknown'] ?? '0');
+    $formData['pos3_unknown'] = (string)($_POST['pos3_unknown'] ?? '0');
     $formData['pos1'] = trim((string)($_POST['pos1'] ?? ''));
     $formData['pos2'] = trim((string)($_POST['pos2'] ?? ''));
     $formData['pos3'] = trim((string)($_POST['pos3'] ?? ''));
 
     $dt1Unknown = $formData['dt1_unknown'] === '1';
     $dt2Unknown = $formData['dt2_unknown'] === '1';
+    $pos1Unknown = $formData['pos1_unknown'] === '1';
+    $pos2Unknown = $formData['pos2_unknown'] === '1';
+    $pos3Unknown = $formData['pos3_unknown'] === '1';
 
     $requiredMissing = (
         (int)$formData['region'] <= 0
@@ -84,9 +93,9 @@ if (
         || $formData['fname'] === ''
         || (!$dt1Unknown && $formData['dt1'] === '')
         || (!$dt2Unknown && $formData['dt2'] === '')
-        || $formData['pos1'] === ''
-        || $formData['pos2'] === ''
-        || $formData['pos3'] === ''
+        || (!$pos1Unknown && $formData['pos1'] === '')
+        || (!$pos2Unknown && $formData['pos2'] === '')
+        || (!$pos3Unknown && $formData['pos3'] === '')
     );
 
     if ($requiredMissing) {
@@ -112,9 +121,9 @@ if (
             $dt2 = $dt2Unknown ? '0000-00-00' : $formData['dt2'];
             $authorId = (int)$_SESSION['uzver'];
             $cemeteryId = (int)$formData['idxkladb'];
-            $pos1 = $formData['pos1'];
-            $pos2 = $formData['pos2'];
-            $pos3 = $formData['pos3'];
+            $pos1 = $pos1Unknown ? '' : $formData['pos1'];
+            $pos2 = $pos2Unknown ? '' : $formData['pos2'];
+            $pos3 = $pos3Unknown ? '' : $formData['pos3'];
 
             mysqli_stmt_bind_param(
                 $stmt,
@@ -138,6 +147,11 @@ if (
                 $messageText = 'Помилка збереження: ' . mysqli_error($dblink);
             } else {
                 $newId = (int)mysqli_insert_id($dblink);
+                graveAddStorePosUnknownFlags($newId, [
+                    'pos1_unknown' => $formData['pos1_unknown'],
+                    'pos2_unknown' => $formData['pos2_unknown'],
+                    'pos3_unknown' => $formData['pos3_unknown'],
+                ]);
                 $uploadDir = __DIR__ . '/graves/' . $newId;
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0777, true);
@@ -186,6 +200,9 @@ if (
                     'dt2' => '',
                     'dt1_unknown' => '0',
                     'dt2_unknown' => '0',
+                    'pos1_unknown' => '0',
+                    'pos2_unknown' => '0',
+                    'pos3_unknown' => '0',
                     'pos1' => '',
                     'pos2' => '',
                     'pos3' => '',
@@ -200,6 +217,31 @@ if (
 function graveAddEsc(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function graveAddStorePosUnknownFlags(int $graveId, array $flags): void
+{
+    if ($graveId <= 0) {
+        return;
+    }
+
+    $normalized = [
+        'pos1_unknown' => (($flags['pos1_unknown'] ?? '0') === '1') ? '1' : '0',
+        'pos2_unknown' => (($flags['pos2_unknown'] ?? '0') === '1') ? '1' : '0',
+        'pos3_unknown' => (($flags['pos3_unknown'] ?? '0') === '1') ? '1' : '0',
+    ];
+
+    $hasUnknown = in_array('1', $normalized, true);
+    if (!isset($_SESSION['grave_pos_unknown_flags']) || !is_array($_SESSION['grave_pos_unknown_flags'])) {
+        $_SESSION['grave_pos_unknown_flags'] = [];
+    }
+
+    if ($hasUnknown) {
+        $_SESSION['grave_pos_unknown_flags'][$graveId] = $normalized;
+        return;
+    }
+
+    unset($_SESSION['grave_pos_unknown_flags'][$graveId]);
 }
 
 function graveAddRegionOptions(string $selectedValue): string
@@ -304,11 +346,14 @@ if (!$isAuthorized) {
     $safeMname = graveAddEsc($formData['mname']);
     $dt1Unknown = ($formData['dt1_unknown'] ?? '0') === '1';
     $dt2Unknown = ($formData['dt2_unknown'] ?? '0') === '1';
+    $pos1Unknown = ($formData['pos1_unknown'] ?? '0') === '1';
+    $pos2Unknown = ($formData['pos2_unknown'] ?? '0') === '1';
+    $pos3Unknown = ($formData['pos3_unknown'] ?? '0') === '1';
     $safeDt1 = $dt1Unknown ? '' : graveAddEsc($formData['dt1']);
     $safeDt2 = $dt2Unknown ? '' : graveAddEsc($formData['dt2']);
-    $safePos1 = graveAddEsc($formData['pos1']);
-    $safePos2 = graveAddEsc($formData['pos2']);
-    $safePos3 = graveAddEsc($formData['pos3']);
+    $safePos1 = $pos1Unknown ? '' : graveAddEsc($formData['pos1']);
+    $safePos2 = $pos2Unknown ? '' : graveAddEsc($formData['pos2']);
+    $safePos3 = $pos3Unknown ? '' : graveAddEsc($formData['pos3']);
 
     $alertHtml = '';
     if ($showMessage) {
@@ -453,17 +498,35 @@ if (!$isAuthorized) {
                                 </div>
                                 <div class="acm-field">
                                     <label for="agf-pos1">Квартал *</label>
-                                    <input id="agf-pos1" type="text" name="pos1" inputmode="numeric" value="<?= $safePos1 ?>" required>
+                                    <div class="agf-unknown-field-wrap">
+                                        <input id="agf-pos1" type="text" name="pos1" inputmode="numeric" value="<?= $safePos1 ?>" placeholder="Вкажіть квартал"<?= $pos1Unknown ? '' : ' required' ?><?= $pos1Unknown ? ' disabled' : '' ?>>
+                                        <button type="button" class="agf-unknown-btn agf-unknown-btn--icon<?= $pos1Unknown ? ' is-active' : '' ?>" data-text-unknown="agf-pos1" data-unknown-input="agf-pos1-unknown" data-unknown-placeholder="Ви позначили квартал як невідомий" data-label-off="Позначити як невідомо" data-label-on="Вказати значення" data-tooltip="<?= $pos1Unknown ? 'Вказати значення' : 'Позначити як невідомо' ?>" aria-label="<?= $pos1Unknown ? 'Вказати значення' : 'Позначити як невідомо' ?>">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-question-mark" aria-hidden="true" focusable="false"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 8a3.5 3 0 0 1 3.5 -3h1a3.5 3 0 0 1 3.5 3a3 3 0 0 1 -2 3a3 4 0 0 0 -2 4" /><path d="M12 19l0 .01" /></svg>
+                                        </button>
+                                    </div>
+                                    <input type="hidden" id="agf-pos1-unknown" name="pos1_unknown" value="<?= $pos1Unknown ? '1' : '0' ?>">
                                 </div>
                             </div>
                             <div class="acm-row acm-row--two">
                                 <div class="acm-field">
                                     <label for="agf-pos2">Ряд *</label>
-                                    <input id="agf-pos2" type="text" name="pos2" inputmode="numeric" value="<?= $safePos2 ?>" required>
+                                    <div class="agf-unknown-field-wrap">
+                                        <input id="agf-pos2" type="text" name="pos2" inputmode="numeric" value="<?= $safePos2 ?>" placeholder="Вкажіть ряд"<?= $pos2Unknown ? '' : ' required' ?><?= $pos2Unknown ? ' disabled' : '' ?>>
+                                        <button type="button" class="agf-unknown-btn agf-unknown-btn--icon<?= $pos2Unknown ? ' is-active' : '' ?>" data-text-unknown="agf-pos2" data-unknown-input="agf-pos2-unknown" data-unknown-placeholder="Ви позначили ряд як невідомий" data-label-off="Позначити як невідомо" data-label-on="Вказати значення" data-tooltip="<?= $pos2Unknown ? 'Вказати значення' : 'Позначити як невідомо' ?>" aria-label="<?= $pos2Unknown ? 'Вказати значення' : 'Позначити як невідомо' ?>">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-question-mark" aria-hidden="true" focusable="false"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 8a3.5 3 0 0 1 3.5 -3h1a3.5 3 0 0 1 3.5 3a3 3 0 0 1 -2 3a3 4 0 0 0 -2 4" /><path d="M12 19l0 .01" /></svg>
+                                        </button>
+                                    </div>
+                                    <input type="hidden" id="agf-pos2-unknown" name="pos2_unknown" value="<?= $pos2Unknown ? '1' : '0' ?>">
                                 </div>
                                 <div class="acm-field">
                                     <label for="agf-pos3">Місце *</label>
-                                    <input id="agf-pos3" type="text" name="pos3" inputmode="numeric" value="<?= $safePos3 ?>" required>
+                                    <div class="agf-unknown-field-wrap">
+                                        <input id="agf-pos3" type="text" name="pos3" inputmode="numeric" value="<?= $safePos3 ?>" placeholder="Вкажіть місце"<?= $pos3Unknown ? '' : ' required' ?><?= $pos3Unknown ? ' disabled' : '' ?>>
+                                        <button type="button" class="agf-unknown-btn agf-unknown-btn--icon<?= $pos3Unknown ? ' is-active' : '' ?>" data-text-unknown="agf-pos3" data-unknown-input="agf-pos3-unknown" data-unknown-placeholder="Ви позначили місце як невідоме" data-label-off="Позначити як невідомо" data-label-on="Вказати значення" data-tooltip="<?= $pos3Unknown ? 'Вказати значення' : 'Позначити як невідомо' ?>" aria-label="<?= $pos3Unknown ? 'Вказати значення' : 'Позначити як невідомо' ?>">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-question-mark" aria-hidden="true" focusable="false"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 8a3.5 3 0 0 1 3.5 -3h1a3.5 3 0 0 1 3.5 3a3 3 0 0 1 -2 3a3 4 0 0 0 -2 4" /><path d="M12 19l0 .01" /></svg>
+                                        </button>
+                                    </div>
+                                    <input type="hidden" id="agf-pos3-unknown" name="pos3_unknown" value="<?= $pos3Unknown ? '1' : '0' ?>">
                                 </div>
                             </div>
                         </fieldset>
@@ -662,11 +725,11 @@ if (!$isAuthorized) {
         return;
     }
 
-    function setDateUnknownState(button, isUnknown) {
+    function setUnknownState(button, isUnknown) {
         if (!button) {
             return;
         }
-        const inputId = button.dataset.dateUnknown;
+        const inputId = button.dataset.dateUnknown || button.dataset.textUnknown;
         const hiddenId = button.dataset.unknownInput;
         const input = inputId ? document.getElementById(inputId) : null;
         const hidden = hiddenId ? document.getElementById(hiddenId) : null;
@@ -674,22 +737,34 @@ if (!$isAuthorized) {
             return;
         }
         if (!input.dataset.defaultPlaceholder) {
-            input.dataset.defaultPlaceholder = input.getAttribute("placeholder") || "дд.мм.рррр";
+            input.dataset.defaultPlaceholder = input.getAttribute("placeholder") || (button.dataset.dateUnknown ? "дд.мм.рррр" : "");
         }
         hidden.value = isUnknown ? "1" : "0";
         if (isUnknown) {
             input.value = "";
             input.disabled = true;
             input.removeAttribute("required");
-            input.setAttribute("placeholder", "Ви позначили дату - невідомо");
+            input.setAttribute("placeholder", button.dataset.unknownPlaceholder || "Ви позначили дату - невідомо");
             button.classList.add("is-active");
-            button.textContent = button.dataset.labelOn || "Вказати дату";
+            if (button.classList.contains("agf-unknown-btn--icon")) {
+                var activeLabel = button.dataset.labelOn || "Вказати значення";
+                button.setAttribute("data-tooltip", activeLabel);
+                button.setAttribute("aria-label", activeLabel);
+            } else {
+                button.textContent = button.dataset.labelOn || "Вказати значення";
+            }
         } else {
             input.disabled = false;
             input.setAttribute("required", "");
             input.setAttribute("placeholder", input.dataset.defaultPlaceholder);
             button.classList.remove("is-active");
-            button.textContent = button.dataset.labelOff || "Дата невідома";
+            if (button.classList.contains("agf-unknown-btn--icon")) {
+                var defaultLabel = button.dataset.labelOff || "Позначити як невідомо";
+                button.setAttribute("data-tooltip", defaultLabel);
+                button.setAttribute("aria-label", defaultLabel);
+            } else {
+                button.textContent = button.dataset.labelOff || "Позначити як невідомо";
+            }
         }
     }
 
@@ -738,11 +813,23 @@ if (!$isAuthorized) {
             });
             const dt1Unknown = document.getElementById("agf-dt1-unknown");
             const dt2Unknown = document.getElementById("agf-dt2-unknown");
+            const pos1Unknown = document.getElementById("agf-pos1-unknown");
+            const pos2Unknown = document.getElementById("agf-pos2-unknown");
+            const pos3Unknown = document.getElementById("agf-pos3-unknown");
             if (dt1Unknown) {
                 values.dt1_unknown = dt1Unknown.value;
             }
             if (dt2Unknown) {
                 values.dt2_unknown = dt2Unknown.value;
+            }
+            if (pos1Unknown) {
+                values.pos1_unknown = pos1Unknown.value;
+            }
+            if (pos2Unknown) {
+                values.pos2_unknown = pos2Unknown.value;
+            }
+            if (pos3Unknown) {
+                values.pos3_unknown = pos3Unknown.value;
             }
             window.localStorage.setItem(draftStorageKey, JSON.stringify({
                 step: currentStep,
@@ -770,11 +857,23 @@ if (!$isAuthorized) {
 
         const dt1Unknown = document.getElementById("agf-dt1-unknown");
         const dt2Unknown = document.getElementById("agf-dt2-unknown");
+        const pos1Unknown = document.getElementById("agf-pos1-unknown");
+        const pos2Unknown = document.getElementById("agf-pos2-unknown");
+        const pos3Unknown = document.getElementById("agf-pos3-unknown");
         if (dt1Unknown && typeof values.dt1_unknown === "string") {
             dt1Unknown.value = values.dt1_unknown;
         }
         if (dt2Unknown && typeof values.dt2_unknown === "string") {
             dt2Unknown.value = values.dt2_unknown;
+        }
+        if (pos1Unknown && typeof values.pos1_unknown === "string") {
+            pos1Unknown.value = values.pos1_unknown;
+        }
+        if (pos2Unknown && typeof values.pos2_unknown === "string") {
+            pos2Unknown.value = values.pos2_unknown;
+        }
+        if (pos3Unknown && typeof values.pos3_unknown === "string") {
+            pos3Unknown.value = values.pos3_unknown;
         }
 
         if (typeof values.district === "string") {
@@ -1173,6 +1272,13 @@ if (!$isAuthorized) {
         districtSel.value = "";
         townSel.value = "";
         cemeterySel.value = "";
+        const posUnknownHiddenIds = ["agf-pos1-unknown", "agf-pos2-unknown", "agf-pos3-unknown"];
+        posUnknownHiddenIds.forEach(function (id) {
+            const hidden = document.getElementById(id);
+            if (hidden) {
+                hidden.value = "0";
+            }
+        });
         districtSel.dataset.selected = "";
         townSel.dataset.selected = "";
         cemeterySel.dataset.selected = "";
@@ -1197,6 +1303,9 @@ if (!$isAuthorized) {
         closeAllCustomSelects();
         closeModal();
         closePhotoModal();
+        dateUnknownButtons.forEach(function (button) {
+            setUnknownState(button, false);
+        });
         toggleSettlementButton();
         syncCustomSelect(regionSel);
         syncCustomSelect(districtSel);
@@ -1268,7 +1377,10 @@ if (!$isAuthorized) {
         });
     });
 
-    Array.from(form.querySelectorAll("input[required]")).forEach(function (inputEl) {
+    Array.from(form.querySelectorAll("input[name]")).forEach(function (inputEl) {
+        if (inputEl.type === "file" || inputEl.type === "hidden") {
+            return;
+        }
         inputEl.addEventListener("input", function () {
             clearInvalid(inputEl);
             saveDraft();
@@ -1523,11 +1635,11 @@ if (!$isAuthorized) {
         const hiddenId = button.dataset.unknownInput || "";
         const hidden = hiddenId ? document.getElementById(hiddenId) : null;
         const isUnknown = hidden && hidden.value === "1";
-        setDateUnknownState(button, !!isUnknown);
+        setUnknownState(button, !!isUnknown);
         button.addEventListener("click", function () {
             const currentUnknown = hidden && hidden.value === "1";
-            setDateUnknownState(button, !currentUnknown);
-            const inputId = button.dataset.dateUnknown || "";
+            setUnknownState(button, !currentUnknown);
+            const inputId = button.dataset.dateUnknown || button.dataset.textUnknown || "";
             const input = inputId ? document.getElementById(inputId) : null;
             if (input) {
                 clearInvalid(input);

@@ -576,7 +576,7 @@ $cssVersion = is_file(__DIR__ . '/assets/css/auth.css') ? (string)filemtime(__DI
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= h($activeMode === 'register' ? $pageTitleRegister : $pageTitleLogin) ?></title>
-    <link rel="icon" type="image/x-icon" href="/assets/images/logobrand3.png">
+    <link rel="icon" type="image/png" href="/assets/images/shana-logo.png">
     <link rel="stylesheet" href="/assets/css/auth.css?v=<?= h($cssVersion) ?>">
 </head>
 <body class="<?= $activeMode === 'register' ? 'ta-theme-register' : '' ?>">
@@ -594,7 +594,9 @@ $cssVersion = is_file(__DIR__ . '/assets/css/auth.css') ? (string)filemtime(__DI
       data-subtitle-register="<?= h($registerSubtitle) ?>"
       id="ta-shell">
     <section class="ta-brand">
-        <div class="ta-logo">S</div>
+        <div class="ta-logo">
+            <img src="/assets/images/shana-logo.png" alt="Логотип Shana">
+        </div>
         <h1>ІПС Shana<br>доступ до акаунта</h1>
         <p class="ta-brand-desc ta-brand-desc--desktop">Увійдіть або створіть акаунт, щоб керувати профілем, публікаціями та персональними налаштуваннями.</p>
         <p class="ta-brand-desc ta-brand-desc--mobile">Увійдіть або зареєструйтесь, щоб отримати доступ до можливостей системи.</p>
@@ -808,6 +810,11 @@ $cssVersion = is_file(__DIR__ . '/assets/css/auth.css') ? (string)filemtime(__DI
         var forgotOpen = document.getElementById("ta-forgot-open");
         var formStageExtra = 16;
         var activeMode = shell.getAttribute("data-mode") === "register" ? "register" : "login";
+        var compactMobileQuery = window.matchMedia ? window.matchMedia("(max-width: 540px)") : null;
+
+        function isCompactMobile() {
+            return !!(compactMobileQuery && compactMobileQuery.matches);
+        }
 
         function getActiveForm() {
             return activeMode === "login" ? formLogin : formRegister;
@@ -818,6 +825,10 @@ $cssVersion = is_file(__DIR__ . '/assets/css/auth.css') ? (string)filemtime(__DI
         }
 
         function animateStageHeight(nextHeight) {
+            if (isCompactMobile()) {
+                formStage.style.height = "";
+                return;
+            }
             var currentHeight = formStage.offsetHeight;
             if (Math.abs(currentHeight - nextHeight) < 1) {
                 formStage.style.height = nextHeight + "px";
@@ -836,7 +847,11 @@ $cssVersion = is_file(__DIR__ . '/assets/css/auth.css') ? (string)filemtime(__DI
             var nextForm = isLogin ? formLogin : formRegister;
             var prevForm = isLogin ? formRegister : formLogin;
 
-            formStage.style.height = getStageHeight(prevForm) + "px";
+            if (!isCompactMobile()) {
+                formStage.style.height = getStageHeight(prevForm) + "px";
+            } else {
+                formStage.style.height = "";
+            }
             activeMode = mode;
 
             shell.setAttribute("data-mode", isLogin ? "login" : "register");
@@ -848,7 +863,6 @@ $cssVersion = is_file(__DIR__ . '/assets/css/auth.css') ? (string)filemtime(__DI
             animateStageHeight(getStageHeight(nextForm));
             syncThemeClass(mode);
             applyModeCopy(mode);
-            scrollToForms();
         }
 
         function syncThemeClass(mode) {
@@ -877,7 +891,7 @@ $cssVersion = is_file(__DIR__ . '/assets/css/auth.css') ? (string)filemtime(__DI
         }
 
         function scrollToForms() {
-            if (!window.matchMedia || !window.matchMedia("(max-width: 540px)").matches) return;
+            if (isCompactMobile()) return;
             var target = document.querySelector(".ta-forms");
             if (!target) return;
             requestAnimationFrame(function () {
@@ -1139,7 +1153,11 @@ $cssVersion = is_file(__DIR__ . '/assets/css/auth.css') ? (string)filemtime(__DI
         var initialForm = getActiveForm();
         formLogin.classList.toggle("is-active", activeMode === "login");
         formRegister.classList.toggle("is-active", activeMode === "register");
-        formStage.style.height = getStageHeight(initialForm) + "px";
+        if (isCompactMobile()) {
+            formStage.style.height = "";
+        } else {
+            formStage.style.height = getStageHeight(initialForm) + "px";
+        }
         syncThemeClass(activeMode);
 
         if (typeof ResizeObserver !== "undefined") {
@@ -1153,6 +1171,10 @@ $cssVersion = is_file(__DIR__ . '/assets/css/auth.css') ? (string)filemtime(__DI
 
         window.addEventListener("resize", function () {
             var activeForm = getActiveForm();
+            if (isCompactMobile()) {
+                formStage.style.height = "";
+                return;
+            }
             formStage.style.height = getStageHeight(activeForm) + "px";
         });
 

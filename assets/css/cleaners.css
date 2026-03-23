@@ -11,12 +11,41 @@
 }
 
 .cleaners-hero {
+    position: relative;
     padding: 40px 20px 24px;
-    background: linear-gradient(135deg, #101826 0%, #1c2a3d 50%, #283c57 100%);
+    background: linear-gradient(120deg, var(--menu-up-new-bg-1), var(--menu-up-new-bg-2));
     color: #ffffff;
+    overflow: hidden;
+}
+
+.cleaners-hero::before,
+.cleaners-hero::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+    opacity: 0.35;
+}
+
+.cleaners-hero::before {
+    top: -72px;
+    right: -28px;
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0) 72%);
+}
+
+.cleaners-hero::after {
+    bottom: -92px;
+    left: -36px;
+    width: 240px;
+    height: 240px;
+    background: radial-gradient(circle, rgba(183, 220, 255, 0.2) 0%, rgba(183, 220, 255, 0) 72%);
 }
 
 .cleaners-hero-inner {
+    position: relative;
+    z-index: 1;
     max-width: 1120px;
     margin: 0 auto;
     display: flex;
@@ -33,12 +62,13 @@
 .cleaners-badge {
     display: inline-flex;
     align-items: center;
-    padding: 4px 12px;
+    padding: 8px 12px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(227, 242, 255, 0.22);
     font-size: 12px;
-    letter-spacing: 0.04em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     margin-bottom: 10px;
 }
@@ -53,17 +83,19 @@
     margin: 0;
     font-size: 14px;
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(231, 245, 255, 0.92);
 }
 
 .cleaners-hero-highlight {
     flex: 0 0 320px;
     max-width: 360px;
     min-width: 260px;
-    background: rgba(0, 0, 0, 0.18);
-    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
     padding: 16px 18px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(227, 242, 255, 0.25);
+    box-shadow: 0 6px 14px rgba(16, 40, 62, 0.12);
+    backdrop-filter: blur(6px);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -71,8 +103,9 @@
 
 .cleaners-hero-stat {
     padding: 8px 10px;
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.16);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(227, 242, 255, 0.18);
 }
 
 .cleaners-hero-stat-label {
@@ -80,12 +113,32 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(220, 238, 255, 0.72);
     margin-bottom: 4px;
 }
 
 .cleaners-hero-stat-value {
     font-size: 13px;
+    color: #eef6ff;
+}
+
+.cleaners-test-note {
+    padding: 12px 20px 0;
+    background: #f3f4f6;
+}
+
+.cleaners-test-note-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid #f3cf67;
+    background: linear-gradient(180deg, #fff4bf 0%, #ffe797 100%);
+    color: #6b4d00;
+    font-size: 14px;
+    line-height: 1.55;
+    font-weight: 600;
+    box-shadow: 0 5px 12px rgba(180, 126, 0, 0.08);
 }
 
 .cleaners-filters {
@@ -1277,6 +1330,10 @@
         padding: 14px 16px 16px;
     }
 
+    .cleaners-test-note {
+        padding: 10px 16px 0;
+    }
+
     .cleaners-filters-form {
         padding: 12px 12px 10px;
     }
@@ -1385,6 +1442,10 @@
 
     .cleaners-filters {
         padding: 12px 12px 14px;
+    }
+
+    .cleaners-test-note {
+        padding: 8px 12px 0;
     }
 
     .cleaners-filters-inner {
@@ -1580,6 +1641,11 @@
     .cleaners-badge {
         font-size: 11px;
         padding: 6px 10px;
+    }
+
+    .cleaners-test-note-inner {
+        padding: 12px 14px;
+        font-size: 13px;
     }
 
     .cleaners-filters-title {

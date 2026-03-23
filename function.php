@@ -1123,7 +1123,7 @@ function Menu_Up_Old(): string {
 
     $out .= '<div class="menu-left">';
 
-    $out .= '<div class="logo"><a href="/"><img src="/assets/images/logobrand3.png" alt="Логотип"></a></div>';
+    $out .= '<div class="logo"><a href="/"><img src="/assets/images/shana-logo.png" alt="Логотип Shana"></a></div>';
     $out .= '<a href="/" class="title">ІПС Шана</a>';
 
     $out .= '</div>'; // menu-left
@@ -1576,7 +1576,7 @@ function Page_Up($ttl = ''): string
         '<head>' . xbr .
         '<title>ІПС Shana | ' . $ttl . '</title>' . xbr .
         '<base href="https://shanapra.com/">' . xbr .
-        '<link rel="icon" type="image/x-icon" href="/assets/images/logobrand3.png">' . xbr .
+        '<link rel="icon" type="image/png" href="/assets/images/shana-logo.png">' . xbr .
         '<meta charset="utf-8"><link rel="canonical" href="https://shanapra.com/">' . xbr .
         '<meta http-equiv="Content-Type" content="text/html">' . xbr .
         '<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1, shrink-to-fit=yes, viewport-fit=cover">' . xbr .
@@ -1632,6 +1632,9 @@ function AccountNotFoundModal(): string
     display: grid;
     place-items: center;
     z-index: 13000;
+    padding: 18px 14px;
+    box-sizing: border-box;
+    font-family: "Manrope", "Segoe UI", Tahoma, sans-serif;
 }
 
 .account-missing-modal__backdrop {
@@ -1644,11 +1647,14 @@ function AccountNotFoundModal(): string
 .account-missing-modal__card {
     position: relative;
     width: min(92vw, 520px);
+    max-width: 100%;
     border-radius: 18px;
     border: 1px solid #d8e3f0;
     background: #ffffff;
     box-shadow: 0 24px 54px rgba(8, 29, 48, 0.26);
     padding: 26px 22px 22px;
+    box-sizing: border-box;
+    font-family: inherit;
 }
 
 .account-missing-modal__close {
@@ -1662,6 +1668,7 @@ function AccountNotFoundModal(): string
     background: #f2f6fb;
     color: #45607c;
     font-size: 22px;
+    font-family: inherit;
     line-height: 1;
     cursor: pointer;
 }
@@ -1670,6 +1677,8 @@ function AccountNotFoundModal(): string
     margin: 0;
     color: #12304d;
     font-size: 23px;
+    font-family: inherit;
+    font-weight: 800;
     line-height: 1.25;
 }
 
@@ -1677,6 +1686,8 @@ function AccountNotFoundModal(): string
     margin: 12px 0 0;
     color: #3f5d7b;
     font-size: 15px;
+    font-family: inherit;
+    font-weight: 500;
     line-height: 1.55;
 }
 
@@ -1696,6 +1707,8 @@ function AccountNotFoundModal(): string
     border-radius: 10px;
     font-weight: 700;
     font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
     text-decoration: none;
     transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 }
@@ -1716,21 +1729,63 @@ function AccountNotFoundModal(): string
 }
 
 @media (max-width: 560px) {
+    .account-missing-modal {
+        align-items: end;
+        padding: 12px;
+    }
+
     .account-missing-modal__card {
-        border-radius: 14px;
+        width: 100%;
+        border-radius: 18px 18px 16px 16px;
         padding: 22px 16px 16px;
+        box-shadow: 0 18px 36px rgba(8, 29, 48, 0.24);
     }
 
     .account-missing-modal__title {
         font-size: 20px;
     }
 
+    .account-missing-modal__text {
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
     .account-missing-modal__actions {
         flex-direction: column;
+        gap: 8px;
     }
 
     .account-missing-modal__btn {
         width: 100%;
+        min-height: 46px;
+        border-radius: 12px;
+    }
+}
+
+@media (max-width: 400px) {
+    .account-missing-modal {
+        padding: 10px;
+    }
+
+    .account-missing-modal__card {
+        padding: 20px 14px 14px;
+    }
+
+    .account-missing-modal__close {
+        top: 8px;
+        right: 8px;
+        width: 30px;
+        height: 30px;
+    }
+
+    .account-missing-modal__title {
+        font-size: 18px;
+        line-height: 1.3;
+    }
+
+    .account-missing-modal__text {
+        margin-top: 10px;
+        font-size: 13px;
     }
 }
 </style>
@@ -1958,6 +2013,24 @@ function InDev_Content(string $requestedUri = '', string $backUrl = '', string $
     return $out;
 }
 
+function MobileOnly_Content(string $backUrl = '/', string $backText = 'На головну'): string
+{
+    $out = '<div class="page-404">';
+    $out .= '<div class="page-404__inner">';
+    $out .= '<div class="page-404__icon">';
+    $out .= '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke:#ffffff"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M12 9v4" /><path d="M12 16v.01" /></svg>';
+    $out .= '</div>';
+    $out .= '<h1 class="page-404__title">Сторінка доступна лише з мобільного пристрою</h1>';
+    $out .= '<p class="page-404__text">Відкрийте цей розділ зі смартфона або поверніться на головну сторінку.</p>';
+    $out .= '<div class="page-404__actions">';
+    $out .= '<a href="' . htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') . '" class="page-404__btn page-404__btn--primary">' . htmlspecialchars($backText, ENT_QUOTES, 'UTF-8') . '</a>';
+    $out .= '</div>';
+    $out .= '</div>';
+    $out .= '</div>';
+
+    return $out;
+}
+
 function Page_Down(): string
 {
     global $hide_page_down;
@@ -1974,7 +2047,7 @@ function Page_Down(): string
             <section class="site-footer-v2__brand">
                 <a href="/" class="site-footer-v2__logo">
                     <span class="site-footer-v2__logo-mark">
-                        <img src="/assets/images/logobrand3.png" alt="Shana logo">
+                        <img src="/assets/images/shana-logo-white.png" alt="Shana logo">
                     </span>
                     <span class="site-footer-v2__logo-text">
                         <strong>ІПС Шана</strong>
@@ -3056,6 +3129,153 @@ function compressCard($sourcePath, $targetPath, $maxSizeKB = 300, $maxWidth = 19
     return true;
 }
 
+function Menu_Mobile_Bottom_Icon(string $icon, bool $active = false): string
+{
+    switch ($icon) {
+        case 'home':
+            return $active
+                ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-home"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12.707 2.293l9 9c.63 .63 .184 1.707 -.707 1.707h-1v6a3 3 0 0 1 -3 3h-1v-7a3 3 0 0 0 -2.824 -2.995l-.176 -.005h-2a3 3 0 0 0 -3 3v7h-1a3 3 0 0 1 -3 -3v-6h-1c-.89 0 -1.337 -1.077 -.707 -1.707l9 -9a1 1 0 0 1 1.414 0m.293 11.707a1 1 0 0 1 1 1v7h-4v-7a1 1 0 0 1 .883 -.993l.117 -.007z" /></svg>'
+                : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-home"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l-2 0l9 -9l9 9l-2 0" /><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" /><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" /></svg>';
+        case 'services':
+            return $active
+                ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-briefcase"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M22 13.478v4.522a3 3 0 0 1 -3 3h-14a3 3 0 0 1 -3 -3v-4.522l.553 .277a20.999 20.999 0 0 0 18.897 -.002l.55 -.275zm-8 -11.478a3 3 0 0 1 3 3v1h2a3 3 0 0 1 3 3v2.242l-1.447 .724a19.002 19.002 0 0 1 -16.726 .186l-.647 -.32l-1.18 -.59v-2.242a3 3 0 0 1 3 -3h2v-1a3 3 0 0 1 3 -3h4zm-2 8a1 1 0 0 0 -1 1a1 1 0 1 0 2 .01c0 -.562 -.448 -1.01 -1 -1.01zm2 -6h-4a1 1 0 0 0 -1 1v1h6v-1a1 1 0 0 0 -1 -1z" /></svg>'
+                : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-briefcase"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 9a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -9" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" /><path d="M12 12l0 .01" /><path d="M3 13a20 20 0 0 0 18 0" /></svg>';
+        case 'add':
+            return $active
+                ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-circle-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4.929 4.929a10 10 0 1 1 14.141 14.141a10 10 0 0 1 -14.14 -14.14m8.071 4.071a1 1 0 1 0 -2 0v2h-2a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0v-2h2a1 1 0 1 0 0 -2h-2v-2z" /></svg>'
+                : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M9 12h6" /><path d="M12 9v6" /></svg>';
+        case 'sections':
+            return $active
+                ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-apps"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 3h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z" /><path d="M9 13h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z" /><path d="M19 13h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z" /><path d="M17 3a1 1 0 0 1 .993 .883l.007 .117v2h2a1 1 0 0 1 .117 1.993l-.117 .007h-2v2a1 1 0 0 1 -1.993 .117l-.007 -.117v-2h-2a1 1 0 0 1 -.117 -1.993l.117 -.007h2v-2a1 1 0 0 1 1 -1z" /></svg>'
+                : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-apps"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /><path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /><path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /><path d="M14 7l6 0" /><path d="M17 4l0 6" /></svg>';
+        case 'profile':
+            return $active
+                ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-user"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 2a5 5 0 1 1 -5 5l.005 -.217a5 5 0 0 1 4.995 -4.783z" /><path d="M14 14a5 5 0 0 1 5 5v1a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-1a5 5 0 0 1 5 -5h4z" /></svg>'
+                : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>';
+        case 'settings':
+            return $active
+                ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-settings"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14.647 4.081a.724 .724 0 0 0 1.08 .448c2.439 -1.485 5.23 1.305 3.745 3.744a.724 .724 0 0 0 .447 1.08c2.775 .673 2.775 4.62 0 5.294a.724 .724 0 0 0 -.448 1.08c1.485 2.439 -1.305 5.23 -3.744 3.745a.724 .724 0 0 0 -1.08 .447c-.673 2.775 -4.62 2.775 -5.294 0a.724 .724 0 0 0 -1.08 -.448c-2.439 1.485 -5.23 -1.305 -3.745 -3.744a.724 .724 0 0 0 -.447 -1.08c-2.775 -.673 -2.775 -4.62 0 -5.294a.724 .724 0 0 0 .448 -1.08c-1.485 -2.439 1.305 -5.23 3.744 -3.745a.722 .722 0 0 0 1.08 -.447c.673 -2.775 4.62 -2.775 5.294 0zm-2.647 4.919a3 3 0 1 0 0 6a3 3 0 0 0 0 -6" /></svg>'
+                : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>';
+        case 'finance':
+            return $active
+                ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-credit-card"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M22 10v6a4 4 0 0 1 -4 4h-12a4 4 0 0 1 -4 -4v-6h20zm-14.99 4h-.01a1 1 0 1 0 .01 2a1 1 0 0 0 0 -2m5.99 0h-2a1 1 0 0 0 0 2h2a1 1 0 0 0 0 -2zm5 -10a4 4 0 0 1 4 4h-20a4 4 0 0 1 4 -4h12z" /></svg>'
+                : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-credit-card"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3l0 -8" /><path d="M3 10l18 0" /><path d="M7 15l.01 0" /><path d="M11 15l2 0" /></svg>';
+        case 'notifications':
+            return $active
+                ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-bell"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14.235 19c.865 0 1.322 1.024 .745 1.668a3.992 3.992 0 0 1 -2.98 1.332a3.992 3.992 0 0 1 -2.98 -1.332c-.552 -.616 -.158 -1.579 .634 -1.661l.11 -.006h4.471z" /><path d="M12 2c1.358 0 2.506 .903 2.875 2.141l.046 .171l.008 .043a8.013 8.013 0 0 1 4.024 6.069l.028 .287l.019 .289v2.931l.021 .136a3 3 0 0 0 1.143 1.847l.167 .117l.162 .099c.86 .487 .56 1.766 -.377 1.864l-.116 .006h-16c-1.028 0 -1.387 -1.364 -.493 -1.87a3 3 0 0 0 1.472 -2.063l.021 -.143l.001 -2.97a8 8 0 0 1 3.821 -6.454l.248 -.146l.01 -.043a3.003 3.003 0 0 1 2.562 -2.29l.182 -.017l.176 -.004z" /></svg>'
+                : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-bell"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>';
+    }
+
+    return '';
+}
+
+function Menu_Mobile_Bottom(
+    bool $isLogged,
+    bool $isHomeActive,
+    bool $isServicesActive,
+    bool $isAddGraveActive,
+    bool $isSectionsActive,
+    bool $isOnProfilePage
+): string {
+    $currentProfileMd = isset($_GET['md']) ? trim((string)$_GET['md']) : '';
+    $isProfileOverviewActive = $isOnProfilePage && ($currentProfileMd === '' || $currentProfileMd === '0');
+    $isProfileSettingsActive = $isOnProfilePage && $currentProfileMd === '2';
+    $isProfileFinanceActive = $isOnProfilePage && $currentProfileMd === '4';
+    $isProfileNotificationsActive = $isOnProfilePage && $currentProfileMd === '11';
+    $isProfileMode = $isLogged && $isOnProfilePage;
+
+    $unreadCount = 0;
+    if ($isLogged && function_exists('getUnreadNotificationCount')) {
+        $unreadCount = getUnreadNotificationCount((int)($_SESSION['uzver'] ?? 0));
+    }
+
+    $unreadBadge = $unreadCount > 0
+        ? '<span class="menu-mobile-bottom__badge">' . (int)$unreadCount . '</span>'
+        : '';
+
+    $profileMainHref = $isLogged ? '/profile.php' : '/auth.php';
+
+    static $mobileBottomScriptIncluded = false;
+    $mobileBottomScript = '';
+    if (!$mobileBottomScriptIncluded) {
+        $mobileBottomScript = '
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const bottomNavs = Array.from(document.querySelectorAll(".menu-mobile-bottom"));
+    if (!bottomNavs.length) return;
+
+    function setSectionsOpen(open) {
+        const burgerToggle = document.querySelector(".menu-up-new .mobile-burger .menu-up-new-mobile-toggle");
+        if (!burgerToggle) return;
+        burgerToggle.checked = !!open;
+        burgerToggle.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    bottomNavs.forEach(function (nav) {
+        nav.addEventListener("click", function (event) {
+            const sectionsOpener = event.target.closest("[data-bottom-nav-open-sections]");
+            if (sectionsOpener && nav.contains(sectionsOpener)) {
+                event.preventDefault();
+                setSectionsOpen(true);
+            }
+        });
+    });
+});
+</script>';
+        $mobileBottomScriptIncluded = true;
+    }
+
+    return '
+    <nav class="menu-mobile-bottom" aria-label="Швидка мобільна навігація" data-authenticated="' . ($isLogged ? '1' : '0') . '" data-mode="' . ($isProfileMode ? 'profile' : 'main') . '">
+        <div class="menu-mobile-bottom__dock menu-mobile-bottom__dock--main' . ($isProfileMode ? ' is-hidden' : '') . '" data-nav-panel="main">
+            <a href="/" class="menu-mobile-bottom__item' . ($isHomeActive ? ' is-active' : '') . '">
+                <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('home', $isHomeActive) . '</span>
+                <span class="menu-mobile-bottom__label">Головна</span>
+            </a>
+            <a href="/service.php" class="menu-mobile-bottom__item' . ($isServicesActive ? ' is-active' : '') . '">
+                <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('services', $isServicesActive) . '</span>
+                <span class="menu-mobile-bottom__label">Послуги</span>
+            </a>
+            <a href="/graveaddform.php" class="menu-mobile-bottom__item' . ($isAddGraveActive ? ' is-active' : '') . '">
+                <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('add', $isAddGraveActive) . '</span>
+                <span class="menu-mobile-bottom__label">Додати</span>
+            </a>
+            <a href="/mobile-nav.php" class="menu-mobile-bottom__item' . ($isSectionsActive ? ' is-active' : '') . '">
+                <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('sections', $isSectionsActive) . '</span>
+                <span class="menu-mobile-bottom__label">Розділи</span>
+            </a>
+            <a href="' . $profileMainHref . '" class="menu-mobile-bottom__item">
+                <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('profile', false) . '</span>
+                <span class="menu-mobile-bottom__label">Профіль</span>
+            </a>
+        </div>
+
+        <div class="menu-mobile-bottom__dock menu-mobile-bottom__dock--profile' . ($isLogged && $isProfileMode ? '' : ' is-hidden') . '" data-nav-panel="profile">
+            <a href="/" class="menu-mobile-bottom__item">
+                <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('home', false) . '</span>
+                <span class="menu-mobile-bottom__label">Головна</span>
+            </a>
+            <a href="/profile.php" class="menu-mobile-bottom__item' . ($isProfileOverviewActive ? ' is-active' : '') . '">
+                <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('profile', $isProfileOverviewActive) . '</span>
+                <span class="menu-mobile-bottom__label">Профіль</span>
+            </a>
+            <a href="/profile.php?md=2" class="menu-mobile-bottom__item' . ($isProfileSettingsActive ? ' is-active' : '') . '">
+                <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('settings', $isProfileSettingsActive) . '</span>
+                <span class="menu-mobile-bottom__label">Налаштування</span>
+            </a>
+            <a href="/profile.php?md=4" class="menu-mobile-bottom__item' . ($isProfileFinanceActive ? ' is-active' : '') . '">
+                <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('finance', $isProfileFinanceActive) . '</span>
+                <span class="menu-mobile-bottom__label">Фінанси</span>
+            </a>
+            <a href="/profile.php?md=11" class="menu-mobile-bottom__item' . ($isProfileNotificationsActive ? ' is-active' : '') . '">
+                <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('notifications', $isProfileNotificationsActive) . '</span>
+                <span class="menu-mobile-bottom__label">Повідомлення</span>
+                ' . $unreadBadge . '
+            </a>
+        </div>
+    </nav>' . $mobileBottomScript;
+}
+
 function Menu_Up(): string
 {
     $isLogged = isset($_SESSION['logged']) && (int)$_SESSION['logged'] === 1;
@@ -3101,14 +3321,9 @@ function Menu_Up(): string
 
     $uid = substr(md5(uniqid('', true)), 0, 10);
     $profileToggleId = 'menu-up-new-profile-' . $uid;
-    $mobileMenuToggleId = 'menu-main-' . $uid;
-    $mobileWorkToggleId = 'mobile-work-toggle-' . $uid;
 
     $currentRequestPath = CurrentPublicRequestPath();
     $isOnProfilePage = ($currentRequestPath === NormalizePublicPath('/profile.php'));
-    $mobileAuthText = $isLogged ? ($isOnProfilePage ? 'Меню профілю' : 'Профіль') : 'Увійти';
-    $mobileAuthHref = $isLogged ? PublicUrl('/profile.php') : PublicUrl('/auth.php');
-
     $requestPath = $currentRequestPath;
 
     $fromPath = '';
@@ -3125,14 +3340,16 @@ function Menu_Up(): string
     $resolvedPath = ($requestPath === NormalizePublicPath('/in-dev.php') && $fromPath !== '') ? $fromPath : $requestPath;
 
     $isHomeActive = ($resolvedPath === NormalizePublicPath('/index.php'));
+    $isServicePageActive = ($resolvedPath === NormalizePublicPath('/service.php'));
     $isServiceCleanActive = ($resolvedPath === NormalizePublicPath('/clean-cemeteries.php'));
     $isServiceProdActive = ($resolvedPath === NormalizePublicPath('/prod-monuments.php'));
     $isServiceOtherActive = ($resolvedPath === NormalizePublicPath('/other-job.php'));
-    $isServicesActive = ($isServiceCleanActive || $isServiceProdActive || $isServiceOtherActive);
+    $isServicesActive = ($isServicePageActive || $isServiceCleanActive || $isServiceProdActive || $isServiceOtherActive);
     $isChurchActive = ($resolvedPath === NormalizePublicPath('/church.php'));
     $isClientsActive = ($resolvedPath === NormalizePublicPath('/clients.php'));
     $isAddGraveActive = ($resolvedPath === NormalizePublicPath('/graveaddform.php'));
     $isModerationPanelActive = ($resolvedPath === NormalizePublicPath('/moderation-panel.php'));
+    $isSectionsActive = ($resolvedPath === NormalizePublicPath('/mobile-nav.php'));
 
     $canSeeAdmin = $isLogged
         && isset($_SESSION['status'])
@@ -3330,71 +3547,25 @@ document.addEventListener("DOMContentLoaded", function () {
         $profileScriptIncluded = true;
     }
 
-    $mobileModerationLink = '';
-    if ($canSeeModeration) {
-        $mobileModerationLink = '<li><a' . ($isModerationPanelActive ? ' class="is-active"' : '') . ' href="/moderation-panel.php">Панель модерації</a></li>';
-    }
+    $mobileTopAction = $isLogged
+        ? '<a class="mobile-menu-messenger" href="/messenger.php" aria-label="Месенджер">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-message-circle" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1" /></svg>
+            </a>'
+        : '<a class="mobile-menu-auth" href="/auth.php">Увійти</a>';
 
     $mobileMenu = '
         <div class="mobile-menu-topbar">
             <a href="/" class="mobile-menu-brand">
-                <span class="mobile-menu-brand-title">ІПС Шана</span>
-                <span class="mobile-menu-brand-sub">SHANAPRA.COM</span>
+                <span class="mobile-menu-brand-mark">
+                    <img src="/assets/images/shana-logo-white.png" alt="Логотип Shana">
+                </span>
+                <span class="mobile-menu-brand-text">
+                    <span class="mobile-menu-brand-title">ІПС Шана</span>
+                    <span class="mobile-menu-brand-sub">SHANAPRA.COM</span>
+                </span>
             </a>
             <div class="mobile-menu-actions">
-                ' . ($isLogged && $isOnProfilePage
-                    ? '<button class="mobile-menu-auth mobile-open-profile-btn" type="button">' . $mobileAuthText . '</button>'
-                    : '<a class="mobile-menu-auth" href="' . $mobileAuthHref . '">' . $mobileAuthText . '</a>'
-                ) . '
-
-                <div class="dropdown nav mobile-burger">
-                    <input type="checkbox" id="' . $mobileMenuToggleId . '" class="dropdown-toggle menu-up-new-mobile-toggle">
-                    <label for="' . $mobileMenuToggleId . '" class="menu-button nav" data-tooltip="Меню" aria-label="Меню">
-                        <div class="burger">
-                          <span></span>
-                          <span></span>
-                          <span></span>
-                        </div>
-                    </label>
-
-                    <div class="dropdown-menu nav">
-                        <div class="mobile-menu-header">
-                            <span class="menu-name">Меню</span>
-                            <label for="' . $mobileMenuToggleId . '" class="mobile-menu-close-btn" aria-label="Закрити меню">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </label>
-                        </div>
-                        <ul class="menu_ups_mobile">
-                            <li><a' . ($isHomeActive ? ' class="is-active"' : '') . ' href="/">Головна</a></li>
-                            <li class="has-submenu">
-                                <input type="checkbox" id="' . $mobileWorkToggleId . '" class="submenu-toggle"' . ($isServicesActive ? ' checked' : '') . '>
-                                <label for="' . $mobileWorkToggleId . '" class="submenu-label' . ($isServicesActive ? ' is-active' : '') . '">Робота</label>
-                                <ul class="submenu-mobile">
-                                    <li><a' . ($isServiceCleanActive ? ' class="is-active"' : '') . ' href="/clean-cemeteries.php">Прибирання кладовищ</a></li>
-                                    <li><a' . ($isServiceProdActive ? ' class="is-active"' : '') . ' href="/in-dev.php?from=/prod-monuments.php">Виготовлення пам`ятників</a></li>
-                                    <li><a' . ($isServiceOtherActive ? ' class="is-active"' : '') . ' href="/in-dev.php?from=/other-job.php">Інші роботи</a></li>
-                                </ul>
-                            </li>
-                            <li><a' . ($isChurchActive ? ' class="is-active"' : '') . ' href="/in-dev.php?from=/church.php">Церкви</a></li>
-                            <li><a' . ($isClientsActive ? ' class="is-active"' : '') . ' href="/in-dev.php?from=/clients.php">Наші клієнти</a></li>
-                            <li><a' . ($isAddGraveActive ? ' class="is-active"' : '') . ' href="/graveaddform.php">Додати поховання</a></li>
-                            ' . $mobileModerationLink . '
-                        </ul>
-                        <hr class="mobile-menu-divider">
-                        <div class="mobile-menu-blocks' . ($isLogged ? '' : ' mobile-menu-blocks-single') . '">
-                            ' . ($isLogged ? '<a href="/messenger.php" class="mobile-menu-block">
-                                <svg class="mobile-menu-block-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                                <span>Месенджер</span>
-                            </a>' : '') . '
-                            <a href="/messenger.php?type=3" class="mobile-menu-block">
-                                <svg class="mobile-menu-block-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-                                <span>Технічна підтримка</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                ' . $mobileTopAction . '
             </div>
         </div>';
 
@@ -3404,40 +3575,47 @@ document.addEventListener("DOMContentLoaded", function () {
         $mobileBurgerScript = '
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const burgerToggles = Array.from(document.querySelectorAll(".menu-up-new .mobile-burger .menu-up-new-mobile-toggle"));
-    if (!burgerToggles.length) return;
+    const header = document.querySelector(".menu-up-new");
+    if (!header) return;
+    const mobileMedia = window.matchMedia("(max-width: 768px)");
+    let lastScrollY = window.scrollY || 0;
+    let scrollTicking = false;
 
-    function setBodyState() {
-        const isAnyOpened = burgerToggles.some(function (toggle) { return !!toggle.checked; });
-        document.body.classList.toggle("burger-open", isAnyOpened);
+    function syncMobileHeaderState() {
+        const isHidden = mobileMedia.matches && header.classList.contains("menu-up-new--mobile-hidden");
+        document.documentElement.classList.toggle("menu-mobile-header-hidden", isHidden);
     }
 
-    burgerToggles.forEach(function (toggle) {
-        toggle.addEventListener("change", function () {
-            if (toggle.checked) {
-                burgerToggles.forEach(function (other) {
-                    if (other !== toggle) other.checked = false;
-                });
-            }
-            setBodyState();
-        });
-    });
+    function updateMobileHeaderVisibility() {
+        scrollTicking = false;
+        const currentY = window.scrollY || 0;
+        if (!mobileMedia.matches || currentY <= 8) {
+            header.classList.remove("menu-up-new--mobile-hidden");
+            syncMobileHeaderState();
+            lastScrollY = currentY;
+            return;
+        }
 
-    document.addEventListener("keydown", function (e) {
-        if (e.key !== "Escape") return;
-        burgerToggles.forEach(function (toggle) { toggle.checked = false; });
-        setBodyState();
-    });
+        const delta = currentY - lastScrollY;
+        if (delta > 4 && currentY > 72) {
+            header.classList.add("menu-up-new--mobile-hidden");
+        } else if (delta < -4) {
+            header.classList.remove("menu-up-new--mobile-hidden");
+        }
 
-    const mobileLinks = Array.from(document.querySelectorAll(".menu-up-new .mobile-burger .dropdown-menu.nav a"));
-    mobileLinks.forEach(function (link) {
-        link.addEventListener("click", function () {
-            burgerToggles.forEach(function (toggle) { toggle.checked = false; });
-            setBodyState();
-        });
-    });
+        syncMobileHeaderState();
+        lastScrollY = currentY;
+    }
 
-    setBodyState();
+    function queueMobileHeaderVisibility() {
+        if (scrollTicking) return;
+        scrollTicking = true;
+        window.requestAnimationFrame(updateMobileHeaderVisibility);
+    }
+
+    window.addEventListener("scroll", queueMobileHeaderVisibility, { passive: true });
+    window.addEventListener("resize", updateMobileHeaderVisibility);
+    updateMobileHeaderVisibility();
 });
 </script>';
         $mobileBurgerScriptIncluded = true;
@@ -3451,7 +3629,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="menu-up-new-wrap">
             <a class="menu-up-new-brand" href="/">
                 <span class="menu-up-new-brand-mark">
-                    <img src="/assets/images/logobrand3.png" alt="Логотип">
+                    <img src="/assets/images/shana-logo-white.png" alt="Логотип Shana">
                 </span>
                 <span class="menu-up-new-brand-text">
                     <strong>ІПС Шана</strong>
@@ -3478,6 +3656,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
             ' . $desktopActions . '
         </div>
-    </header>';
+    </header>
+    ' . Menu_Mobile_Bottom(
+        $isLogged,
+        $isHomeActive,
+        $isServicesActive,
+        $isAddGraveActive,
+        $isSectionsActive,
+        $isOnProfilePage
+    ) . '';
 }
 

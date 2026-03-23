@@ -261,9 +261,188 @@ if (($md == 0) || ($md == '')) {
             }
 
             View_Add('<link rel="stylesheet" href="/assets/css/profile.css">');
+
+            $profileNameParts = [];
+            if (!empty($p['lname'])) {
+                $profileNameParts[] = trim((string)$p['lname']);
+            }
+            if (!empty($p['fname'])) {
+                $profileNameParts[] = trim((string)$p['fname']);
+            }
+            $profileDisplayName = trim(implode(' ', $profileNameParts));
+            if ($profileDisplayName === '') {
+                $profileDisplayName = 'Користувач';
+            }
+
+            $profileAvatarPath = !empty($p['avatar']) ? (string)$p['avatar'] : '/avatars/ava.png';
+            $profileHasAvatar = !empty($p['avatar']);
+            $profileAvatarInitialSource = trim((string)($p['lname'] ?? ''));
+            if ($profileAvatarInitialSource === '') {
+                $profileAvatarInitialSource = trim((string)($p['fname'] ?? ''));
+            }
+            if ($profileAvatarInitialSource === '') {
+                $profileAvatarInitialSource = $profileDisplayName;
+            }
+            $profileAvatarInitial = function_exists('mb_substr')
+                ? mb_substr($profileAvatarInitialSource, 0, 1, 'UTF-8')
+                : substr($profileAvatarInitialSource, 0, 1);
+            if (function_exists('mb_strtoupper')) {
+                $profileAvatarInitial = mb_strtoupper($profileAvatarInitial, 'UTF-8');
+            } else {
+                $profileAvatarInitial = strtoupper($profileAvatarInitial);
+            }
+            if ($profileAvatarInitial === '') {
+                $profileAvatarInitial = 'U';
+            }
+
+            $profileLocationParts = [];
+            if (!empty($p['region_title'])) {
+                $profileLocationParts[] = $p['region_title'] . ' область';
+            }
+            if (!empty($p['district_title'])) {
+                $profileLocationParts[] = $p['district_title'] . ' район';
+            }
+            $profileLocationLabel = !empty($profileLocationParts) ? implode(', ', $profileLocationParts) : 'Не вказано';
+
+            $regDate = 'Не вказано';
+            if (!empty($p['dttmreg'])) {
+                $timestamp = strtotime($p['dttmreg']);
+                if ($timestamp !== false) {
+                    $months = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
+                    $regDate = date('j', $timestamp) . ' ' . $months[(int)date('n', $timestamp) - 1] . ' ' . date('Y', $timestamp);
+                }
+            }
+
+            $isAccountActive = (int)$p['activ'] === 1;
+            $profileStatusLabel = $isAccountActive ? 'Акаунт активний' : 'Потрібна активація';
+            $profileStatusClass = $isAccountActive ? ' profile-mobile-status--active' : ' profile-mobile-status--inactive';
+
+            $profileCompletionFields = [
+                !empty($p['fname']) || !empty($p['lname']),
+                !empty($p['tel']),
+                $profileLocationLabel !== 'Не вказано',
+                !empty($p['avatar']),
+            ];
+            $profileCompletionPercent = (int)round((array_sum(array_map(static fn($filled) => $filled ? 1 : 0, $profileCompletionFields)) / count($profileCompletionFields)) * 100);
+            $profileNeedsAttention = in_array(false, $profileCompletionFields, true);
+            $profileCompletionLabel = $profileCompletionPercent >= 100
+                ? 'Профіль заповнений'
+                : 'Заповнено на ' . $profileCompletionPercent . '%';
+            $profileMissingLabels = [];
+            if (empty($p['fname']) && empty($p['lname'])) {
+                $profileMissingLabels[] = 'імʼя та прізвище';
+            }
+            if (empty($p['tel'])) {
+                $profileMissingLabels[] = 'телефон';
+            }
+            if ($profileLocationLabel === 'Не вказано') {
+                $profileMissingLabels[] = 'локацію';
+            }
+            if (empty($p['avatar'])) {
+                $profileMissingLabels[] = 'фото';
+            }
+            $profileMissingText = !empty($profileMissingLabels)
+                ? 'Що додати: ' . implode(', ', $profileMissingLabels) . '.'
+                : 'Профіль заповнений повністю.';
+
+            $mobileUnreadCount = function_exists('getUnreadNotificationCount') ? getUnreadNotificationCount($userId) : 0;
+            $profilePublicationsPreview = 0;
+            $profileSavedPreview = 0;
+
+            $pubCountRes = mysqli_query($dblink, "SELECT COUNT(*) AS cnt FROM grave WHERE idxadd = " . (int)$userId);
+            if ($pubCountRes && ($pubCountRow = mysqli_fetch_assoc($pubCountRes))) {
+                $profilePublicationsPreview = (int)($pubCountRow['cnt'] ?? 0);
+            }
+
+            $savedCountRes = mysqli_query($dblink, "SELECT COUNT(*) AS cnt FROM saved_grave WHERE user_id = " . (int)$userId);
+            if ($savedCountRes && ($savedCountRow = mysqli_fetch_assoc($savedCountRes))) {
+                $profileSavedPreview = (int)($savedCountRow['cnt'] ?? 0);
+            }
+
+            $profileStatus = (int)($_SESSION['status'] ?? ROLE_GUEST);
+            $profileNavLinks = [];
+
+            if (hasRole($profileStatus, ROLE_CLEANER)) {
+                $profileNavLinks[] = [
+                    'title' => 'Кабінет прибиральника',
+                    'text' => 'Замовлення, налаштування та робота з заявками.',
+                    'href' => '/profile.php?md=10',
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 9a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -9" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" /><path d="M12 12l0 .01" /><path d="M3 13a20 20 0 0 0 18 0" /></svg>',
+                ];
+            }
+
+            if (profileCanAccessAdminTools($profileStatus)) {
+                $profileNavLinks[] = [
+                    'title' => 'Бухгалтерія',
+                    'text' => 'Фінансовий модуль, аналітика і робочі інструменти.',
+                    'href' => profileAdminToolsUrl('accounting'),
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 6c0 1.657 3.582 3 8 3s8 -1.343 8 -3s-3.582 -3 -8 -3s-8 1.343 -8 3" /><path d="M4 6v6c0 1.657 3.582 3 8 3c.415 0 .822 -.012 1.22 -.035" /><path d="M20 10v-4" /><path d="M4 12v6c0 1.657 3.582 3 8 3c.352 0 .698 -.009 1.037 -.025" /><path d="M21 15h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5" /><path d="M19 21v1m0 -8v1" /></svg>',
+                ];
+            } elseif (hasRole($profileStatus, ROLE_ACCOUNTANT)) {
+                $profileNavLinks[] = [
+                    'title' => 'Бухгалтерія',
+                    'text' => 'Профільний розділ для бухгалтерських задач.',
+                    'href' => '/profile.php?md=5',
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12h18" /><path d="M3 6h18" /><path d="M5 18h14" /><path d="M7 14h10" /></svg>',
+                ];
+            }
+
+            if (hasAnyRole($profileStatus, [ROLE_MODERATOR, ROLE_WEBMASTER, ROLE_CREATOR])) {
+                $profileNavLinks[] = [
+                    'title' => 'Панель модерації',
+                    'text' => 'Перевірка матеріалів та робочий контроль публікацій.',
+                    'href' => '/moderation-panel.php',
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3l8 4v5c0 5 -3.5 8.5 -8 9c-4.5 -.5 -8 -4 -8 -9v-5l8 -4" /><path d="M9 12l2 2l4 -4" /></svg>',
+                ];
+            }
+
+            $profileNavLinks[] = [
+                'title' => 'Підтримка',
+                'text' => 'Швидкий перехід до чату з підтримкою.',
+                'href' => '/messenger.php?type=3',
+                'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h8" /><path d="M8 13h6" /><path d="M9 18h-4a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-4l-3 3l-3 -3z" /></svg>',
+            ];
+
             View_Add('<div class="profile-view-container">');
+            View_Add('<section class="profile-mobile-hero">');
+            View_Add('<div class="profile-mobile-hero-top">');
+            View_Add('<div class="profile-mobile-eyebrow">Особистий кабінет</div>');
+            View_Add('<span class="profile-mobile-status' . $profileStatusClass . '">' . htmlspecialchars($profileStatusLabel, ENT_QUOTES, 'UTF-8') . '</span>');
+            View_Add('</div>');
+            View_Add('<div class="profile-mobile-identity">');
+            View_Add('<div class="profile-mobile-avatar-wrap">');
+            if ($profileHasAvatar) {
+                View_Add('<img class="profile-mobile-avatar" src="' . htmlspecialchars($profileAvatarPath, ENT_QUOTES, 'UTF-8') . '" alt="Аватар">');
+            } else {
+                View_Add('<div class="profile-mobile-avatar-fallback" aria-hidden="true">' . htmlspecialchars($profileAvatarInitial, ENT_QUOTES, 'UTF-8') . '</div>');
+            }
+            View_Add('</div>');
+            View_Add('<div class="profile-mobile-identity-copy">');
+            View_Add('<h1 class="profile-mobile-name">' . htmlspecialchars($profileDisplayName, ENT_QUOTES, 'UTF-8') . '</h1>');
+            View_Add('<p class="profile-mobile-email">' . htmlspecialchars((string)$p['email'], ENT_QUOTES, 'UTF-8') . '</p>');
+            View_Add('</div>');
+            View_Add('</div>');
+            View_Add('<div class="profile-mobile-actions">');
+            View_Add('<a class="profile-mobile-action profile-mobile-action--primary" href="/profile.php?md=1803"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg><span>Редагувати профіль</span></a>');
+            View_Add('<a class="profile-mobile-action" href="/profile.php?md=11"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-bell" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg><span>Сповіщення' . ($mobileUnreadCount > 0 ? ' (' . (int)$mobileUnreadCount . ')' : '') . '</span></a>');
+            View_Add('</div>');
+            View_Add('<div class="profile-mobile-stats">');
+            View_Add('<a class="profile-mobile-stat-card" href="/profile.php?md=0&tab=publications"><span class="profile-mobile-stat-label">Публікації</span><strong class="profile-mobile-stat-value">' . $profilePublicationsPreview . '</strong></a>');
+            View_Add('<a class="profile-mobile-stat-card" href="/profile.php?md=0&tab=saved"><span class="profile-mobile-stat-label">Збережене</span><strong class="profile-mobile-stat-value" data-profile-saved-count>' . $profileSavedPreview . '</strong></a>');
+            View_Add('<a class="profile-mobile-stat-card" href="/profile.php?md=11"><span class="profile-mobile-stat-label">Новини</span><strong class="profile-mobile-stat-value">' . (int)$mobileUnreadCount . '</strong></a>');
+            View_Add('</div>');
+            if ($profileNeedsAttention) {
+                View_Add('<div class="profile-mobile-tip">');
+                View_Add('<div class="profile-mobile-tip-copy">');
+                View_Add('<strong>' . htmlspecialchars($profileCompletionLabel, ENT_QUOTES, 'UTF-8') . '</strong>');
+                View_Add('<span>Додайте телефон, локацію та фото, щоб профіль виглядав повніше на мобільному.</span>');
+                View_Add('</div>');
+                View_Add('<a class="profile-mobile-tip-link" href="/profile.php?md=1803">Заповнити</a>');
+                View_Add('</div>');
+            }
+            View_Add('</section>');
             $activeProfileTab = isset($_GET['tab']) ? (string)$_GET['tab'] : 'general';
-            if (!in_array($activeProfileTab, ['general', 'publications', 'saved'], true)) {
+            if (!in_array($activeProfileTab, ['general', 'navigation', 'publications', 'saved'], true)) {
                 $activeProfileTab = 'general';
             }
 
@@ -277,20 +456,47 @@ if (($md == 0) || ($md == '')) {
             View_Add('<button type="button" class="profile-view-tab-btn ' . ($activeProfileTab === 'publications' ? 'active' : '') . '" data-tab="publications">Мої публікації</button>');
             View_Add('<button type="button" class="profile-view-tab-btn ' . ($activeProfileTab === 'saved' ? 'active' : '') . '" data-tab="saved">Збережене</button>');
             View_Add('</div>');
+            View_Add('<div class="profile-mobile-tab-nav" aria-label="Розділи профілю">');
+            View_Add('<button type="button" class="profile-view-tab-btn profile-mobile-tab-btn profile-mobile-tab-btn--icon ' . ($activeProfileTab === 'general' ? 'active' : '') . '" data-tab="general" aria-label="Контактна інформація та статистика"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-layout-dashboard" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1" /><path d="M5 16h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1" /><path d="M15 12h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1" /><path d="M15 4h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1" /></svg></button>');
+            View_Add('<button type="button" class="profile-view-tab-btn profile-mobile-tab-btn ' . ($activeProfileTab === 'navigation' ? 'active' : '') . '" data-tab="navigation">Навігація</button>');
+            View_Add('<button type="button" class="profile-view-tab-btn profile-mobile-tab-btn ' . ($activeProfileTab === 'publications' ? 'active' : '') . '" data-tab="publications">Публікації</button>');
+            View_Add('<button type="button" class="profile-view-tab-btn profile-mobile-tab-btn ' . ($activeProfileTab === 'saved' ? 'active' : '') . '" data-tab="saved">Збережене</button>');
+            View_Add('</div>');
             View_Add('<div class="profile-view-tab-content" id="profile-tab-general" style="display: ' . ($activeProfileTab === 'general' ? 'block' : 'none') . ';">');
 
             // Основная карточка профиля
             View_Add('<div class="profile-view-main-card">');
-            View_Add('<div class="profile-view-avatar-wrapper">');
-            View_Add('<img class="profile-view-avatar" src="' . ($p['avatar'] != '' ? htmlspecialchars($p['avatar']) : '/avatars/ava.png') . '" alt="Аватар">');
+            View_Add('<div class="profile-view-main-copy">');
+            View_Add('<div class="profile-view-main-topline">');
+            View_Add('<span class="profile-view-main-eyebrow">Особистий кабінет</span>');
+            View_Add('<div class="profile-view-main-tags">');
+            View_Add('<span class="profile-view-main-tag' . ($isAccountActive ? ' profile-view-main-tag--success' : ' profile-view-main-tag--warning') . '">' . htmlspecialchars($profileStatusLabel, ENT_QUOTES, 'UTF-8') . '</span>');
             View_Add('</div>');
-
-            if (!empty($p['fname']) || !empty($p['lname'])) {
-                View_Add('<div class="profile-view-name">' . htmlspecialchars($p['lname'] . ' ' . $p['fname']) . '</div>');
+            View_Add('</div>');
+            View_Add('<div class="profile-view-name">' . htmlspecialchars($profileDisplayName, ENT_QUOTES, 'UTF-8') . '</div>');
+            View_Add('<p class="profile-view-main-subtitle">' . htmlspecialchars((string)$p['email'], ENT_QUOTES, 'UTF-8') . '</p>');
+            View_Add('</div>');
+            View_Add('<div class="profile-view-main-stats">');
+            View_Add('<div class="profile-view-stat-card"><span class="profile-view-stat-label">Публікації</span><strong class="profile-view-stat-value">' . $profilePublicationsPreview . '</strong></div>');
+            View_Add('<div class="profile-view-stat-card"><span class="profile-view-stat-label">Збережене</span><strong class="profile-view-stat-value" data-profile-saved-count>' . $profileSavedPreview . '</strong></div>');
+            View_Add('<div class="profile-view-stat-card"><span class="profile-view-stat-label">Новини</span><strong class="profile-view-stat-value">' . (int)$mobileUnreadCount . '</strong></div>');
+            View_Add('</div>');
+            View_Add('<div class="profile-view-avatar-panel">');
+            View_Add('<div class="profile-view-avatar-wrapper">');
+            if ($profileHasAvatar) {
+                View_Add('<img class="profile-view-avatar" src="' . htmlspecialchars($profileAvatarPath, ENT_QUOTES, 'UTF-8') . '" alt="Аватар">');
             } else {
-                View_Add('<div class="profile-view-name">Пользователь</div>');
-                View_Add('<div style="margin-top: 10px; padding: 10px 15px; background-color: #eef5ff; border: 1px dashed #a0c4ff; border-radius: 10px; font-size: 14px;">');
-                View_Add('<p style="margin: 0;">Ви ще не вказали інформацію про себе. <a href="/profile.php/?md=2" class="profile-fill-link">Заповнити зараз</a></p>');
+                View_Add('<div class="profile-view-avatar-fallback" aria-hidden="true">' . htmlspecialchars($profileAvatarInitial, ENT_QUOTES, 'UTF-8') . '</div>');
+            }
+            View_Add('</div>');
+            View_Add('</div>');
+            if ($profileNeedsAttention) {
+                View_Add('<div class="profile-view-main-note">');
+                View_Add('<div class="profile-view-note-copy">');
+                View_Add('<strong>Заповненість профілю: ' . $profileCompletionPercent . '%</strong>');
+                View_Add('<span>' . htmlspecialchars($profileMissingText, ENT_QUOTES, 'UTF-8') . '</span>');
+                View_Add('</div>');
+                View_Add('<a href="/profile.php?md=1803" class="profile-fill-link">Заповнити зараз</a>');
                 View_Add('</div>');
             }
             View_Add('</div>');
@@ -336,18 +542,7 @@ if (($md == 0) || ($md == '')) {
             View_Add('</div>');
             View_Add('<div class="profile-view-info-item-content">');
             View_Add('<span class="profile-view-info-label">Місто</span>');
-            $location = '';
-            if (!empty($p['region_title'])) {
-                $location .= htmlspecialchars($p['region_title']) . ' область';
-            }
-            if (!empty($p['district_title'])) {
-                if (!empty($location)) $location .= ', ';
-                $location .= htmlspecialchars($p['district_title']) . ' район';
-            }
-            if (empty($location)) {
-                $location = 'Не вказано';
-            }
-            View_Add('<span class="profile-view-info-value">' . $location . '</span>');
+            View_Add('<span class="profile-view-info-value">' . htmlspecialchars($profileLocationLabel, ENT_QUOTES, 'UTF-8') . '</span>');
             View_Add('</div>');
             View_Add('</div>');
 
@@ -357,16 +552,6 @@ if (($md == 0) || ($md == '')) {
             View_Add('<div class="profile-view-info-card">');
             View_Add('<h2 class="profile-view-info-card-title">Статистика облікового запису</h2>');
             View_Add('<p class="profile-view-info-card-subtitle">Інформація про ваш обліковий запис</p>');
-
-            // Дата регистрации
-            $regDate = 'Не указана';
-            if (!empty($p['dttmreg'])) {
-                $timestamp = strtotime($p['dttmreg']);
-                if ($timestamp !== false) {
-                    $months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-                    $regDate = date('j', $timestamp) . ' ' . $months[date('n', $timestamp) - 1] . ' ' . date('Y', $timestamp);
-                }
-            }
 
             View_Add('<div class="profile-view-info-block">');
             View_Add('<div class="profile-view-icon-box">');
@@ -380,8 +565,6 @@ if (($md == 0) || ($md == '')) {
             View_Add('</div>');
             View_Add('</div>');
 
-            // Статус аккаунта
-            $isAccountActive = (int)$p['activ'] === 1;
             View_Add('<div class="profile-view-status-block">');
             View_Add('<div class="profile-view-status-table">');
             View_Add('<div class="profile-view-status-row">');
@@ -405,6 +588,26 @@ if (($md == 0) || ($md == '')) {
             View_Add('</div>');
             View_Add('</div>');
 
+            View_Add('</div>');
+            View_Add('<div class="profile-view-tab-content" id="profile-tab-navigation" style="display: ' . ($activeProfileTab === 'navigation' ? 'block' : 'none') . ';">');
+            View_Add('<div class="profile-mobile-links-card">');
+            View_Add('<div class="profile-mobile-links-head">');
+            View_Add('<h2 class="profile-mobile-links-title">Навігація профілю</h2>');
+            View_Add('<p class="profile-mobile-links-subtitle">Швидкі переходи до додаткових розділів.</p>');
+            View_Add('</div>');
+            View_Add('<div class="profile-mobile-links-grid">');
+            foreach ($profileNavLinks as $navLink) {
+                View_Add('<a class="profile-mobile-link-card" href="' . htmlspecialchars($navLink['href'], ENT_QUOTES, 'UTF-8') . '">');
+                View_Add('<span class="profile-mobile-link-icon">' . $navLink['icon'] . '</span>');
+                View_Add('<span class="profile-mobile-link-copy">');
+                View_Add('<span class="profile-mobile-link-title">' . htmlspecialchars($navLink['title'], ENT_QUOTES, 'UTF-8') . '</span>');
+                View_Add('<span class="profile-mobile-link-text">' . htmlspecialchars($navLink['text'], ENT_QUOTES, 'UTF-8') . '</span>');
+                View_Add('</span>');
+                View_Add('<span class="profile-mobile-link-arrow" aria-hidden="true">›</span>');
+                View_Add('</a>');
+            }
+            View_Add('</div>');
+            View_Add('</div>');
             View_Add('</div>');
             View_Add('<div class="profile-view-tab-content" id="profile-tab-publications" style="display: ' . ($activeProfileTab === 'publications' ? 'block' : 'none') . ';">');
             $publications = [];
@@ -495,7 +698,7 @@ if (($md == 0) || ($md == '')) {
                         </div>
                         <div class="profile-pub-card-actions">
                             <a class="profile-pub-card-link" href="/cardout.php?idx=' . $pubId . '">Переглянути</a>
-                            <a class="profile-pub-card-link profile-pub-card-link--secondary" href="/cardout.php?idx=' . $pubId . '&edit=1">Редагувати</a>
+                            <a class="profile-pub-card-link profile-pub-card-link--secondary" href="/cardout/editgraveform?idx=' . $pubId . '">Редагувати</a>
                         </div>
                     </div>');
                 }
@@ -532,7 +735,7 @@ if (($md == 0) || ($md == '')) {
             $savedCount = count($savedItems);
 
             View_Add('<div class="profile-pubs-toolbar">');
-            View_Add('<div class="profile-pubs-total">Збережено публікацій: <strong id="profile-saved-count">' . $savedCount . '</strong></div>');
+            View_Add('<div class="profile-pubs-total">Збережено публікацій: <strong id="profile-saved-count" data-profile-saved-count>' . $savedCount . '</strong></div>');
             View_Add('<div class="profile-pubs-search"><input type="text" class="profile-saved-search-input profile-pubs-search-input" placeholder="Пошук за прізвищем / ім`ям / по батькові" aria-label="Пошук збережених публікацій"></div>');
             View_Add('</div>');
 
@@ -596,13 +799,15 @@ if (($md == 0) || ($md == '')) {
 document.addEventListener("DOMContentLoaded", function() {
     const tabButtons = document.querySelectorAll(".profile-view-tab-btn");
     const tabContents = document.querySelectorAll(".profile-view-tab-content");
+    const mobileTabNav = document.querySelector(".profile-mobile-tab-nav");
+    const siteHeader = document.querySelector(".menu-up-new");
     const pubsSearchInput = document.querySelector(".profile-pubs-search-input");
     const pubsCards = document.querySelectorAll(".profile-publication-card");
     const pubsNoResults = document.getElementById("profile-pubs-no-results");
     const savedSearchInput = document.querySelector(".profile-saved-search-input");
     const savedCards = document.querySelectorAll(".profile-saved-card");
     const savedNoResults = document.getElementById("profile-saved-no-results");
-    const savedCountNode = document.getElementById("profile-saved-count");
+    const savedCountNodes = document.querySelectorAll("[data-profile-saved-count]");
 
     function applyPublicationsSearch() {
         if (!pubsSearchInput || !pubsCards.length) return;
@@ -639,29 +844,33 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
+    function syncMobileTabNavState() {
+        if (!mobileTabNav) return;
+        const headerHidden = !siteHeader || siteHeader.classList.contains("menu-up-new--mobile-hidden");
+        mobileTabNav.classList.toggle("is-header-hidden", headerHidden);
+    }
+
+    function switchProfileTab(tabName) {
+        tabButtons.forEach(function(button) {
+            button.classList.toggle("active", button.dataset.tab === tabName);
+        });
+
+        tabContents.forEach(function(content) {
+            content.style.display = content.id === "profile-tab-" + tabName ? "block" : "none";
+        });
+
+        const url = new URL(window.location.href);
+        if (tabName === "general") {
+            url.searchParams.delete("tab");
+        } else {
+            url.searchParams.set("tab", tabName);
+        }
+        window.history.replaceState(null, "", url.toString());
+    }
+
     tabButtons.forEach(function(btn) {
         btn.addEventListener("click", function() {
-            const tabName = this.dataset.tab;
-
-            tabButtons.forEach(function(b) { b.classList.remove("active"); });
-            this.classList.add("active");
-
-            tabContents.forEach(function(content) {
-                content.style.display = "none";
-            });
-
-            const targetTab = document.getElementById("profile-tab-" + tabName);
-            if (targetTab) {
-                targetTab.style.display = "block";
-            }
-
-            const url = new URL(window.location.href);
-            if (tabName === "general") {
-                url.searchParams.delete("tab");
-            } else {
-                url.searchParams.set("tab", tabName);
-            }
-            window.history.replaceState(null, "", url.toString());
+            switchProfileTab(this.dataset.tab);
         });
     });
 
@@ -674,6 +883,15 @@ document.addEventListener("DOMContentLoaded", function() {
         savedSearchInput.addEventListener("input", applySavedSearch);
         applySavedSearch();
     }
+
+    syncMobileTabNavState();
+
+    if (siteHeader && mobileTabNav && typeof MutationObserver !== "undefined") {
+        const headerObserver = new MutationObserver(syncMobileTabNavState);
+        headerObserver.observe(siteHeader, { attributes: true, attributeFilter: ["class"] });
+    }
+
+    window.addEventListener("resize", syncMobileTabNavState);
 
     savedCards.forEach(function(card) {
         const removeBtn = card.querySelector(".profile-saved-remove-btn");
@@ -724,9 +942,12 @@ document.addEventListener("DOMContentLoaded", function() {
                     card.setAttribute("data-removed", "1");
                     card.remove();
 
-                    if (savedCountNode) {
-                        const current = parseInt(savedCountNode.textContent || "0", 10) || 0;
-                        savedCountNode.textContent = String(Math.max(0, current - 1));
+                    if (savedCountNodes.length) {
+                        const current = parseInt(savedCountNodes[0].textContent || "0", 10) || 0;
+                        const nextValue = String(Math.max(0, current - 1));
+                        savedCountNodes.forEach(function(node) {
+                            node.textContent = nextValue;
+                        });
                     }
 
                     const hasCardsLeft = Array.from(document.querySelectorAll(".profile-saved-card")).some(function(c) {

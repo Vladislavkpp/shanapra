@@ -1,15 +1,23 @@
 /* Сторінка «В розробці» — той самий стиль, що й 404 */
 
 .out-index--404 {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: stretch;
+    justify-content: center;
+    width: 100%;
+    min-height: calc(100vh - 84px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    padding: 0;
     background: linear-gradient(160deg, #e8f0f8 0%, #f5f9fd 35%, #fff 70%);
 }
 
 .out-index--404 .page-404 {
-    min-height: calc(100vh - 140px);
+    width: 100%;
+    min-height: 100%;
 }
 
 .page-404 {
-    min-height: 60vh;
+    min-height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;

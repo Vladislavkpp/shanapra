@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_order'])) {
         header('Location: /auth.php');
         exit;
     }
-    
+
     $cleaner_id = (int)($_POST['cleaner_id'] ?? 0);
     $client_id = (int)$_SESSION['uzver'];
     $customer_name = trim($_POST['customer_name'] ?? '');
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_order'])) {
     $quarter = !empty($_POST['quarter']) ? trim($_POST['quarter']) : '';
     $row = !empty($_POST['row']) ? trim($_POST['row']) : '';
     $place = !empty($_POST['place']) ? trim($_POST['place']) : '';
-    
+
     // Формируем строку "Кладовище та ділянка"
     $cemetery_place = '';
     if ($cemetery_id) {
@@ -43,33 +43,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_order'])) {
             }
         }
     }
-    
+
     $preferred_date = trim($_POST['preferred_date'] ?? '');
     $comment = trim($_POST['comment'] ?? '');
-    $selected_services = isset($_POST['selected_services']) && is_array($_POST['selected_services']) 
-        ? array_map('intval', $_POST['selected_services']) 
+    $selected_services = isset($_POST['selected_services']) && is_array($_POST['selected_services'])
+        ? array_map('intval', $_POST['selected_services'])
         : [];
     $approximate_price = trim($_POST['approximate_price'] ?? '');
-    
+
     // Получаем email клиента
     $userRes = mysqli_query($dblink, "SELECT email FROM users WHERE idx = $client_id LIMIT 1");
     $userData = mysqli_fetch_assoc($userRes);
     $client_email = $userData['email'] ?? '';
-    
+
     if ($cleaner_id <= 0) {
         $_SESSION['message'] = 'Помилка: не обрано прибиральника';
         $_SESSION['messageType'] = 'error';
         header('Location: /clean-cemeteries.php');
         exit;
     }
-    
+
     // Создаем чат type=2 (рабочий чат)
     $chats = new Chats($dblink);
     $chat_idx = $chats->createChat($client_id, $cleaner_id, 2);
-    
+
     // Формируем JSON выбранных услуг
     $services_json = json_encode($selected_services);
-    
+
     // Сохраняем заказ
     $stmt = mysqli_prepare($dblink, "
         INSERT INTO cleaner_orders (
@@ -78,20 +78,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_order'])) {
             approximate_price, chat_idx, status
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     ");
-    
+
     $preferred_date_db = !empty($preferred_date) ? $preferred_date : null;
     mysqli_stmt_bind_param(
-        $stmt, 
+        $stmt,
         'iissssssssi',
         $cleaner_id, $client_id, $customer_name, $customer_phone, $client_email,
         $cemetery_place, $preferred_date_db, $comment, $services_json,
         $approximate_price, $chat_idx
     );
-    
+
     mysqli_stmt_execute($stmt);
     $order_id = mysqli_insert_id($dblink);
     mysqli_stmt_close($stmt);
-    
+
     // Сохраняем связи услуг с заказом
     if (!empty($selected_services)) {
         $stmt = mysqli_prepare($dblink, "INSERT INTO cleaner_order_services (order_id, service_id) VALUES (?, ?)");
@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_order'])) {
         }
         mysqli_stmt_close($stmt);
     }
-    
+
     // Сохраняем данные для попапа
     $_SESSION['order_success'] = true;
     $_SESSION['order_chat_idx'] = $chat_idx;
@@ -205,7 +205,7 @@ while ($cleaner = mysqli_fetch_assoc($cleanersRes)) {
     while ($s = mysqli_fetch_assoc($servicesRes)) {
         $cleaner['services'][] = $s;
     }
-    
+
     // Получаем кладбища уборщика (если не все кладбища района)
     $cleaner['cemeteries'] = [];
     if (!$cleaner['all_cemeteries_in_district']) {
@@ -219,7 +219,7 @@ while ($cleaner = mysqli_fetch_assoc($cleanersRes)) {
             $cleaner['cemeteries'][] = $c;
         }
     }
-    
+
     $cleaners[] = $cleaner;
 }
 
@@ -268,6 +268,12 @@ View_Add('
                 <span class="cleaners-hero-stat-value">Прибирання, оновлення декору, догляд за квітами</span>
             </div>
         </div>
+    </div>
+</section>
+
+<section class="cleaners-test-note">
+    <div class="cleaners-test-note-inner">
+        Увага: сторінка працює в тестовому режимі. Частина функцій ще допрацьовується, тому сервіс наразі не можна повноцінно використовувати.
     </div>
 </section>
 
@@ -399,13 +405,13 @@ if (empty($cleaners)) {
 } else {
     foreach ($cleaners as $cleaner) {
         $fullName = trim(htmlspecialchars($cleaner['lname'] . ' ' . $cleaner['fname']));
-        $avatar = !empty($cleaner['avatar']) && $cleaner['avatar'] !== '' 
+        $avatar = !empty($cleaner['avatar']) && $cleaner['avatar'] !== ''
             ? (strpos($cleaner['avatar'], '/') === 0 ? $cleaner['avatar'] : '/' . ltrim($cleaner['avatar'], '/'))
             : '/avatars/ava.png';
         $avatar = htmlspecialchars($avatar);
         $initials = mb_substr($cleaner['fname'] ?? '', 0, 1) . mb_substr($cleaner['lname'] ?? '', 0, 1);
         $avatarBgClass = ($avatar == '/avatars/ava.png') ? ' cleaner-avatar-bg-' . ((int)($cleaner['user_id'] ?? 0) % 6) : '';
-        
+
         $location = '';
         if (!empty($cleaner['region_title'])) {
             $location .= htmlspecialchars($cleaner['region_title']);
@@ -425,11 +431,11 @@ if (empty($cleaners)) {
                 $location .= '...';
             }
         }
-        
+
         $rating = $cleaner['rating'] ?? 0;
         $reviews = $cleaner['reviews_count'] ?? 0;
         $stars = str_repeat('★', min(5, floor($rating))) . str_repeat('☆', max(0, 5 - floor($rating)));
-        
+
         $servicesList = '';
         $servicesData = [];
         foreach ($cleaner['services'] as $service) {
@@ -445,9 +451,9 @@ if (empty($cleaners)) {
                 'price_num' => $priceNum
             ];
         }
-        
+
         $servicesJson = htmlspecialchars(json_encode($servicesData), ENT_QUOTES, 'UTF-8');
-        
+
         View_Add('
         <article class="cleaner-card">
             <div class="cleaner-card-main">
@@ -1763,7 +1769,7 @@ if (isset($_GET['ajax_cemeteries']) && isset($_GET['district'])) {
 // AJAX загрузка кладбищ уборщика для формы заказа
 if (isset($_GET['ajax_cleaner_cemeteries']) && isset($_GET['cleaner_id'])) {
     $cleaner_id = intval($_GET['cleaner_id']);
-    
+
     // Получаем профиль уборщика
     $profileRes = mysqli_query($dblink, "
         SELECT all_cemeteries_in_district, district_id 
@@ -1771,9 +1777,9 @@ if (isset($_GET['ajax_cleaner_cemeteries']) && isset($_GET['cleaner_id'])) {
         WHERE user_id = $cleaner_id LIMIT 1
     ");
     $profile = mysqli_fetch_assoc($profileRes);
-    
+
     $cemeteries = [];
-    
+
     if ($profile && $profile['all_cemeteries_in_district']) {
         // Если работает на всех кладбищах района
         if ($profile['district_id']) {
@@ -1800,7 +1806,7 @@ if (isset($_GET['ajax_cleaner_cemeteries']) && isset($_GET['cleaner_id'])) {
             $cemeteries[] = $c;
         }
     }
-    
+
     header('Content-Type: application/json');
     echo json_encode($cemeteries);
     exit;

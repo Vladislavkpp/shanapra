@@ -19,6 +19,16 @@ function sendJson($data) {
 $isAjax = isset($_GET['action'])
     || ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['chat_idx']))
     || ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']));
+$device = function_exists('detectDevice')
+    ? detectDevice($_SERVER['HTTP_USER_AGENT'] ?? '')
+    : ['type' => 'desktop'];
+
+if (!$isAjax && (($device['type'] ?? 'desktop') === 'mobile')) {
+    $_GET['from'] = (string)($_SERVER['REQUEST_URI'] ?? '/messenger.php');
+    require $_SERVER['DOCUMENT_ROOT'] . '/maintenance.php';
+    exit;
+}
+
 $type = isset($_GET['type']) ? (int)$_GET['type'] : 0;
 
 if (!$isAjax && !isset($_GET['type'])) {

@@ -19,7 +19,7 @@ function faqpage() {
         'register'      => ['url' => '/auth.php?mode=register', 'text' => '"Ще не зареєстровані? Зареєструватися"'],
         'support'       => ['url' => '/messenger.php?type=3', 'text' => '"Підтримка"'],
         'profile'       => ['url' => '/profile.php', 'text' => 'Профілю'],
-        'settings'      => ['url' => '/profile.php?md=1803', 'text' => '"Налаштування профілю"'],
+        'settings'      => ['url' => '/profile.php?md=2', 'text' => '"Налаштування профілю"'],
         'cleaners'      => ['url' => '/clean-cemeteries.php', 'text' => '"Прибирання кладовищ"'],
         'password_reset'=> ['url' => '/strepair.php', 'text' => '"Забули пароль?"'],
         'cabinet'       => ['url' => '/profile.php?md=10', 'text' => '"Кабінет прибиральника"'],

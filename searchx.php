@@ -167,6 +167,7 @@ if ($idxkladb !== '') {
     $searchParts[] = 'Кладовище: ' . htmlspecialchars($cemeteryTriggerText, ENT_QUOTES, 'UTF-8');
 }
 $search_line = !empty($searchParts) ? implode('; ', $searchParts) : '—';
+$searchParamsMobileClass = $search_line === '—' ? ' search-badge--mobile-hidden' : '';
 
 
 View_Clear();
@@ -180,7 +181,7 @@ View_Add('<div class="search-container">');
 View_Add('<div class="search-out search-toolbar">');
 
 View_Add('<div class="search-badges">');
-View_Add('<div class="search-badge search-badge--params">Пошук за параметрами: ' . $search_line . '</div>');
+View_Add('<div class="search-badge search-badge--params' . $searchParamsMobileClass . '">Пошук за параметрами: ' . $search_line . '</div>');
 View_Add('<div class="search-badge">Всього публікацій: <strong>' . $cout . '</strong></div>');
 View_Add('</div>');
 
@@ -317,6 +318,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var closeBtn = filterPanel.querySelector(".filter-close");
     var resetBtn = filterPanel.querySelector(".filter-reset");
+    var filterForm = filterPanel.querySelector(".filter-form");
 
     // Елементи фільтра місця
     var regionSelect   = document.getElementById("filter-region");
@@ -326,6 +328,130 @@ document.addEventListener("DOMContentLoaded", function () {
     var regionWrapper = document.getElementById("region-wrapper");
     var districtWrapper = document.getElementById("district-wrapper");
     var cemeteryWrapper = document.getElementById("cemetery-wrapper");
+    var mobileFilterMedia = window.matchMedia("(max-width: 768px)");
+
+    function getCustomOptions(wrapper) {
+        if (!wrapper) return null;
+        if (wrapper._portalOptions && wrapper._portalOptions.isConnected) {
+            return wrapper._portalOptions;
+        }
+
+        var options = wrapper.querySelector(".custom-options");
+        if (options) {
+            wrapper._portalOptions = options;
+        }
+
+        return options;
+    }
+
+    function restoreCustomOptions(wrapper) {
+        var options = getCustomOptions(wrapper);
+        if (!wrapper || !options) return null;
+
+        if (options.parentNode !== wrapper) {
+            wrapper.appendChild(options);
+        }
+
+        options.classList.remove("custom-options--portal");
+        wrapper._portalOptions = options;
+        return options;
+    }
+
+    function isCustomSelectTarget(target) {
+        return !!(target && (target.closest(".custom-select-wrapper") || target.closest(".custom-options--portal")));
+    }
+
+    function cleanupCustomOptions(wrapper) {
+        if (!wrapper) return;
+        var options = getCustomOptions(wrapper);
+        if (!options) return;
+        wrapper.classList.remove("open-upward");
+        wrapper.classList.remove("custom-select-wrapper--floating");
+        options.classList.remove("custom-options--portal");
+        options.style.position = "";
+        options.style.left = "";
+        options.style.right = "";
+        options.style.top = "";
+        options.style.bottom = "";
+        options.style.width = "";
+        options.style.maxHeight = "";
+        options.style.zIndex = "";
+    }
+
+    function closeCustomSelect(wrapper) {
+        if (!wrapper) return;
+        var options = getCustomOptions(wrapper);
+        wrapper.classList.remove("open");
+        cleanupCustomOptions(wrapper);
+        if (options) {
+            options.style.display = "none";
+            restoreCustomOptions(wrapper);
+        }
+    }
+
+    function closeAllCustomSelects(exceptWrapper) {
+        document.querySelectorAll(".custom-select-wrapper").forEach(function (wrapper) {
+            if (wrapper !== exceptWrapper) {
+                closeCustomSelect(wrapper);
+            }
+        });
+    }
+
+    function positionCustomOptions(wrapper) {
+        if (!wrapper) return;
+        var options = getCustomOptions(wrapper);
+        var trigger = wrapper.querySelector(".custom-select-trigger");
+        if (!options || !trigger) return;
+
+        if (!mobileFilterMedia.matches) {
+            restoreCustomOptions(wrapper);
+            cleanupCustomOptions(wrapper);
+            return;
+        }
+
+        var triggerRect = trigger.getBoundingClientRect();
+        var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        var viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+        var sideGap = 12;
+        var bottomReserve = 92;
+        var availableBelow = viewportHeight - triggerRect.bottom - bottomReserve;
+        var availableAbove = triggerRect.top - 18;
+        var openUpward = availableBelow < 180 && availableAbove > availableBelow;
+        var maxHeight = Math.max(132, Math.min(240, openUpward ? (availableAbove - 8) : (availableBelow - 8)));
+        var width = Math.min(triggerRect.width, viewportWidth - sideGap * 2);
+        var left = Math.min(Math.max(sideGap, triggerRect.left), viewportWidth - sideGap - width);
+
+        if (options.parentNode !== document.body) {
+            document.body.appendChild(options);
+        }
+
+        options.classList.add("custom-options--portal");
+
+        options.style.position = "fixed";
+        options.style.left = left + "px";
+        options.style.right = "auto";
+        options.style.width = width + "px";
+        options.style.maxHeight = maxHeight + "px";
+        options.style.zIndex = "10050";
+
+        if (openUpward) {
+            options.style.top = "auto";
+            options.style.bottom = Math.max(12, viewportHeight - triggerRect.top + 6) + "px";
+            wrapper.classList.add("open-upward");
+        } else {
+            options.style.bottom = "auto";
+            options.style.top = Math.max(12, triggerRect.bottom + 6) + "px";
+            wrapper.classList.remove("open-upward");
+        }
+
+        wrapper.classList.add("custom-select-wrapper--floating");
+    }
+
+    function refreshOpenCustomOptions() {
+        document.querySelectorAll(".custom-select-wrapper.open").forEach(function (wrapper) {
+            positionCustomOptions(wrapper);
+        });
+    }
 
     function openPanel() {
         filterPanel.classList.add("open");
@@ -334,6 +460,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function closePanel() {
+        closeAllCustomSelects();
         filterPanel.classList.remove("open");
         filterPanel.setAttribute("aria-hidden", "true");
         filterToggle.classList.remove("active");
@@ -358,9 +485,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Закрытие при клике вне панели, но не при клике на кастомные селекты
     document.addEventListener("click", function (e) {
         if (!filterPanel.contains(e.target) && !filterToggle.contains(e.target)) {
-            // Проверяем, что клик не на кастомный селект
-            var isCustomSelect = e.target.closest(".custom-select-wrapper");
-            if (!isCustomSelect) {
+            if (!isCustomSelectTarget(e.target)) {
                 closePanel();
             }
         }
@@ -376,24 +501,24 @@ document.addEventListener("DOMContentLoaded", function () {
     function initCustomSelect(wrapper) {
         if (!wrapper) return;
         var trigger = wrapper.querySelector(".custom-select-trigger");
-        var options = wrapper.querySelector(".custom-options");
+        var options = getCustomOptions(wrapper);
         var select = wrapper.previousElementSibling;
         
         if (!trigger || !options || !select) return;
+        wrapper._portalOptions = options;
 
         trigger.addEventListener("click", function (e) {
             e.stopPropagation();
             
-            // Закрываем все другие селекты
-            document.querySelectorAll(".custom-select-wrapper").forEach(function(w) {
-                if (w !== wrapper) {
-                    w.classList.remove("open");
-                    w.querySelector(".custom-options").style.display = "none";
-                }
-            });
+            closeAllCustomSelects(wrapper);
 
             wrapper.classList.toggle("open");
-            options.style.display = wrapper.classList.contains("open") ? "flex" : "none";
+            if (wrapper.classList.contains("open")) {
+                options.style.display = "flex";
+                positionCustomOptions(wrapper);
+            } else {
+                closeCustomSelect(wrapper);
+            }
         });
 
         function bindOptions() {
@@ -403,8 +528,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     trigger.textContent = opt.textContent;
                     select.value = opt.dataset.value || "";
                     select.dispatchEvent(new Event("change", { bubbles: true }));
-                    wrapper.classList.remove("open");
-                    options.style.display = "none";
+                    closeCustomSelect(wrapper);
                     // НЕ закрываем фильтр при выборе
                 };
             });
@@ -421,13 +545,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Закрытие кастомных селектов при клике вне
     document.addEventListener("click", function(e) {
-        if (!e.target.closest(".custom-select-wrapper")) {
-            document.querySelectorAll(".custom-select-wrapper").forEach(function(w) {
-                w.classList.remove("open");
-                w.querySelector(".custom-options").style.display = "none";
-            });
+        if (!isCustomSelectTarget(e.target)) {
+            closeAllCustomSelects();
         }
     });
+
+    window.addEventListener("resize", refreshOpenCustomOptions);
+    window.addEventListener("scroll", refreshOpenCustomOptions, { passive: true });
+    if (filterForm) {
+        filterForm.addEventListener("scroll", refreshOpenCustomOptions, { passive: true });
+    }
 
     // Обновление кастомного селекта при изменении обычного
     function updateCustomSelect(select, wrapper) {

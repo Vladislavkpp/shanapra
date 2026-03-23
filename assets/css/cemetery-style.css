@@ -248,6 +248,7 @@
     border: 1px solid #d1d5db;
     border-radius: 10px;
     background: #ffffff;
+    font-family: "Manrope", "Segoe UI", Tahoma, sans-serif;
     color: #1f2937;
     display: flex;
     align-items: center;
@@ -269,6 +270,7 @@
     border: 1px solid #d1d5db;
     border-radius: 10px;
     background: #ffffff;
+    font-family: "Manrope", "Segoe UI", Tahoma, sans-serif;
     padding: 6px;
     max-height: 220px;
     overflow-y: auto;
@@ -277,6 +279,7 @@
 .out-xsearch .filter-panel .custom-option {
     border-radius: 8px;
     padding: 8px 10px;
+    font-family: "Manrope", "Segoe UI", Tahoma, sans-serif;
     font-size: 14px;
     color: #1f2937;
 }

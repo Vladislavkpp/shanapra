@@ -792,6 +792,10 @@
         display: none;
     }
 
+    .itp-hero__glows {
+        display: none;
+    }
+
     .itp-btn {
         width: 100%;
         min-height: 44px;

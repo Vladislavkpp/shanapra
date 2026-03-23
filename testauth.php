@@ -454,7 +454,9 @@ $cssVersion = is_file(__DIR__ . '/auth.css') ? (string)filemtime(__DIR__ . '/aut
 <body class="<?= $activeMode === 'register' ? 'ta-theme-register' : '' ?>">
 <main class="ta-shell" data-mode="<?= h($activeMode) ?>" id="ta-shell">
     <section class="ta-brand">
-        <div class="ta-logo">S</div>
+        <div class="ta-logo">
+            <img src="/assets/images/shana-logo.png" alt="Логотип Shana">
+        </div>
         <h1>ІПС Shana<br>доступ до акаунта</h1>
         <p>Увійдіть або створіть акаунт, щоб керувати профілем, публікаціями та персональними налаштуваннями.</p>
         <ul class="ta-points">
