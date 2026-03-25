@@ -683,7 +683,23 @@ body.grvdet-modal-open {
     display: none;
 }
 
+.grvdet-share-pop {
+    position: fixed;
+    z-index: 10020;
+    width: 320px;
+    background: #fff;
+    border: 1px solid #d3e2f1;
+    border-radius: 16px;
+    box-shadow: 0 16px 40px rgba(15, 33, 56, 0.18);
+    padding: 12px;
+    display: none;
+}
+
 .grvdet-author-pop.is-open {
+    display: block;
+}
+
+.grvdet-share-pop.is-open {
     display: block;
 }
 
@@ -696,7 +712,22 @@ body.grvdet-modal-open {
     border-bottom: 1px solid #e2eaf4;
 }
 
+.grvdet-share-pop__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #e2eaf4;
+}
+
 .grvdet-author-pop__close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+.grvdet-share-pop__close {
     position: absolute;
     top: 8px;
     right: 8px;
@@ -724,7 +755,19 @@ body.grvdet-modal-open {
     gap: 2px;
 }
 
+.grvdet-share-pop__meta {
+    display: grid;
+    gap: 4px;
+    padding-right: 24px;
+}
+
 .grvdet-author-pop__meta strong {
+    font-size: 14px;
+    font-weight: 800;
+    color: #12243a;
+}
+
+.grvdet-share-pop__meta strong {
     font-size: 14px;
     font-weight: 800;
     color: #12243a;
@@ -738,11 +781,66 @@ body.grvdet-modal-open {
     text-transform: uppercase;
 }
 
+.grvdet-share-pop__meta span {
+    font-size: 11px;
+    font-weight: 800;
+    color: #6c7f96;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
 .grvdet-author-pop__actions {
     display: grid;
     gap: 8px;
     grid-template-columns: 1fr;
     justify-items: start;
+}
+
+.grvdet-share-pop__body {
+    display: grid;
+    gap: 10px;
+}
+
+.grvdet-share-pop__field {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+}
+
+.grvdet-share-pop__field span {
+    font-size: 11px;
+    font-weight: 800;
+    color: #6c7f96;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.grvdet-share-pop__field input {
+    width: 100%;
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid #d1ddec;
+    background: #f8fbff;
+    padding: 0 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #18314d;
+    box-sizing: border-box;
+}
+
+.grvdet-share-pop__actions {
+    display: grid;
+    gap: 8px;
+}
+
+.grvdet-share-pop__feedback {
+    font-size: 12px;
+    font-weight: 700;
+    color: #4a6584;
+}
+
+.grvdet-share-pop__feedback:empty {
+    display: none;
 }
 
 .grvdet-author-pop__form {

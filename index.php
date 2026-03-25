@@ -89,7 +89,7 @@ View_Add('
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-map-search"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M11 18l-2 -1l-6 3v-13l6 -3l6 3l6 -3v7.5" /><path d="M9 4v13" /><path d="M15 7v5" /><path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M20.2 20.2l1.8 1.8" /></svg>
                         <span>Шукати кладовища</span>
                     </a>
-                    <a href="/graveaddform.php" class="itp-btn itp-btn--soft">
+                    <a href="/graveaddform.php" class="itp-btn itp-btn--soft itp-btn--add-grave">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
                         <span>Додати поховання</span>
                     </a>
@@ -462,8 +462,46 @@ View_Add('
         }
     });
 
+    function setupIosToolbarWatcher() {
+        var ua = navigator.userAgent || "";
+        var isIOS = /iP(ad|hone|od)/.test(ua);
+        if (!isIOS) return;
+        var isSafari = /WebKit/.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
+        if (!isSafari) return;
+
+        var body = document.body;
+        if (!body) return;
+
+        var supportsVV = window.visualViewport && typeof window.visualViewport.height === "number";
+        var maxInner = window.innerHeight;
+        var minInner = window.innerHeight;
+
+        function update() {
+            var toolbarHidden = false;
+            if (supportsVV) {
+                var diff = Math.abs(window.innerHeight - window.visualViewport.height);
+                toolbarHidden = diff < 2;
+            } else {
+                var h = window.innerHeight;
+                if (h > maxInner) maxInner = h;
+                if (h < minInner) minInner = h;
+                toolbarHidden = (maxInner - minInner) > 40 && (maxInner - h) < 2;
+            }
+            body.classList.toggle("itp-ios-toolbar-hidden", toolbarHidden);
+        }
+
+        window.addEventListener("resize", update, { passive: true });
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener("resize", update);
+            window.visualViewport.addEventListener("scroll", update);
+        }
+        window.addEventListener("scroll", update, { passive: true });
+        update();
+    }
+
     syncCustomSelect(regionSel);
     syncCustomSelect(districtSel);
+    setupIosToolbarWatcher();
 })();
 </script>
 ');

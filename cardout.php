@@ -721,9 +721,12 @@ function cardOutTestRenderFeed(array $messages): string
 
 $idx = (int)($_GET['idx'] ?? 0);
 $view = (string)($_GET['view'] ?? 'view');
-if ($view !== 'edit') {
+if (!in_array($view, ['view', 'edit', 'branch'], true)) {
     $view = 'view';
 }
+$branchPostId = (int)($_GET['post'] ?? 0);
+$branchCommentId = (int)($_GET['comment_id'] ?? 0);
+$branchReplyToId = (int)($_GET['reply_to'] ?? 0);
 $dblink = DbConnect();
 $lentaGrave = new LentaGrave($dblink);
 $lentaGrave->handlePublishRequest($idx);
@@ -731,11 +734,15 @@ $lentaGrave->handlePublishRequest($idx);
 $grave = null;
 $relatedGraves = [];
 $feedComposerHtml = '';
+$feedDividerHtml = '';
 $feedFlashHtml = '';
 $feedMessagesHtml = '';
 $feedCount = 0;
 $cemeteryGravesCount = 0;
 $isSaved = false;
+$publicationsTitle = 'Останні публікації';
+$publicationsMeta = '';
+$publicationsLinkHtml = '';
 $grave = cardOutTestLoadGrave($dblink, $idx);
 
 if ($grave) {
@@ -770,8 +777,33 @@ if ($grave) {
 
     $feedCount = $lentaGrave->countMessages($idx);
     $feedFlashHtml = $lentaGrave->renderFlash();
-    $feedComposerHtml = $lentaGrave->renderComposer($idx);
-    $feedMessagesHtml = $lentaGrave->renderMessages($idx, 10);
+    if ($view === 'branch' && $branchPostId > 0) {
+        $branchViewData = $lentaGrave->getBranchViewData(
+            $idx,
+            $branchPostId,
+            $branchCommentId > 0 ? $branchCommentId : null,
+            $branchReplyToId > 0 ? $branchReplyToId : null
+        );
+        $publicationsTitle = (string)($branchViewData['title'] ?? 'Гілка коментарів');
+        $publicationsMeta = (string)($branchViewData['meta'] ?? '');
+        $publicationsLinkHtml = (string)($branchViewData['link_html'] ?? '');
+        $feedMessagesHtml = (string)($branchViewData['content_html'] ?? '');
+    } else {
+        if ($view === 'branch') {
+            $publicationsTitle = 'Гілка коментарів';
+            $publicationsMeta = 'Оберіть публікацію';
+            $publicationsLinkHtml = '<a href="/cardout.php?idx=' . (int)$idx . '#publications" class="grvdet-inline-link" data-branch-open>До всіх публікацій</a>';
+            $feedMessagesHtml = '<div class="ltt-empty">Щоб відкрити гілку, спочатку виберіть публікацію зі стрічки.</div>';
+        } else {
+            $feedComposerHtml = $lentaGrave->renderComposer($idx);
+            $feedDividerHtml = $feedCount > 0 ? '<div class="ltt-feed-separator" aria-hidden="true"></div>' : '';
+            $feedMessagesHtml = $lentaGrave->renderMessages($idx, 10);
+        }
+    }
+
+    if ($publicationsMeta === '') {
+        $publicationsMeta = 'У стрічці: ' . $feedCount;
+    }
 
     $userId = (int)($_SESSION['uzver'] ?? 0);
     if ($userId > 0) {
@@ -1013,12 +1045,44 @@ if ($editMessageText !== '') {
     $editAlertHtml = '<div class="acm-alert ' . $alertClass . '">' . cardOutTestEsc($editMessageText) . '</div>';
 }
 
+ob_start();
+?>
+<article class="grvdet-panel grvdet-panel--wide" data-ltt-publications-panel data-grave-id="<?= (int)$idx ?>">
+    <div class="grvdet-panel-head" id="publications">
+        <div class="grvdet-panel-title">
+            <h2><?= cardOutTestEsc($publicationsTitle) ?></h2>
+            <span class="grvdet-panel-meta"><?= cardOutTestEsc($publicationsMeta) ?></span>
+        </div>
+        <?= $publicationsLinkHtml ?>
+    </div>
+    <?= $feedFlashHtml ?>
+    <?= $feedComposerHtml ?>
+    <?= $feedDividerHtml ?>
+    <?= $feedMessagesHtml ?>
+</article>
+<?php
+$publicationsPanelHtml = ob_get_clean();
+
+if ($view !== 'edit' && (string)($_SERVER['HTTP_X_BRANCH_PARTIAL'] ?? '') === '1') {
+    header('Content-Type: text/html; charset=utf-8');
+    echo $publicationsPanelHtml;
+    exit;
+}
+
 View_Clear();
 View_Add(Page_Up($pageTitle));
 View_Add(Menu_Up());
 View_Add('<link rel="stylesheet" href="/assets/css/cardout.css?v=3">');
-View_Add('<link rel="stylesheet" href="/assets/css/lenta-grave.css?v=1">');
-View_Add('<script src="/assets/js/lenta-grave.js?v=1" defer></script>');
+$lentaCssVersion = (int)@filemtime(__DIR__ . '/assets/css/lenta-grave.css');
+if ($lentaCssVersion <= 0) {
+    $lentaCssVersion = time();
+}
+$lentaJsVersion = (int)@filemtime(__DIR__ . '/assets/js/lenta-grave.js');
+if ($lentaJsVersion <= 0) {
+    $lentaJsVersion = time();
+}
+View_Add('<link rel="stylesheet" href="/assets/css/lenta-grave.css?v=' . $lentaCssVersion . '">');
+View_Add('<script src="/assets/js/lenta-grave.js?v=' . $lentaJsVersion . '" defer></script>');
 if ($view === 'edit') {
     $graveCssVersion = (int)@filemtime(__DIR__ . '/assets/css/grave.css');
     if ($graveCssVersion <= 0) {
@@ -2542,18 +2606,7 @@ ob_start();
                     </div>
                 </article>
 
-                <article class="grvdet-panel grvdet-panel--wide">
-                    <div class="grvdet-panel-head" id="publications">
-                        <div class="grvdet-panel-title">
-                            <h2>Останні публікації</h2>
-                            <span class="grvdet-panel-meta">У стрічці: <?= $feedCount ?></span>
-                        </div>
-
-                    </div>
-                    <?= $feedFlashHtml ?>
-                    <?= $feedComposerHtml ?>
-                    <?= $feedMessagesHtml ?>
-                </article>
+                <?= $publicationsPanelHtml ?>
             </section>
 
             <div class="grvdet-author-pop" id="grvdetAuthorPop" aria-hidden="true">
@@ -2586,6 +2639,31 @@ ob_start();
                         </span>
                         <span>Увійти щоб написати</span>
                     </a>
+                </div>
+            </div>
+
+            <div class="grvdet-share-pop" id="grvdetSharePop" aria-hidden="true">
+                <button type="button" class="grvdet-close-btn grvdet-share-pop__close" data-share-pop-close aria-label="Закрити">&#10005;</button>
+                <div class="grvdet-share-pop__head">
+                    <div class="grvdet-share-pop__meta">
+                        <strong data-share-title>Посилання</strong>
+                        <span>Скопіюйте URL або скористайтеся кнопкою нижче</span>
+                    </div>
+                </div>
+                <div class="grvdet-share-pop__body">
+                    <label class="grvdet-share-pop__field">
+                        <span>Посилання</span>
+                        <input type="text" value="" readonly data-share-link-input>
+                    </label>
+                    <div class="grvdet-share-pop__actions">
+                        <button type="button" class="grvdet-author-pop__btn" data-share-copy>
+                            <span class="grvdet-author-pop__btn-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 15l6 -6" /><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464" /><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463" /></svg>
+                            </span>
+                            <span>Скопіювати</span>
+                        </button>
+                        <div class="grvdet-share-pop__feedback" data-share-feedback aria-live="polite"></div>
+                    </div>
                 </div>
             </div>
 
@@ -2851,9 +2929,9 @@ ob_start();
                     });
                 }
 
-                var authorBtns = document.querySelectorAll(".grvdet-author-btn");
                 var authorPop = document.getElementById("grvdetAuthorPop");
-                if (authorBtns.length && authorPop) {
+                var sharePop = document.getElementById("grvdetSharePop");
+                if (authorPop) {
                     var avatarNode = authorPop.querySelector("[data-author-avatar]");
                     var nameNode = authorPop.querySelector("[data-author-name]");
                     var profileLink = authorPop.querySelector("[data-author-profile]");
@@ -2863,10 +2941,63 @@ ob_start();
                     var selfLink = authorPop.querySelector("[data-author-self-link]");
                     var closeBtn = authorPop.querySelector("[data-author-pop-close]");
                     var currentUserId = <?= $currentUserId ?>;
+                    var shareTitleNode = sharePop ? sharePop.querySelector("[data-share-title]") : null;
+                    var shareInput = sharePop ? sharePop.querySelector("[data-share-link-input]") : null;
+                    var shareCopyBtn = sharePop ? sharePop.querySelector("[data-share-copy]") : null;
+                    var shareFeedback = sharePop ? sharePop.querySelector("[data-share-feedback]") : null;
+                    var shareCloseBtn = sharePop ? sharePop.querySelector("[data-share-pop-close]") : null;
 
                     function closeAuthorPop() {
                         authorPop.classList.remove("is-open");
                         authorPop.setAttribute("aria-hidden", "true");
+                    }
+
+                    function closeSharePop() {
+                        if (!sharePop) {
+                            return;
+                        }
+
+                        sharePop.classList.remove("is-open");
+                        sharePop.setAttribute("aria-hidden", "true");
+                        if (shareFeedback) {
+                            shareFeedback.textContent = "";
+                        }
+                    }
+
+                    function placePop(pop, event) {
+                        if (!pop) {
+                            return;
+                        }
+
+                        pop.style.left = "0px";
+                        pop.style.top = "0px";
+                        pop.classList.add("is-open");
+                        pop.setAttribute("aria-hidden", "false");
+
+                        var padding = 12;
+                        var popRect = pop.getBoundingClientRect();
+                        var left = event.clientX + 12;
+                        var top = event.clientY + 12;
+
+                        if (left + popRect.width > window.innerWidth - padding) {
+                            left = window.innerWidth - popRect.width - padding;
+                        }
+                        if (top + popRect.height > window.innerHeight - padding) {
+                            top = window.innerHeight - popRect.height - padding;
+                        }
+                        if (left < padding) left = padding;
+                        if (top < padding) top = padding;
+
+                        pop.style.left = left + "px";
+                        pop.style.top = top + "px";
+                    }
+
+                    function normalizeShareUrl(url) {
+                        try {
+                            return new URL(url, window.location.origin).toString();
+                        } catch (error) {
+                            return window.location.href;
+                        }
                     }
 
                     function openAuthorPop(btn, event) {
@@ -2924,59 +3055,119 @@ ob_start();
                             }
                         }
 
-                        authorPop.style.left = "0px";
-                        authorPop.style.top = "0px";
-                        authorPop.classList.add("is-open");
-                        authorPop.setAttribute("aria-hidden", "false");
-
-                        var padding = 12;
-                        var popRect = authorPop.getBoundingClientRect();
-                        var left = event.clientX + 12;
-                        var top = event.clientY + 12;
-
-                        if (left + popRect.width > window.innerWidth - padding) {
-                            left = window.innerWidth - popRect.width - padding;
-                        }
-                        if (top + popRect.height > window.innerHeight - padding) {
-                            top = window.innerHeight - popRect.height - padding;
-                        }
-                        if (left < padding) left = padding;
-                        if (top < padding) top = padding;
-
-                        authorPop.style.left = left + "px";
-                        authorPop.style.top = top + "px";
+                        closeSharePop();
+                        placePop(authorPop, event);
                     }
 
-                    authorBtns.forEach(function (btn) {
-                        btn.addEventListener("click", function (event) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            openAuthorPop(btn, event);
-                        });
-                    });
+                    function openSharePop(trigger, event) {
+                        if (!sharePop) {
+                            return;
+                        }
 
-                    if (closeBtn) {
-                        closeBtn.addEventListener("click", function () {
-                            closeAuthorPop();
-                        });
+                        var shareTitle = trigger.getAttribute("data-share-title") || "Посилання";
+                        var shareUrl = normalizeShareUrl(trigger.getAttribute("data-share-url") || window.location.href);
+
+                        if (shareTitleNode) {
+                            shareTitleNode.textContent = shareTitle;
+                        }
+                        if (shareInput) {
+                            shareInput.value = shareUrl;
+                        }
+                        if (shareFeedback) {
+                            shareFeedback.textContent = "";
+                        }
+
+                        closeAuthorPop();
+                        placePop(sharePop, event);
                     }
 
                     document.addEventListener("click", function (event) {
-                        if (!authorPop.classList.contains("is-open")) return;
-                        if (event.target.closest(".grvdet-author-btn") || authorPop.contains(event.target)) {
+                        var authorBtn = event.target.closest(".grvdet-author-btn");
+                        if (authorBtn) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openAuthorPop(authorBtn, event);
                             return;
                         }
+
+                        var shareTrigger = event.target.closest("[data-share-trigger]");
+                        if (shareTrigger) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openSharePop(shareTrigger, event);
+                            return;
+                        }
+
+                        if (event.target.closest("[data-author-pop-close]")) {
+                            closeAuthorPop();
+                            return;
+                        }
+
+                        if (event.target.closest("[data-share-pop-close]")) {
+                            closeSharePop();
+                            return;
+                        }
+
+                        if (authorPop.classList.contains("is-open") && authorPop.contains(event.target)) {
+                            return;
+                        }
+
+                        if (sharePop && sharePop.classList.contains("is-open") && sharePop.contains(event.target)) {
+                            return;
+                        }
+
                         closeAuthorPop();
+                        closeSharePop();
                     });
+
+                    if (shareCopyBtn && shareInput) {
+                        shareCopyBtn.addEventListener("click", function () {
+                            var value = shareInput.value || "";
+                            if (value === "") {
+                                return;
+                            }
+
+                            function updateShareFeedback(success) {
+                                if (!shareFeedback) {
+                                    return;
+                                }
+
+                                shareFeedback.textContent = success
+                                    ? "Посилання скопійовано."
+                                    : "Не вдалося скопіювати автоматично.";
+                            }
+
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(value).then(function () {
+                                    updateShareFeedback(true);
+                                }).catch(function () {
+                                    shareInput.focus();
+                                    shareInput.select();
+                                    updateShareFeedback(false);
+                                });
+                                return;
+                            }
+
+                            shareInput.focus();
+                            shareInput.select();
+                            try {
+                                updateShareFeedback(document.execCommand("copy"));
+                            } catch (error) {
+                                updateShareFeedback(false);
+                            }
+                        });
+                    }
 
                     document.addEventListener("keydown", function (event) {
                         if (event.key === "Escape") {
                             closeAuthorPop();
+                            closeSharePop();
                         }
                     });
 
                     window.addEventListener("scroll", function () {
                         closeAuthorPop();
+                        closeSharePop();
                     }, true);
                 }
 

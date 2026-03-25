@@ -3365,6 +3365,12 @@ function Menu_Up(): string
         && defined('ROLE_CREATOR')
         && hasAnyRole($_SESSION['status'], [ROLE_MODERATOR, ROLE_WEBMASTER, ROLE_CREATOR]);
 
+    $canSeeSupportDesk = $isLogged
+        && isset($_SESSION['status'])
+        && function_exists('hasRole')
+        && defined('ROLE_WEBMASTER')
+        && hasRole($_SESSION['status'], ROLE_WEBMASTER);
+
     $moderationButton = '';
     if ($canSeeModeration) {
         $moderationButton = '
@@ -3396,12 +3402,26 @@ function Menu_Up(): string
             </a>';
     }
 
+    $supportDeskButton = '';
+    if ($canSeeSupportDesk) {
+        $supportDeskButton = '
+            <a href="/support-desk.php" class="menu-button menu-up-new-desktop-only" data-tooltip="Support Desk" aria-label="Support Desk">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-headset">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M4 14v-3a8 8 0 1 1 16 0v3" />
+                    <path d="M18 19a3 3 0 0 0 3 -3v-1a2 2 0 0 0 -2 -2h-3v6h2z" />
+                    <path d="M6 19a3 3 0 0 1 -3 -3v-1a2 2 0 0 1 2 -2h3v6h-2z" />
+                </svg>
+            </a>';
+    }
+
     $desktopActions = '';
     if ($isLogged) {
         $desktopActions = '
         <div class="header-right menu-up-new-actions menu-up-new-actions-auth">
             ' . $moderationButton . '
             ' . $adminButton . '
+            ' . $supportDeskButton . '
             <a href="/messenger.php" class="menu-button menu-up-new-desktop-only" data-tooltip="Чати" aria-label="Чати">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-message-dots">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -3483,6 +3503,18 @@ function Menu_Up(): string
                         </span>
                         Підтримка
                     </a>
+                    ' . ($canSeeSupportDesk ? '
+                    <a href="/support-desk.php">
+                        <span class="icon-wrapper">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dpm-icon icon icon-tabler icons-tabler-outline icon-tabler-headset">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M4 14v-3a8 8 0 1 1 16 0v3" />
+                                <path d="M18 19a3 3 0 0 0 3 -3v-1a2 2 0 0 0 -2 -2h-3v6h2z" />
+                                <path d="M6 19a3 3 0 0 1 -3 -3v-1a2 2 0 0 1 2 -2h3v6h-2z" />
+                            </svg>
+                        </span>
+                        Support Desk
+                    </a>' : '') . '
 
                     <div class="menu-separator"></div>
 
