@@ -20,6 +20,8 @@ oauth.php
 /avatars/[0-9]*/
 /cemeteries/[0-9]*/
 /graves/[0-9]*/
+/realtime/node_modules/
+/output/
 
 # Backups and local admin bundles
 /ziip/
