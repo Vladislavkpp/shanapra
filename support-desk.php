@@ -11,7 +11,7 @@ function supportDeskSendJson(array $data): void
         ob_clean();
     }
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 
@@ -54,6 +54,47 @@ function supportDeskSaveUploadedImage(int $entityId = 0): string
     return '/chat_images/' . $filename;
 }
 
+function supportDeskIsMobileRequest(): bool
+{
+    $userAgent = strtolower((string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
+    if ($userAgent === '') {
+        return false;
+    }
+
+    return preg_match('/android|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/u', $userAgent) === 1;
+}
+
+function supportDeskRenderDesktopOnlyPage(): void
+{
+    View_Add(Page_Up('Support Desk'));
+    View_Add('<link rel="stylesheet" href="/assets/css/in-dev.css">');
+    View_Add(Menu_Up());
+    View_Add('<div class="out-index out-index--404">');
+    View_Add('
+        <section class="page-404">
+            <div class="page-404__inner">
+                <div class="page-404__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M0 0h24v24H0z" stroke="none" fill="none"></path>
+                        <path d="M3 4m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"></path>
+                        <path d="M7 20h10"></path>
+                        <path d="M9 16v4"></path>
+                        <path d="M15 16v4"></path>
+                    </svg>
+                </div>
+                <h1 class="page-404__title">Support Desk доступний лише на десктопній версії</h1>
+                <p class="page-404__text">Щоб працювати зі зверненнями, відкрийте цю сторінку з компʼютера або ноутбука. На телефоні консоль оператора недоступна.</p>
+                <div class="page-404__actions">
+                    <a class="page-404__btn page-404__btn--primary" href="/">На головну</a>
+                </div>
+            </div>
+        </section>
+    ');
+    View_Add('</div>');
+    View_Out();
+    exit;
+}
+
 $userId = isset($_SESSION['uzver']) ? (int)$_SESSION['uzver'] : 0;
 $userStatus = (int)($_SESSION['status'] ?? 0);
 if ($userId <= 0 || !function_exists('hasRole') || !defined('ROLE_WEBMASTER') || !hasRole($userStatus, ROLE_WEBMASTER)) {
@@ -62,6 +103,10 @@ if ($userId <= 0 || !function_exists('hasRole') || !defined('ROLE_WEBMASTER') ||
     View_Add('<div class="outmsg"><div class="warn">Доступ до Support Desk дозволений лише вебмайстрам.</div></div>');
     View_Out();
     exit;
+}
+
+if (!isset($_GET['action']) && supportDeskIsMobileRequest()) {
+    supportDeskRenderDesktopOnlyPage();
 }
 
 $dblink = DbConnect();
@@ -105,6 +150,15 @@ if (isset($_GET['action'])) {
                 $imgPath !== '' ? $imgPath : null,
                 (int)($_POST['template_id'] ?? 0) ?: null
             );
+            supportDeskSendJson([
+                'status' => 'ok',
+                'ticket' => $result['ticket'],
+                'message' => $result['message'],
+            ]);
+        }
+
+        if ($action === 'support_request_resolution' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $result = $supportDesk->requestResolutionConfirmation((int)($_POST['ticket_id'] ?? 0), $userId);
             supportDeskSendJson([
                 'status' => 'ok',
                 'ticket' => $result['ticket'],
@@ -205,8 +259,6 @@ if (!$selectedTicket) {
 $messages = $selectedTicket ? $supportDesk->getMessages((int)$selectedTicket['id']) : [];
 $webmasters = $supportDesk->getWebmasters();
 $templates = $supportDesk->listTemplates();
-$socketConfig = $supportDesk->getSocketConfig();
-
 View_Add(Page_Up('Support Desk'));
 View_Add(Menu_Up());
 View_Add('<div class="outmsg">');
@@ -217,7 +269,9 @@ View_Add(NormalizePublicMarkup($supportRender->renderStaffPage(
     $messages,
     $webmasters,
     $templates,
-    $socketConfig
+    [
+        'current_user_id' => $userId,
+    ]
 )));
 View_Add('</div>');
 View_Out();

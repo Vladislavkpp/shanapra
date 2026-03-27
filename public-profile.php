@@ -1,25 +1,9 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . "/function.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/classes/chats.php";
 
 $dblink = DbConnect();
 $userId = (int)($_GET['idx'] ?? 0);
 $currentUserId = (int)($_SESSION['uzver'] ?? 0);
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') === 'create_chat') {
-    if ($currentUserId <= 0) {
-        header('Location: /auth.php');
-        exit;
-    }
-
-    if ($userId > 0 && $userId !== $currentUserId) {
-        $chats = new Chats($dblink);
-        $chatId = $chats->createChat($currentUserId, $userId);
-        mysqli_close($dblink);
-        header('Location: /messenger.php?chat=' . $chatId);
-        exit;
-    }
-}
 
 function publicProfileEsc(string $value): string
 {
@@ -307,15 +291,12 @@ if (!$user) {
         ');
     } elseif ($currentUserId > 0) {
         View_Add('
-            <form method="post" class="pubprof-form">
-                <input type="hidden" name="action" value="create_chat">
-                <button type="submit" class="pubprof-btn pubprof-btn--primary">
-                    <span class="pubprof-btn__icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-message"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h8" /><path d="M8 13h6" /><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12" /></svg>
-                    </span>
-                    <span>Написати</span>
-                </button>
-            </form>
+            <div class="pubprof-btn pubprof-btn--primary pubprof-btn--disabled" aria-disabled="true">
+                <span class="pubprof-btn__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-message-off"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h2" /><path d="M8 13h4" /><path d="M14 18h4a3 3 0 0 0 3 -3v-6m0 -4a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -3 3v8a3 3 0 0 0 3 3h2v3l3 -3" /><path d="M3 3l18 18" /></svg>
+                </span>
+                <span>Особисті чати вимкнено</span>
+            </div>
         ');
     } elseif ($currentUserId <= 0) {
         View_Add('

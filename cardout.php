@@ -1,30 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . "/function.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/classes/Lenta-grave.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/classes/chats.php";
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') === 'create_chat') {
-    $currentUserId = (int)($_SESSION['uzver'] ?? 0);
-    $targetUserId = (int)($_POST['target_user'] ?? 0);
-
-    if ($currentUserId <= 0) {
-        header('Location: /auth.php');
-        exit;
-    }
-
-    if ($targetUserId <= 0 || $targetUserId === $currentUserId) {
-        header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/'));
-        exit;
-    }
-
-    $dblink = DbConnect();
-    $chats = new Chats($dblink);
-    $chatId = $chats->createChat($currentUserId, $targetUserId);
-    mysqli_close($dblink);
-
-    header('Location: /messenger.php?chat=' . $chatId);
-    exit;
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') === 'toggle_save_grave') {
     header('Content-Type: application/json; charset=utf-8');
@@ -2622,16 +2598,7 @@ ob_start();
                 </div>
                 <div class="grvdet-author-pop__actions">
                     <a class="grvdet-author-pop__link" href="<?= cardOutTestEsc($authorProfileUrl) ?>" data-author-profile>Переглянути профіль</a>
-                    <form method="post" class="grvdet-author-pop__form" data-author-chat-form>
-                        <input type="hidden" name="action" value="create_chat">
-                        <input type="hidden" name="target_user" value="<?= $authorId ?>">
-                        <button type="submit" class="grvdet-author-pop__btn">
-                            <span class="grvdet-author-pop__btn-icon" aria-hidden="true">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-message"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h8" /><path d="M8 13h6" /><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12" /></svg>
-                            </span>
-                            <span>Написати</span>
-                        </button>
-                    </form>
+                    <div class="grvdet-author-pop__link grvdet-author-pop__link--ghost" data-author-chat-form aria-disabled="true">Особисті чати вимкнено</div>
                     <a class="grvdet-author-pop__link grvdet-author-pop__link--self is-hidden" href="/profile.php" data-author-self-link>До профілю</a>
                     <a class="grvdet-author-pop__link grvdet-author-pop__link--ghost" href="/auth.php" data-author-login>
                         <span class="grvdet-author-pop__btn-icon" aria-hidden="true">

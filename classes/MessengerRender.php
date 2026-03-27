@@ -1,52 +1,31 @@
 <?php
 
-class MessengerRender {
+class MessengerRender
+{
     private $dblink;
 
-    public function __construct($dblink) {
+    public function __construct($dblink)
+    {
         $this->dblink = $dblink;
     }
 
-    public function renderContainer($user_id, $userChats, $currentChat, $messages, $chat_id, $type = 0) {
+    public function renderContainer($user_id, $userChats, $currentChat, $messages, $chat_id, $type = 2)
+    {
+        $chatId = (int)$chat_id;
+        $mobileView = $chatId > 0 ? 'chat' : 'list';
+
         $out = '<link rel="stylesheet" href="/assets/css/msg.css">';
-
-        $isMobile = isset($_SERVER['HTTP_USER_AGENT']) && preg_match('/Mobile|Android|iPhone|iPad/i', $_SERVER['HTTP_USER_AGENT']);
-
-        // Мобильная версия
-        if ($isMobile) {
-            $out .= '<div class="mobile-chat-container">';
-
-            // Список чатов — изначально активен на мобильном
-            $out .= '<div class="mobile-chat-list active">';
-            $out .= $this->renderChatList($user_id, $userChats, $chat_id, $type);
-            $out .= '</div>';
-
-            // Окно чата
-            $out .= '<div class="mobile-chat-window">';
-            $out .= $this->renderChatWindow($user_id, $currentChat, $messages, $chat_id, $type);
-            $out .= '</div>';
-
-            // Панель информации о чате
-            $out .= '<div class="mobile-chat-info">';
-            $out .= '<div class="mobile-chat-info-header">';
-            $out .= '<button type="button" class="mobile-info-back-btn" aria-label="Назад до чату">';
-            $out .= '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
-            $out .= '</button>';
-            $out .= '<span class="mobile-chat-info-title">Інформація про чат</span>';
-            $out .= '</div>';
-            $out .= '<div class="mobile-chat-info-content">' . $this->renderChatInfo($user_id, $currentChat) . '</div>';
-            $out .= '</div>';
-
-            $out .= '</div>';
-
-        } else {
-            $chatContainerClass = 'messenger-container' . (!$currentChat ? ' no-chat-selected' : '');
-            $out .= '<div class="'.$chatContainerClass.'">';
-            $out .= $this->renderChatList($user_id, $userChats, $chat_id, $type);
-            $out .= $this->renderChatWindow($user_id, $currentChat, $messages, $chat_id, $type);
-            $out .= $this->renderChatInfo($user_id, $currentChat);
-            $out .= '</div>';
-        }
+        $out .= '<div class="messenger-page" id="messengerRoot" data-chat-id="' . $chatId . '" data-type="' . (int)$type . '" data-mobile-view="' . $mobileView . '">';
+        $out .= '<aside class="messenger-sidebar">';
+        $out .= $this->renderChatList($user_id, $userChats, $chatId);
+        $out .= '</aside>';
+        $out .= '<section class="messenger-thread-panel" id="messengerThreadPanel">';
+        $out .= $this->renderChatWindow($user_id, $currentChat, $messages, $chatId, $type);
+        $out .= '</section>';
+        $out .= '<aside class="messenger-info-panel" id="messengerInfoPanel">';
+        $out .= $this->renderChatInfo($user_id, $currentChat);
+        $out .= '</aside>';
+        $out .= '</div>';
 
         $out .= '<div id="chatImageLightbox" class="chat-lightbox" aria-hidden="true" role="dialog" aria-label="Перегляд зображення">
             <div class="chat-lightbox-backdrop"></div>
@@ -58,1201 +37,965 @@ class MessengerRender {
             </div>
         </div>';
 
-        $out .= $this->renderScripts($user_id, $chat_id);
+        $out .= $this->renderScripts($user_id);
         return $out;
     }
 
-    private function renderChatList($user_id, $userChats, $chat_id, $type = 0) {
-        $title = 'Мої чати';
-        switch ($type) {
-            case 1:
-                $title = 'Особисті чати';
-                break;
-            case 2:
-                $title = 'Робочі чати';
-                break;
-            case 3:
-                $title = 'Підтримка';
-                break;
-        }
+    private function renderChatList($user_id, $userChats, $chat_id)
+    {
+        $out = '<div class="messenger-list">';
+        $out .= '<div class="messenger-list__head">';
+        $out .= '<div class="messenger-list__head-main">';
+        $out .= '<span class="messenger-list__head-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l3.65 -3.65a9 9 0 1 1 3.35 2.29l-7 1.36z" /></svg>
+        </span>';
+        $out .= '<div><p class="messenger-list__eyebrow">Внутрішній messenger</p><h1>Робочі чати</h1><p class="messenger-list__subtitle">Оберіть діалог зі списку або продовжіть поточну переписку.</p></div>';
+        $out .= '</div>';
+        $out .= '</div>';
 
-        $out = '<div class="chat-list">';
-        $out .= '<h3>' . $title . '</h3>';
-        if ($type != 3) {
-            $out .= '
-<div class="chat-type-switch">
-    <a href="/messenger.php?type=1" class="chat-type-btn ' . ($type == 1 ? 'active' : '') . '">
-        <div class="chat-type-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M16 8c0 3.866-3.582 7-8 7a9 9 0 0 1-2.347-.306c-.584.296-1.925.864-4.181 1.234-.2.032-.352-.176-.273-.362.354-.836.674-1.95.77-2.966C.744 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7M5 8a1 1 0 1 0-2 0 1 1 0 0 0 2 0m4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
-            </svg>
-        </div>
-        <div class="chat-type-label">Особисті</div>
-    </a>
-    <a href="/messenger.php?type=2" class="chat-type-btn ' . ($type == 2 ? 'active' : '') . '">
-        <div class="chat-type-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M6.5 1A1.5 1.5 0 0 0 5 2.5V3H1.5A1.5 1.5 0 0 0 0 4.5v1.384l7.614 2.03a1.5 1.5 0 0 0 .772 0L16 5.884V4.5A1.5 1.5 0 0 0 14.5 3H11v-.5A1.5 1.5 0 0 0 9.5 1zm0 1h3a.5.5 0 0 1 .5.5V3H6v-.5a.5.5 0 0 1 .5-.5"/>
-                <path d="M0 12.5A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5V6.85L8.129 8.947a.5.5 0 0 1-.258 0L0 6.85z"/>
-            </svg>
-        </div>
-        <div class="chat-type-label">Робочі</div>
-    </a>
-</div>
-';
-        }
-
-        // Если нет чатов
         if (empty($userChats)) {
-            $out .= '<div class="no-chats">Немає чатів</div></div>';
+            $out .= '<div class="messenger-list__empty">Робочих чатів поки немає.</div>';
+            $out .= '</div>';
             return $out;
         }
 
         foreach ($userChats as $chat) {
-            // фильтрация по типу
-            if ($type > 0) {
-                if ((int)$chat['type'] !== $type) continue;
-            } else {
-                if (!in_array((int)$chat['type'], [1, 2])) continue;
+            if ((int)($chat['type'] ?? 0) !== 2) {
+                continue;
             }
 
-            $isActive = ($chat['idx'] == $chat_id) ? 'active' : '';
-            $otherUserId = ($chat['user_one'] == $user_id) ? $chat['user_two'] : $chat['user_one'];
+            $partner = $this->getChatPartnerData($user_id, $chat);
+            $lastMessage = $chat['last_message'] ?? null;
+            $preview = $this->getChatPreview($lastMessage);
+            $time = '';
+            if (!empty($lastMessage['idtadd'])) {
+                $time = date('H:i', strtotime((string)$lastMessage['idtadd']));
+            }
 
-            $res = mysqli_query($this->dblink, "SELECT fname, lname, avatar FROM users WHERE idx = " . (int)$otherUserId);
-            $u = $res ? mysqli_fetch_assoc($res) : null;
-
-            $name = $u ? htmlspecialchars(trim($u['fname'] . ' ' . $u['lname'])) : 'Користувач';
-            $avatar = (!empty($u['avatar'])) ? $u['avatar'] : '/avatars/ava.png';
-
-            // Последнее сообщение
-            $lastMsgData = $chat['last_message'] ?? null;
-            $lastMsgText = $lastMsgData['message'] ?? 'Немає повідомлень';
-            $lastMsgTime = $lastMsgData['idtadd'] ?? '';
-            $time = $lastMsgTime ? date('H:i', strtotime($lastMsgTime)) : '';
-
-            $link = '/messenger.php?type=' . (int)$chat['type'] . '&chat=' . (int)$chat['idx'];
-
-
-            $out .= '<div class="chat-item ' . $isActive . '" data-link="' . htmlspecialchars($link) . '" data-chat-id="' . $chat['idx'] . '">';
-            $out .= '  <img src="' . htmlspecialchars($avatar) . '" alt="Аватар" class="chat-item-avatar">';
-            $out .= '  <div class="chat-item-info">';
-            $out .= '    <div class="chat-item-name">' . $name . '</div>';
-            $out .= '    <div class="chat-item-lastmsg">';
-            $out .= '      <div class="message-text">' . htmlspecialchars(mb_strimwidth($lastMsgText, 0, 100, '...')) . '</div>';
-            $out .= '      <div class="time">' . $time . '</div>';
-            $out .= '    </div>';
-            $out .= '  </div>';
-            $out .= '</div>';
+            $isActive = (int)$chat['idx'] === $chat_id ? ' is-active' : '';
+            $out .= '<button type="button" class="chat-item' . $isActive . '" data-chat-id="' . (int)$chat['idx'] . '" data-link="/messenger.php?type=2&chat=' . (int)$chat['idx'] . '">';
+            $out .= '<img src="' . htmlspecialchars($partner['avatar'], ENT_QUOTES, 'UTF-8') . '" alt="' . htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8') . '" class="chat-item__avatar">';
+            $out .= '<span class="chat-item__body">';
+            $out .= '<span class="chat-item__top"><strong>' . htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8') . '</strong><span class="chat-item__time">' . htmlspecialchars($time, ENT_QUOTES, 'UTF-8') . '</span></span>';
+            $out .= '<span class="chat-item__bottom"><span class="chat-item__preview">' . htmlspecialchars($preview, ENT_QUOTES, 'UTF-8') . '</span></span>';
+            $out .= '</span>';
+            $out .= '</button>';
         }
 
-        return $out . '</div>';
+        $out .= '</div>';
+        return $out;
     }
-
 
     public function renderChatWindow($user_id, $currentChat, $messages, $chat_id, $type)
     {
         $out = '<div class="chat-window">';
 
-        if (!$currentChat) {
-            return $out . '<div class="chat-empty"><p>Виберіть чат, щоб почати переписку</p></div></div>';
+        if (!$currentChat || (int)($currentChat['type'] ?? 0) !== 2) {
+            $out .= '<div class="chat-empty">
+                <div class="chat-empty__card">
+                    <p class="chat-empty__eyebrow">Робочі чати</p>
+                    <h2>Оберіть чат</h2>
+                    <p>Відкрийте діалог зі списку ліворуч, щоб побачити переписку та інформацію по чату.</p>
+                </div>
+            </div></div>';
+            return $out;
         }
 
-        $otherUser = ($currentChat['user_one'] == $user_id)
-            ? $currentChat['user_two']
-            : $currentChat['user_one'];
+        $partner = $this->getChatPartnerData($user_id, $currentChat);
 
-        $res = mysqli_query($this->dblink, "SELECT fname, lname, avatar FROM users WHERE idx=" . (int)$otherUser);
-        $u = $res ? mysqli_fetch_assoc($res) : null;
+        $out .= '<header class="chat-header">';
+        $out .= '<button type="button" class="chat-nav-btn chat-back-btn" aria-label="Назад до списку чатів">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>';
+        $out .= '<div class="chat-header__meta">';
+        $out .= '<img src="' . htmlspecialchars($partner['avatar'], ENT_QUOTES, 'UTF-8') . '" alt="' . htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8') . '" class="chat-header__avatar">';
+        $out .= '<div><strong>' . htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8') . '</strong><span>Робочий чат</span></div>';
+        $out .= '</div>';
+        $out .= '<button type="button" class="chat-nav-btn chat-info-btn" aria-label="Інформація про чат">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-dots"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M18 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg>
+        </button>';
+        $out .= '</header>';
 
-        $name = $u ? htmlspecialchars($u['fname'] . ' ' . $u['lname']) : 'Користувач';
-        $avatar = (!empty($u['avatar'])) ? $u['avatar'] : '/avatars/ava.png';
-
-        // Шапка: кнопка назад (мобильный), аватар, имя, кнопка инфо
-        $out .= '
-        <div class="chat-header">
-            <div class="chat-header-left" style="display:flex; align-items:center; gap:10px;">
-                <button type="button" class="chat-back-btn mobile-only" aria-label="Назад до списку чатів" title="Назад">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                </button>
-                <img src="' . htmlspecialchars($avatar) . '" alt="Аватар" class="chat-header-avatar" style="width:40px;height:40px;border-radius:50%;">
-                <span>' . $name . '</span>
-            </div>
-            <div class="chat-header-right">
-                <button type="button" class="info-toggle-btn mobile-only" aria-label="Інформація про чат" title="Інформація" data-tooltip="Інформація">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                </button>
-            </div>
-        </div>
-    ';
-
-        // Сообщения
         $out .= '<div class="chat-messages" id="chatMessages" data-chat-id="' . (int)$chat_id . '">';
+        $out .= $this->renderMessages($user_id, $messages);
+        $out .= '</div>';
+        $out .= '<button type="button" class="chat-scroll-bottom" id="chatScrollBottom" aria-label="Прокрутити донизу">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14" /><path d="M18 13l-6 6" /><path d="M6 13l6 6" /></svg>
+        </button>';
+        $out .= $this->renderInputField($chat_id);
+        $out .= '</div>';
 
+        return $out;
+    }
+
+    private function renderMessages($user_id, $messages)
+    {
+        if (empty($messages)) {
+            return '<div class="chat-empty-thread">Повідомлень поки немає. Напишіть першим.</div>';
+        }
+
+        $out = '';
         $lastDate = null;
         $today = date('Y-m-d');
         $yesterday = date('Y-m-d', strtotime('-1 day'));
 
         foreach ($messages as $msg) {
-            $time = date('H:i', strtotime($msg['idtadd']));
-            $date = date('Y-m-d', strtotime($msg['idtadd']));
-            $dateLabel = ($date == $today)
-                ? 'Сьогодні'
-                : (($date == $yesterday)
-                    ? 'Вчора'
-                    : date('d.m.Y', strtotime($msg['idtadd'])));
-
-            if ($lastDate !== $date) {
-                $out .= '<div class="date-divider"><span>' . $dateLabel . '</span></div>';
+            $date = !empty($msg['idtadd']) ? date('Y-m-d', strtotime((string)$msg['idtadd'])) : '';
+            if ($date !== '' && $date !== $lastDate) {
+                $dateLabel = $date === $today
+                    ? 'Сьогодні'
+                    : ($date === $yesterday ? 'Вчора' : date('d.m.Y', strtotime((string)$msg['idtadd'])));
+                $out .= '<div class="date-divider"><span>' . htmlspecialchars($dateLabel, ENT_QUOTES, 'UTF-8') . '</span></div>';
                 $lastDate = $date;
             }
 
-            // Класс для сообщения
-            $isJoin = (
-                (int)$msg['sender_idx'] === -1 &&
-                (
-                    $msg['message'] === "Спеціаліст приєднався до чату" ||
-                    $msg['message'] === "Спеціаліст завершив чат"
-                )
-            );
-
-            $cls = $isJoin
-                ? 'system join'
-                : (((int)$msg['sender_idx'] === (int)$user_id) ? 'me' : 'other');
-
-            $msgText = trim($msg['message'] ?? '');
-            $msgTextHtml = $msgText !== '' ? '<div class="msg-text">' . nl2br(htmlspecialchars($msgText)) . '</div>' : '';
-            $msgImg = '';
-            if (!empty($msg['img'])) {
-                $imgSrc = htmlspecialchars($msg['img']);
-                $msgImg = '<div class="msg-img-wrap"><a href="' . $imgSrc . '" class="msg-img-link" data-full-img="' . $imgSrc . '"><img src="' . $imgSrc . '" alt="" class="msg-img"></a></div>';
+            $messageClass = ((int)$msg['sender_idx'] === (int)$user_id) ? 'message--me' : 'message--other';
+            if ((int)$msg['sender_idx'] === -1) {
+                $messageClass = 'message--system';
             }
-            $out .= '
-            <div class="message ' . $cls . '" data-idx="' . (int)$msg['idx'] . '">
-                ' . $msgImg . '
-                ' . $msgTextHtml . '
-                <div class="msg-time">' . $time . '</div>
-            </div>
-        ';
+
+            $time = !empty($msg['idtadd']) ? date('H:i', strtotime((string)$msg['idtadd'])) : '';
+            $out .= '<article class="message ' . $messageClass . '" data-idx="' . (int)$msg['idx'] . '">';
+
+            if (!empty($msg['img'])) {
+                $imgSrc = htmlspecialchars((string)$msg['img'], ENT_QUOTES, 'UTF-8');
+                $out .= '<div class="message__image"><a href="' . $imgSrc . '" class="msg-img-link" data-full-img="' . $imgSrc . '"><img src="' . $imgSrc . '" alt=""></a></div>';
+            }
+
+            if (trim((string)($msg['message'] ?? '')) !== '') {
+                $out .= '<div class="message__text">' . nl2br(htmlspecialchars((string)$msg['message'], ENT_QUOTES, 'UTF-8')) . '</div>';
+            }
+
+            if ($time !== '') {
+                $out .= '<div class="message__time">' . htmlspecialchars($time, ENT_QUOTES, 'UTF-8') . '</div>';
+            }
+
+            $out .= '</article>';
         }
 
+        return $out;
+    }
+
+    private function renderInputField($chat_id)
+    {
+        return '
+        <form class="chat-input" id="chatForm" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="chat_idx" value="' . (int)$chat_id . '">
+            <div class="chat-input__preview" id="chatImagePreview" aria-hidden="true"></div>
+            <div class="chat-input__row">
+                <label class="chat-input__attach" for="chatImgInput" title="Додати зображення">
+                    <input type="file" name="img" id="chatImgInput" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </label>
+                <textarea name="message" id="chatMessage" placeholder="Напишіть повідомлення..." rows="1" maxlength="2000"></textarea>
+                <button type="submit" id="sendBtn" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-send"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 14l11 -11" /><path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5" /></svg>
+                </button>
+            </div>
+            <div class="chat-input__meta">
+                <span id="charCounter">0 / 2000</span>
+                <span>Enter для відправки, Shift+Enter для нового рядка</span>
+            </div>
+        </form>';
+    }
+
+    public function renderChatInfo($user_id, $currentChat)
+    {
+        $out = '<div class="chat-info">';
+        $out .= '<div class="chat-info__mobile-head"><button type="button" class="chat-nav-btn chat-info-back-btn" aria-label="Назад до чату">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button><span>Інформація</span></div>';
+
+        if (!$currentChat || (int)($currentChat['type'] ?? 0) !== 2) {
+            $out .= '<div class="chat-info__empty">Оберіть робочий чат, щоб побачити деталі.</div></div>';
+            return $out;
+        }
+
+        $partner = $this->getChatPartnerData($user_id, $currentChat);
+        $createdAt = !empty($currentChat['idtadd']) ? date('d.m.Y H:i', strtotime((string)$currentChat['idtadd'])) : '';
+        $lastMessage = $this->getLastMessage((int)$currentChat['idx']);
+        $lastActivity = !empty($lastMessage['idtadd']) ? date('d.m.Y H:i', strtotime((string)$lastMessage['idtadd'])) : $createdAt;
+
+        $out .= '<div class="chat-info__card">';
+        $out .= '<img src="' . htmlspecialchars($partner['avatar'], ENT_QUOTES, 'UTF-8') . '" alt="' . htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8') . '" class="chat-info__avatar">';
+        $out .= '<h2>' . htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8') . '</h2>';
+        $out .= '<p>У цьому блоці зібрана коротка інформація по робочому діалогу.</p>';
         $out .= '</div>';
 
-        if ((int)$currentChat['user_two'] === -1 && $type === 3 && $user_id === -1) {
-            $hasJoin = false;
+        $out .= '<div class="chat-info__section">';
+        $out .= '<div class="chat-info__row"><span>Тип</span><strong>Робочий чат</strong></div>';
+        $out .= '<div class="chat-info__row"><span>Створено</span><strong>' . htmlspecialchars($createdAt, ENT_QUOTES, 'UTF-8') . '</strong></div>';
+        $out .= '<div class="chat-info__row"><span>Остання активність</span><strong>' . htmlspecialchars($lastActivity, ENT_QUOTES, 'UTF-8') . '</strong></div>';
+        $out .= '</div>';
 
-            foreach ($messages as $msg) {
-                if (
-                    (int)$msg['sender_idx'] === -1 &&
-                    $msg['message'] === "Спеціаліст приєднався до чату"
-                ) {
-                    $hasJoin = true;
-                    break;
-                }
-            }
+        $out .= '<div class="chat-info__actions">';
+        if (!empty($partner['profile_url'])) {
+            $out .= '<a href="' . htmlspecialchars($partner['profile_url'], ENT_QUOTES, 'UTF-8') . '" class="chat-info__action chat-info__action--ghost">Відкрити профіль</a>';
+        }
+        $out .= '<button type="button" class="chat-info__action chat-info__action--danger" id="deleteChatBtn">Видалити чат</button>';
+        $out .= '</div>';
 
-            if (!$hasJoin) {
-                $out .= '
-                <div class="chat-join-container">
-                    <button id="joinChatBtn" class="join-chat-btn">Приєднатися до чату</button>
-                </div>
-            ';
-            } else {
-                $out .= $this->renderInputField($chat_id);
-            }
-        } else {
-            $out .= $this->renderInputField($chat_id);
+        $out .= '</div>';
+        return $out;
+    }
+
+    private function getChatPartnerData($user_id, $chat)
+    {
+        $otherUserId = ((int)$chat['user_one'] === (int)$user_id)
+            ? (int)$chat['user_two']
+            : (int)$chat['user_one'];
+
+        if ($otherUserId <= 0) {
+            return [
+                'id' => $otherUserId,
+                'name' => 'Робочий контакт',
+                'avatar' => '/avatars/ava.png',
+                'profile_url' => '',
+            ];
         }
 
-        return $out . '</div>';
-    }
+        $res = mysqli_query(
+            $this->dblink,
+            "SELECT fname, lname, avatar FROM users WHERE idx = " . $otherUserId . " LIMIT 1"
+        );
+        $user = $res ? mysqli_fetch_assoc($res) : null;
 
-
-    private function renderInputField($chat_id) {
-        return '
-    <form class="chat-input" id="chatForm" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="chat_idx" value="'.(int)$chat_id.'">
-        <div class="input-top">
-            <div id="charCounter">0/2000</div>
-            <div class="chat-image-preview" id="chatImagePreview" aria-hidden="true"></div>
-        </div>
-        <div class="input-area">
-            <label class="chat-attach-img" for="chatImgInput" title="Додати зображення">
-                <input type="file" name="img" id="chatImgInput" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            </label>
-            <textarea name="message" id="chatMessage" placeholder="Повідомлення..." rows="1"></textarea>
-            <button type="submit" id="sendBtn" disabled>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                     fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471z"/>
-                </svg>
-            </button>
-        </div>
-    </form>';
-    }
-
-
-
-
-    public function renderChatInfo($user_id, $currentChat) {
-        $out = '<div class="chat-info">';
-
-        if (!$currentChat) return $out.'<p>Виберіть чат</p></div>';
-
-        $chatType = isset($currentChat['type']) ? (int)$currentChat['type'] : 0;
-
-        $otherUser = ($currentChat['user_one'] == $user_id) ? $currentChat['user_two'] : $currentChat['user_one'];
-        $resUser = mysqli_query($this->dblink, "SELECT fname, lname, avatar FROM users WHERE idx=" . (int)$otherUser);
-        $u = $resUser ? mysqli_fetch_assoc($resUser) : null;
-
-        $userName = $u ? htmlspecialchars(trim($u['fname'] . ' ' . $u['lname'])) : (($otherUser < 0) ? 'Гість #' . abs($otherUser) : 'Користувач');
-        $userAvatar = (!empty($u['avatar'])) ? $u['avatar'] : '/avatars/ava.png';
-
-
-        $out .= '<div class="chat-info-top">
-                <h3 class="chat-info-title">Інформація про користувача</h3>
-                <div class="chat-info-user">
-                    <img src="'.htmlspecialchars($userAvatar).'" alt="Аватар" class="chat-info-avatar">
-                    <div class="chat-info-name">'.$userName.'</div>
-                </div>';
-
-        if ($chatType === 3) {
-
-
-            if ($user_id == -1) {
-                if ($otherUser > 0) {
-                    $out .= '<div class="chat-info-buttons-top">
-                            <a href="/userprofile.php?idx='.(int)$otherUser.'" class="icon-btn" data-tooltip="Профіль">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12zm0 2.2c-3.3 0-9.9 1.7-9.9 5v2.7h19.8V19c0-3.3-6.6-5-9.9-5z"/>
-                                </svg>
-                            </a>
-                         </div>';
-                } else {
-                    // Гость
-                    $out .= '<div class="chat-info-guest-id">Гість #' . abs($otherUser) . '</div>';
-                }
-
-                // Нижние кнопки для поддержки
-                $out .= '</div>
-                    <div class="chat-info-bottom">
-                        <button class="btn btn-danger full-width btn-end-chat">Завершити чат</button>
-                        <button class="btn btn-danger full-width">Заблокувати</button>
-                        <button class="btn btn-danger full-width" id="deleteChatBtn">Видалити чат</button>
-                    </div>';
-            }
-
-            else {
-                $out .= '</div>';
-            }
-
-        } else {
-            $out .= '<div class="chat-info-buttons-top">
-                    <a href="/userprofile.php?idx='.(int)$otherUser.'" class="icon-btn" data-tooltip="Профіль">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12zm0 2.2c-3.3 0-9.9 1.7-9.9 5v2.7h19.8V19c0-3.3-6.6-5-9.9-5z"/>
-                        </svg>
-                    </a>
-                </div>
-            </div>
-            <div class="chat-info-bottom">
-                <button class="btn btn-danger full-width">Поскаржитись</button>
-                <button class="btn btn-danger full-width">Заблокувати</button>
-                <button class="btn btn-danger full-width">Видалити чат</button>
-            </div>';
+        $name = trim((string)($user['fname'] ?? '') . ' ' . (string)($user['lname'] ?? ''));
+        if ($name === '') {
+            $name = 'Користувач #' . $otherUserId;
         }
 
-        return $out.'</div>';
+        $avatar = !empty($user['avatar']) ? (string)$user['avatar'] : '/avatars/ava.png';
+
+        return [
+            'id' => $otherUserId,
+            'name' => $name,
+            'avatar' => $avatar,
+            'profile_url' => '/public-profile.php?idx=' . $otherUserId,
+        ];
     }
 
+    private function getChatPreview($lastMessage)
+    {
+        if (!$lastMessage) {
+            return 'Без повідомлень';
+        }
 
-    private function renderScripts($user_id, $chat_id) {
+        $text = trim((string)($lastMessage['message'] ?? ''));
+        if ($text !== '') {
+            return mb_strimwidth($text, 0, 90, '...');
+        }
+
+        if (!empty($lastMessage['img'])) {
+            return '[Зображення]';
+        }
+
+        return 'Без повідомлень';
+    }
+
+    private function getLastMessage($chatId)
+    {
+        $res = mysqli_query(
+            $this->dblink,
+            "SELECT idx, idtadd FROM chatsmsg WHERE chat_idx = " . (int)$chatId . " ORDER BY idtadd DESC LIMIT 1"
+        );
+
+        return $res ? mysqli_fetch_assoc($res) : null;
+    }
+
+    private function renderScripts($user_id)
+    {
         ob_start();
         ?>
         <script>
-            document.addEventListener("DOMContentLoaded", function() {
+            document.addEventListener("DOMContentLoaded", function () {
+                const root = document.getElementById("messengerRoot");
+                if (!root) return;
+
                 const userId = <?= (int)$user_id ?>;
+                const threadPanel = document.getElementById("messengerThreadPanel");
+                const infoPanel = document.getElementById("messengerInfoPanel");
+                const deleteModal = document.getElementById("deleteChatModal");
+                let currentChatId = parseInt(root.dataset.chatId || "0", 10) || 0;
+                let lastMessageId = 0;
+                let pollTimer = null;
+                let initialScrollRestored = false;
 
-                let chatContainer = document.getElementById("chatMessages");
-                let chatForm = document.getElementById("chatForm");
-                const urlParams = new URLSearchParams(window.location.search);
-                let chatId = chatContainer ? parseInt(chatContainer.dataset.chatId || 0) : (urlParams.get("chat") ? parseInt(urlParams.get("chat")) : 0);
+                function escapeHTML(value) {
+                    return String(value).replace(/[&<>"']/g, function (char) {
+                        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char];
+                    });
+                }
 
-                // Лайтбокс для зображень у чаті
-                const lightbox = document.getElementById("chatImageLightbox");
-                if (lightbox) {
-                    const lightboxImg = lightbox.querySelector(".chat-lightbox-img");
-                    const openLightbox = function(src) {
-                        if (lightboxImg && src) {
-                            lightboxImg.src = src;
-                            lightbox.classList.add("open");
-                            lightbox.setAttribute("aria-hidden", "false");
-                            document.body.style.overflow = "hidden";
+                function isMobile() {
+                    return window.innerWidth <= 900;
+                }
+
+                function setMobileView(view) {
+                    root.dataset.mobileView = view;
+                    updateActiveListItem();
+                    updateMobileChrome();
+                }
+
+                function updateMobileChrome() {
+                    const shouldHideBottomDock = isMobile() && root.dataset.mobileView !== "list";
+                    document.body.classList.toggle("messenger-mobile-chat-open", shouldHideBottomDock);
+                }
+
+                function updateViewportMetrics() {
+                    if (!isMobile()) {
+                        document.documentElement.style.setProperty("--msg-mobile-viewport-height", "100dvh");
+                        document.documentElement.style.setProperty("--msg-mobile-viewport-offset-top", "0px");
+                        document.documentElement.style.setProperty("--msg-mobile-viewport-offset-bottom", "0px");
+                        return;
+                    }
+
+                    const viewport = window.visualViewport;
+                    const viewportHeight = viewport ? viewport.height : window.innerHeight;
+                    const viewportOffsetTop = viewport ? viewport.offsetTop : 0;
+                    const viewportOffsetBottom = viewport
+                        ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+                        : 0;
+
+                    document.documentElement.style.setProperty("--msg-mobile-viewport-height", Math.round(viewportHeight) + "px");
+                    document.documentElement.style.setProperty("--msg-mobile-viewport-offset-top", Math.round(Math.max(0, viewportOffsetTop)) + "px");
+                    document.documentElement.style.setProperty("--msg-mobile-viewport-offset-bottom", Math.round(viewportOffsetBottom) + "px");
+                }
+
+                function normalizeMobilePageScroll() {
+                    if (!isMobile() || root.dataset.mobileView !== "chat") {
+                        return;
+                    }
+
+                    const activeEl = document.activeElement;
+                    const isComposerFocused = !!(activeEl && activeEl.id === "chatMessage");
+                    if (!isComposerFocused) {
+                        return;
+                    }
+
+                    if (window.scrollY > 0) {
+                        window.scrollTo(0, 0);
+                    }
+                    if (document.documentElement.scrollTop > 0) {
+                        document.documentElement.scrollTop = 0;
+                    }
+                    if (document.body.scrollTop > 0) {
+                        document.body.scrollTop = 0;
+                    }
+                }
+
+                function updateComposeMetrics() {
+                    const form = document.getElementById("chatForm");
+                    if (!form) {
+                        document.documentElement.style.setProperty("--msg-compose-height", "92px");
+                        return;
+                    }
+
+                    const nextHeight = Math.max(72, Math.ceil(form.getBoundingClientRect().height));
+                    document.documentElement.style.setProperty("--msg-compose-height", nextHeight + "px");
+                }
+
+                function queueLayoutRefresh(keepBottom) {
+                    [0, 80, 220, 420].forEach(function (delay) {
+                        window.setTimeout(function () {
+                            updateViewportMetrics();
+                            updateComposeMetrics();
+                            normalizeMobilePageScroll();
+
+                            if (!keepBottom || !isMobile()) {
+                                updateScrollBottomButton();
+                                return;
+                            }
+
+                            const activeEl = document.activeElement;
+                            const chatMessages = document.getElementById("chatMessages");
+                            const isComposerFocused = !!(activeEl && activeEl.id === "chatMessage");
+
+                            if (isComposerFocused && chatMessages && isNearBottom()) {
+                                chatMessages.scrollTop = chatMessages.scrollHeight;
+                                saveScrollPosition();
+                            }
+
+                            updateScrollBottomButton();
+                        }, delay);
+                    });
+                }
+
+                function syncViewWithState() {
+                    if (!isMobile()) {
+                        root.dataset.mobileView = "chat";
+                        updateMobileChrome();
+                        updateViewportMetrics();
+                        return;
+                    }
+
+                    if (currentChatId > 0 && root.dataset.mobileView === "list") {
+                        updateMobileChrome();
+                        updateViewportMetrics();
+                        return;
+                    }
+
+                    setMobileView(currentChatId > 0 ? "chat" : "list");
+                    updateViewportMetrics();
+                }
+
+                function updateActiveListItem() {
+                    const hideActiveState = isMobile() && root.dataset.mobileView === "list";
+                    root.querySelectorAll(".chat-item").forEach(function (item) {
+                        const isCurrentChat = parseInt(item.dataset.chatId || "0", 10) === currentChatId;
+                        item.classList.toggle("is-active", !hideActiveState && isCurrentChat);
+                    });
+                }
+
+                function autoResize(textarea) {
+                    if (!textarea) return;
+                    const maxHeight = 120;
+                    textarea.style.height = "auto";
+                    const nextHeight = Math.min(textarea.scrollHeight, maxHeight);
+                    textarea.style.height = nextHeight + "px";
+                    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+                    updateComposeMetrics();
+                }
+
+                function updateComposeState() {
+                    const form = document.getElementById("chatForm");
+                    if (!form) return;
+                    const textarea = form.querySelector("textarea[name='message']");
+                    const sendBtn = document.getElementById("sendBtn");
+                    const counter = document.getElementById("charCounter");
+                    const fileInput = form.querySelector("input[name='img']");
+                    const textLength = textarea ? textarea.value.length : 0;
+                    const hasImage = !!(fileInput && fileInput.files && fileInput.files.length > 0);
+                    if (sendBtn) {
+                        sendBtn.disabled = textLength === 0 && !hasImage;
+                    }
+                    if (counter) {
+                        counter.textContent = textLength + " / 2000";
+                    }
+                    updateComposeMetrics();
+                }
+
+                function setLastMessageId() {
+                    lastMessageId = 0;
+                    const chatMessages = document.getElementById("chatMessages");
+                    if (!chatMessages) return;
+                    chatMessages.querySelectorAll(".message[data-idx]").forEach(function (message) {
+                        const id = parseInt(message.dataset.idx || "0", 10) || 0;
+                        if (id > lastMessageId) {
+                            lastMessageId = id;
                         }
+                    });
+                }
+
+                function scrollMessagesToBottom() {
+                    const chatMessages = document.getElementById("chatMessages");
+                    if (chatMessages) {
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                        saveScrollPosition();
+                    }
+                }
+
+                function scrollStorageKey(chatId) {
+                    return "messenger_scroll_" + String(chatId || 0);
+                }
+
+                function saveScrollPosition() {
+                    const chatMessages = document.getElementById("chatMessages");
+                    if (!chatMessages || !currentChatId) return;
+                    try {
+                        sessionStorage.setItem(scrollStorageKey(currentChatId), String(chatMessages.scrollTop));
+                    } catch (error) {}
+                }
+
+                function restoreScrollPosition(forceBottom) {
+                    const chatMessages = document.getElementById("chatMessages");
+                    if (!chatMessages) return;
+
+                    if (forceBottom) {
+                        scrollMessagesToBottom();
+                        updateScrollBottomButton();
+                        return;
+                    }
+
+                    let restored = false;
+                    try {
+                        const saved = sessionStorage.getItem(scrollStorageKey(currentChatId));
+                        if (saved !== null) {
+                            chatMessages.scrollTop = parseInt(saved, 10) || 0;
+                            restored = true;
+                        }
+                    } catch (error) {}
+
+                    if (!restored) {
+                        chatMessages.scrollTop = 0;
+                    }
+
+                    updateScrollBottomButton();
+                }
+
+                function isNearBottom() {
+                    const chatMessages = document.getElementById("chatMessages");
+                    if (!chatMessages) return true;
+                    return (chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight) < 80;
+                }
+
+                function updateScrollBottomButton() {
+                    const button = document.getElementById("chatScrollBottom");
+                    if (!button) return;
+                    button.classList.toggle("is-visible", !isNearBottom());
+                }
+
+                function updatePreviewCard(fileInput, previewBox, onChange) {
+                    if (!previewBox) return;
+
+                    previewBox.innerHTML = "";
+                    previewBox.classList.remove("is-visible");
+                    previewBox.setAttribute("aria-hidden", "true");
+
+                    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+                        updateComposeMetrics();
+                        if (typeof onChange === "function") onChange();
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function () {
+                        previewBox.classList.add("is-visible");
+                        previewBox.removeAttribute("aria-hidden");
+                        previewBox.innerHTML = '<div class="chat-image-preview-card"><img src="' + escapeHTML(reader.result || "") + '" alt=""><button type="button" class="chat-image-preview-remove">&times;</button></div>';
+                        const removeBtn = previewBox.querySelector(".chat-image-preview-remove");
+                        if (removeBtn) {
+                            removeBtn.addEventListener("click", function () {
+                                fileInput.value = "";
+                                updatePreviewCard(fileInput, previewBox, onChange);
+                            });
+                        }
+                        if (typeof onChange === "function") onChange();
+                        updateComposeMetrics();
                     };
-                    const closeLightbox = function() {
+                    reader.readAsDataURL(fileInput.files[0]);
+                }
+
+                function bindLightbox() {
+                    const lightbox = document.getElementById("chatImageLightbox");
+                    if (!lightbox || lightbox.dataset.bound === "1") return;
+                    lightbox.dataset.bound = "1";
+
+                    const img = lightbox.querySelector(".chat-lightbox-img");
+                    const close = function () {
                         lightbox.classList.remove("open");
                         lightbox.setAttribute("aria-hidden", "true");
+                        if (img) img.removeAttribute("src");
                         document.body.style.overflow = "";
-                        if (lightboxImg) lightboxImg.removeAttribute("src");
                     };
-                    document.body.addEventListener("click", function(e) {
-                        const link = e.target.closest(".msg-img-link");
-                        if (link) {
-                            e.preventDefault();
-                            openLightbox(link.dataset.fullImg || link.getAttribute("href") || "");
+
+                    document.body.addEventListener("click", function (event) {
+                        const link = event.target.closest(".msg-img-link");
+                        if (!link) return;
+                        event.preventDefault();
+                        if (img) {
+                            img.src = link.dataset.fullImg || link.getAttribute("href") || "";
                         }
+                        lightbox.classList.add("open");
+                        lightbox.setAttribute("aria-hidden", "false");
+                        document.body.style.overflow = "hidden";
                     });
-                    lightbox.querySelector(".chat-lightbox-backdrop").addEventListener("click", closeLightbox);
-                    lightbox.querySelector(".chat-lightbox-close").addEventListener("click", closeLightbox);
-                    document.addEventListener("keydown", function(e) {
-                        if (e.key === "Escape" && lightbox.classList.contains("open")) closeLightbox();
-                    });
-                }
 
-                // ===
-                const joinBtn = document.getElementById("joinChatBtn");
-                if (joinBtn) {
-                    joinBtn.addEventListener("click", async function() {
-                        if (!chatId) return;
-                        try {
-                            const formData = new FormData();
-                            formData.append("chat_idx", chatId);
-                            formData.append("message", "Спеціаліст приєднався до чату");
-                            const res = await fetch("messenger.php?action=send_message", { method: "POST", body: formData });
-                            const data = await res.json();
-                            if (data.status === "ok") {
-
-                                joinBtn.parentElement.remove();
-
-                                const inputHTML = `<?php echo addslashes($this->renderInputField($chat_id)); ?>`;
-                                const chatWrapper = document.querySelector(".chat-window");
-                                chatWrapper.insertAdjacentHTML('beforeend', inputHTML);
-
-                                const newForm = document.getElementById("chatForm");
-                                if (newForm) bindFormHandlers(newForm);
-
-                                if (Array.isArray(data.messages)) {
-                                    data.messages.forEach(msg => appendMessage(msg));
-                                }
-                            }
-                        } catch (e) { console.error(e); }
+                    const backdrop = lightbox.querySelector(".chat-lightbox-backdrop");
+                    const closeBtn = lightbox.querySelector(".chat-lightbox-close");
+                    if (backdrop) backdrop.addEventListener("click", close);
+                    if (closeBtn) closeBtn.addEventListener("click", close);
+                    document.addEventListener("keydown", function (event) {
+                        if (event.key === "Escape" && lightbox.classList.contains("open")) {
+                            close();
+                        }
                     });
                 }
 
-                function appendMessage(msg) {
-                    if (!chatContainer) return;
+                function updateChatListPreview(message) {
+                    const item = root.querySelector('.chat-item[data-chat-id="' + String(currentChatId) + '"]');
+                    if (!item || !message) return;
 
-                    if (chatContainer.querySelector(`.message[data-idx="${String(msg.idx)}"]`)) return;
+                    const preview = item.querySelector(".chat-item__preview");
+                    const time = item.querySelector(".chat-item__time");
+                    const nextPreview = (message.message && String(message.message).trim())
+                        ? String(message.message).trim()
+                        : (message.img ? "[Зображення]" : "Без повідомлень");
 
-                    const isJoinSystem = msg.sender_idx === -1 && (
-                        msg.message.includes("приєднався до чату") ||
-                        msg.message.includes("завершив чат")
-                    );
-
-                    const cls = isJoinSystem
-                        ? "system join"
-                        : ((parseInt(msg.sender_idx) === userId && userId !== -1) ? "me" : "other");
-
-                    const div = document.createElement("div");
-                    div.className = "message " + cls;
-                    div.dataset.idx = String(msg.idx);
-
-                    if (isJoinSystem) {
-                        div.innerHTML = `<div class="msg-text">${escapeHTML(msg.message)}</div>`;
-                    } else {
-                        const time = msg.idtadd
-                            ? new Date(msg.idtadd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                            : '';
-                        const imgPart = (msg.img) ? `<div class="msg-img-wrap"><a href="${escapeHTML(msg.img)}" class="msg-img-link" data-full-img="${escapeHTML(msg.img)}"><img src="${escapeHTML(msg.img)}" alt="" class="msg-img"></a></div>` : '';
-                        const textPart = (msg.message && String(msg.message).trim()) ? `<div class="msg-text">${escapeHTML(msg.message)}</div>` : '';
-                        div.innerHTML =
-                            imgPart +
-                            textPart +
-                            (time ? `<div class="msg-time">${time}</div>` : '');
+                    if (preview) {
+                        preview.textContent = nextPreview.length > 90 ? nextPreview.slice(0, 87) + "..." : nextPreview;
                     }
 
-                    chatContainer.appendChild(div);
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    if (time) {
+                        const date = message.idtadd ? new Date(message.idtadd) : new Date();
+                        const hh = String(date.getHours()).padStart(2, "0");
+                        const mm = String(date.getMinutes()).padStart(2, "0");
+                        time.textContent = hh + ":" + mm;
+                    }
+                }
 
-                    updateChatListWithMessage(chatId, msg);
+                function buildMessageHtml(message) {
+                    const senderClass = parseInt(message.sender_idx || 0, 10) === userId ? "message--me" : "message--other";
+                    const time = message.idtadd
+                        ? new Date(message.idtadd).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                        : "";
+                    const imgPart = message.img
+                        ? '<div class="message__image"><a href="' + escapeHTML(message.img) + '" class="msg-img-link" data-full-img="' + escapeHTML(message.img) + '"><img src="' + escapeHTML(message.img) + '" alt=""></a></div>'
+                        : "";
+                    const textPart = message.message && String(message.message).trim()
+                        ? '<div class="message__text">' + escapeHTML(message.message).replace(/\n/g, "<br>") + '</div>'
+                        : "";
+                    return '<article class="message ' + senderClass + '" data-idx="' + parseInt(message.idx || 0, 10) + '">' + imgPart + textPart + '<div class="message__time">' + escapeHTML(time) + '</div></article>';
+                }
 
-                    if (msg.sender_idx === -1 && msg.message.includes("завершив чат")) {
-                        const inputForm = document.getElementById("chatForm");
-                        if (inputForm) inputForm.remove();
+                function appendMessages(messages) {
+                    const chatMessages = document.getElementById("chatMessages");
+                    if (!chatMessages || !Array.isArray(messages) || messages.length === 0) return;
 
-                        const joinHTML = `
-            <div class="chat-join-container">
-                <button id="joinChatBtn" class="join-chat-btn">Приєднатися до чату</button>
-            </div>`;
-                        chatContainer.insertAdjacentHTML('afterend', joinHTML);
+                    const empty = chatMessages.querySelector(".chat-empty-thread");
+                    if (empty) empty.remove();
 
-                        const joinBtn = document.getElementById("joinChatBtn");
-                        if (joinBtn) {
-                            joinBtn.addEventListener("click", async function() {
-                                if (!chatId) return;
-                                try {
-                                    const formData = new FormData();
-                                    formData.append("chat_idx", chatId);
-                                    formData.append("message", "Спеціаліст приєднався до чату");
+                    const stickToBottom = isNearBottom();
 
-                                    const res = await fetch("messenger.php?action=send_message", {
-                                        method: "POST",
-                                        body: formData
-                                    });
-                                    const data = await res.json();
-
-                                    if (data.status === "ok") {
-                                        joinBtn.parentElement.remove();
-
-                                        const inputHTML = `<?php echo addslashes($this->renderInputField($chat_id)); ?>`;
-                                        const chatWrapper = document.querySelector(".chat-window");
-                                        chatWrapper.insertAdjacentHTML('beforeend', inputHTML);
-
-                                        const newForm = document.getElementById("chatForm");
-                                        if (newForm) bindFormHandlers(newForm);
-
-                                        if (Array.isArray(data.messages)) {
-                                            data.messages.forEach(m => appendMessage(m));
-                                        }
-                                    }
-                                } catch (e) {
-                                    console.error(e);
-                                }
-                            });
+                    messages.forEach(function (message) {
+                        const messageId = parseInt(message.idx || "0", 10) || 0;
+                        if (!messageId || chatMessages.querySelector('.message[data-idx="' + String(messageId) + '"]')) {
+                            return;
                         }
-                    }
-                }
-
-
-                // ====
-
-                let lastMsgId = 0, fetching = false;
-                const pollingInterval = 1500;
-                let pollingTimer = null;
-                let userIsScrolling = false, scrollTimer = null;
-
-                // блоки
-                let chatList = document.querySelector(".chat-list");
-                let chatWindow = document.querySelector(".chat-window");
-                let chatInfo = document.querySelector(".chat-info");
-                const mobileListWrap = document.querySelector(".mobile-chat-list");
-                const mobileWindowWrap = document.querySelector(".mobile-chat-window");
-                const mobileInfoWrap = document.querySelector(".mobile-chat-info");
-
-                function updateChatListWithMessage(chatIdParam, msg) {
-                    try {
-                        const id = String(chatIdParam || 0);
-
-                        if (!chatList) chatList = document.querySelector(".chat-list");
-                        if (!chatList) return;
-
-                        const item = chatList.querySelector(`.chat-item[data-chat-id="${id}"]`);
-                        if (!item) return;
-
-                        const textEl = item.querySelector('.chat-item-lastmsg .message-text');
-                        let text = (msg && msg.message) ? String(msg.message) : '';
-                        text = text.replace(/\s+/g, ' ').trim();
-                        const maxLen = 100;
-                        if (text.length > maxLen) text = text.slice(0, maxLen - 3) + '...';
-                        if (textEl) textEl.textContent = text || 'Немає повідомлень';
-
-
-                        const timeEl = item.querySelector('.chat-item-lastmsg .time');
-                        let timeStr = '';
-                        if (msg && msg.idtadd) {
-                            const dt = new Date(msg.idtadd);
-                            if (!isNaN(dt.getTime())) {
-                                const hh = String(dt.getHours()).padStart(2, '0');
-                                const mm = String(dt.getMinutes()).padStart(2, '0');
-                                timeStr = `${hh}:${mm}`;
-                            }
+                        chatMessages.insertAdjacentHTML("beforeend", buildMessageHtml(message));
+                        if (messageId > lastMessageId) {
+                            lastMessageId = messageId;
                         }
-                        if (!timeStr) {
-                            const now = new Date();
-                            timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-                        }
-                        if (timeEl) timeEl.textContent = timeStr;
+                        updateChatListPreview(message);
+                    });
 
-
-                        const switchBlock = chatList.querySelector('.chat-type-switch');
-                        if (switchBlock) {
-
-                            const next = switchBlock.nextElementSibling;
-                            if (next && next !== item) {
-                                chatList.insertBefore(item, next);
-                            } else if (next === item) {
-
-                            } else {
-
-                                switchBlock.insertAdjacentElement('afterend', item);
-                            }
-                        } else {
-                            const firstChat = chatList.querySelector('.chat-item');
-                            if (firstChat && firstChat !== item) {
-                                chatList.insertBefore(item, firstChat);
-                            } else if (!firstChat) {
-
-                                chatList.appendChild(item);
-                            }
-                        }
-
-                        item.classList.add('highlighted');
-                        setTimeout(() => item.classList.remove('highlighted'), 600);
-
-                    } catch (e) {
-                        console.error("updateChatListWithMessage error:", e);
-                    }
-                }
-
-
-
-                function updateBodyScrollLock() {
-                    if (window.innerWidth <= 600 && (mobileWindowWrap?.classList.contains("active") || mobileInfoWrap?.classList.contains("active"))) {
-                        document.body.classList.add("messenger-chat-noscroll");
-                        document.documentElement.classList.add("messenger-chat-noscroll");
+                    if (stickToBottom) {
+                        scrollMessagesToBottom();
                     } else {
-                        document.body.classList.remove("messenger-chat-noscroll");
-                        document.documentElement.classList.remove("messenger-chat-noscroll");
-                    }
-                }
-                function showChatList() {
-                    if (window.innerWidth <= 600) {
-                        mobileListWrap?.classList.add("active");
-                        mobileWindowWrap?.classList.remove("active");
-                        mobileInfoWrap?.classList.remove("active");
-                        updateBodyScrollLock();
-                    } else {
-                        chatList?.classList.add("active");
-                        chatWindow?.classList.remove("active");
-                        chatInfo?.classList.remove("active");
-                    }
-                }
-                function showChatWindow() {
-                    if (window.innerWidth <= 600) {
-                        mobileListWrap?.classList.remove("active");
-                        mobileWindowWrap?.classList.add("active");
-                        mobileInfoWrap?.classList.remove("active");
-                        updateBodyScrollLock();
-                    } else {
-                        chatList?.classList.remove("active");
-                        chatWindow?.classList.add("active");
-                        chatInfo?.classList.remove("active");
-                    }
-                }
-                function showChatInfo() {
-                    if (window.innerWidth <= 600) {
-                        mobileListWrap?.classList.remove("active");
-                        mobileWindowWrap?.classList.remove("active");
-                        mobileInfoWrap?.classList.add("active");
-                        updateBodyScrollLock();
-                    } else {
-                        chatList?.classList.remove("active");
-                        chatWindow?.classList.remove("active");
-                        chatInfo?.classList.add("active");
+                        updateScrollBottomButton();
                     }
                 }
 
-                function storageKeyForChat(id) { return "chatScroll_" + (parseInt(id) || 0); }
-                function saveScrollPosition() { if (chatContainer && chatId) localStorage.setItem(storageKeyForChat(chatId), String(chatContainer.scrollTop)); }
-                function getSavedScroll() {
-                    try {
-                        const v = localStorage.getItem(storageKeyForChat(chatId));
-                        return v === null ? null : parseInt(v, 10);
-                    } catch (e) { return null; }
-                }
-
-                function restoreScrollPositionWithRetry(maxAttempts = 6) {
-                    if (!chatContainer) return;
-                    const saved = getSavedScroll();
-                    if (saved === null || isNaN(saved)) return;
-
-                    let attempt = 0;
-                    function tryRestore() {
-                        attempt++;
-                        const maxTop = Math.max(0, chatContainer.scrollHeight - chatContainer.clientHeight);
-                        if (maxTop > 0 || attempt >= maxAttempts) {
-                            chatContainer.scrollTop = Math.min(saved, maxTop);
-                        } else {
-                            setTimeout(tryRestore, 80 * attempt);
-                        }
-                    }
-                    tryRestore();
-                }
-
-                function isNearBottom(c, t = 50) { return (c.scrollHeight - c.scrollTop - c.clientHeight) < t; }
-
-                window.addEventListener("beforeunload", saveScrollPosition);
-
-                function stopPolling() {
-                    if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
-                    fetching = false;
-                }
-
-                function escapeHTML(s) { return String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
-
-                async function fetchNewMessages() {
-                    if (fetching || !chatId || !chatContainer) return;
-                    fetching = true;
+                async function pollMessages() {
+                    if (!currentChatId) return;
 
                     try {
-                        const res = await fetch(`messenger.php?action=get_new_messages&chat=${chatId}&last_msg_id=${lastMsgId}`);
-                        if (!res.ok) throw new Error("Network error");
-
+                        const res = await fetch("messenger.php?action=get_new_messages&chat=" + encodeURIComponent(currentChatId) + "&last_msg_id=" + encodeURIComponent(lastMessageId), {
+                            credentials: "same-origin",
+                            cache: "no-store"
+                        });
                         const data = await res.json();
-
                         if (data.status === "ok" && Array.isArray(data.messages) && data.messages.length > 0) {
-                            const oldBottom = isNearBottom(chatContainer, 50);
-
-                            data.messages.forEach(msg => {
-                                const msgId = msg.idx;
-
-                                if (msgId === window.__lastSystemMsg) return;
-                                if (chatContainer.querySelector(`.message[data-idx="${msgId}"]`)) {
-                                    if (!isNaN(msgId)) lastMsgId = Math.max(lastMsgId, msgId);
-                                    return;
-                                }
-
-                                const isJoinSystem = msg.sender_idx === -1 && (
-                                    msg.message.includes("приєднався до чату") ||
-                                    msg.message.includes("завершив чат")
-                                );
-
-                                const cls = isJoinSystem
-                                    ? "system join"
-                                    : ((parseInt(msg.sender_idx) === userId && userId !== -1) ? "me" : "other");
-
-                                const div = document.createElement("div");
-                                div.className = "message " + cls;
-                                div.dataset.idx = msgId;
-
-                                if (isJoinSystem) {
-                                    div.innerHTML = `<div class="msg-text">${escapeHTML(msg.message)}</div>`;
-                                } else {
-                                    const time = msg.idtadd
-                                        ? new Date(msg.idtadd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                        : '';
-                                    const imgPart = (msg.img) ? `<div class="msg-img-wrap"><a href="${escapeHTML(msg.img)}" class="msg-img-link" data-full-img="${escapeHTML(msg.img)}"><img src="${escapeHTML(msg.img)}" alt="" class="msg-img"></a></div>` : '';
-                                    const textPart = (msg.message && String(msg.message).trim()) ? `<div class="msg-text">${escapeHTML(msg.message)}</div>` : '';
-                                    div.innerHTML =
-                                        imgPart +
-                                        textPart +
-                                        (time ? `<div class="msg-time">${time}</div>` : '');
-                                }
-
-                                chatContainer.appendChild(div);
-                                if (!isNaN(msgId)) lastMsgId = Math.max(lastMsgId, msgId);
-                                updateChatListWithMessage(chatId, msg);
-                            });
-
-                            if (oldBottom) chatContainer.scrollTop = chatContainer.scrollHeight;
+                            appendMessages(data.messages);
                         }
-                    } catch (e) {
-                        console.error("Fetch error:", e);
+                    } catch (error) {
+                        console.error(error);
                     }
-
-                    fetching = false;
                 }
 
+                function startPolling() {
+                    if (pollTimer) {
+                        window.clearInterval(pollTimer);
+                    }
+                    if (!currentChatId) return;
+                    pollTimer = window.setInterval(pollMessages, 4000);
+                }
 
-                function bindFormHandlers(formEl) {
-                    if (!formEl || formEl._bound) return;
-                    formEl._bound = true;
+                function bindCompose() {
+                    const form = document.getElementById("chatForm");
+                    if (!form || form.dataset.bound === "1") return;
+                    form.dataset.bound = "1";
 
-                    const textarea = formEl.querySelector("textarea");
-                    const sendBtn = formEl.querySelector("button[type='submit']");
-                    const counter = document.getElementById("charCounter");
-                    const fileInput = formEl.querySelector('input[type="file"][name="img"]');
+                    const textarea = form.querySelector("textarea[name='message']");
+                    const fileInput = form.querySelector("input[name='img']");
                     const previewBox = document.getElementById("chatImagePreview");
-                    const maxLen = 2000;
-                    const minHeight = 41;
-                    const maxHeight = 150;
 
-                    function hasImage() {
-                        return fileInput && fileInput.files && fileInput.files.length > 0;
+                    if (textarea) {
+                        autoResize(textarea);
+                        textarea.addEventListener("input", function () {
+                            autoResize(textarea);
+                            updateComposeState();
+                        });
+                        textarea.addEventListener("focus", function () {
+                            queueLayoutRefresh(true);
+                        });
+                        textarea.addEventListener("blur", function () {
+                            queueLayoutRefresh(false);
+                        });
+                        textarea.addEventListener("keydown", function (event) {
+                            if (event.key === "Enter" && !event.shiftKey) {
+                                event.preventDefault();
+                                const sendBtn = document.getElementById("sendBtn");
+                                if (sendBtn && !sendBtn.disabled) {
+                                    form.requestSubmit();
+                                }
+                            }
+                        });
                     }
-
-                    function updateButtonState() {
-                        const len = (textarea && textarea.value) ? textarea.value.length : 0;
-                        const canSend = (len > 0 && len <= maxLen) || hasImage();
-                        if (sendBtn) sendBtn.disabled = !canSend;
-                        if (counter) {
-                            counter.textContent = `${len}/${maxLen}`;
-                            counter.style.color = len > maxLen ? "red" : "";
-                        }
-                    }
-                    function autoResize() {
-                        textarea.style.height = minHeight + "px";
-                        if (!textarea.value) { textarea.style.overflowY = "hidden"; return; }
-                        const newHeight = Math.min(textarea.scrollHeight + 2, maxHeight);
-                        textarea.style.height = newHeight + "px";
-                        textarea.style.overflowY = (textarea.scrollHeight > maxHeight) ? "auto" : "hidden";
-                    }
-
-                    if (counter) counter.style.display = "none";
-                    textarea.addEventListener("focus", () => {
-                        if (counter) counter.style.display = "block";
-                        const sb = document.querySelector(".scroll-down-btn");
-                        if (sb) sb.style.display = "none";
-                    });
-                    textarea.addEventListener("blur", () => {
-                        if (counter) counter.style.display = "none";
-                    });
-
-                    textarea.addEventListener("input", () => { autoResize(); updateButtonState(); });
 
                     if (fileInput) {
-                        fileInput.addEventListener("change", () => {
-                            if (previewBox) {
-                                previewBox.innerHTML = "";
-                                previewBox.removeAttribute("aria-hidden");
-                                if (fileInput.files && fileInput.files[0]) {
-                                    const fr = new FileReader();
-                                    fr.onload = () => {
-                                        const img = document.createElement("img");
-                                        img.src = fr.result;
-                                        img.alt = "";
-                                        img.className = "chat-image-preview-img";
-                                        const removeBtn = document.createElement("button");
-                                        removeBtn.type = "button";
-                                        removeBtn.className = "chat-image-preview-remove";
-                                        removeBtn.innerHTML = "×";
-                                        removeBtn.title = "Прибрати зображення";
-                                        removeBtn.addEventListener("click", () => {
-                                            fileInput.value = "";
-                                            previewBox.innerHTML = "";
-                                            previewBox.setAttribute("aria-hidden", "true");
-                                            updateButtonState();
-                                        });
-                                        previewBox.appendChild(img);
-                                        previewBox.appendChild(removeBtn);
-                                    };
-                                    fr.readAsDataURL(fileInput.files[0]);
-                                } else {
-                                    previewBox.setAttribute("aria-hidden", "true");
-                                }
-                            }
-                            updateButtonState();
+                        fileInput.addEventListener("change", function () {
+                            updatePreviewCard(fileInput, previewBox, updateComposeState);
                         });
                     }
 
-                    textarea.style.height = minHeight + "px";
-                    updateButtonState();
-
-                    formEl.addEventListener("submit", async e => {
-                        e.preventDefault();
-                        if (formEl._sending) return;
-                        const message = (textarea.value || "").trim();
-                        if (!message && !hasImage()) return;
-                        if (message.length > maxLen) return;
-
-                        formEl._sending = true;
-                        if (sendBtn) sendBtn.disabled = true;
+                    form.addEventListener("submit", async function (event) {
+                        event.preventDefault();
+                        const sendBtn = document.getElementById("sendBtn");
+                        if (sendBtn) {
+                            sendBtn.disabled = true;
+                        }
 
                         try {
-                            const formData = new FormData(formEl);
-                            const res = await fetch("messenger.php?action=send_message", { method: "POST", body: formData });
+                            const res = await fetch("messenger.php?action=send_message", {
+                                method: "POST",
+                                body: new FormData(form),
+                                credentials: "same-origin"
+                            });
                             const data = await res.json();
-                            if (data.status === "ok" && Array.isArray(data.messages)) {
-                                data.messages.forEach(msg => {
-                                    const msgId = parseInt(msg.idx) || 0;
-                                    if (chatContainer.querySelector(`.message[data-idx="${msgId}"]`)) {
-                                        lastMsgId = Math.max(lastMsgId, msgId);
-                                        return;
-                                    }
-                                    const cls = (parseInt(msg.sender_idx) === userId) ? 'me' : 'other';
-                                    const time = new Date(msg.idtadd).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-                                    const imgPart = (msg.img) ? `<div class="msg-img-wrap"><a href="${escapeHTML(msg.img)}" class="msg-img-link" data-full-img="${escapeHTML(msg.img)}"><img src="${escapeHTML(msg.img)}" alt="" class="msg-img"></a></div>` : '';
-                                    const textPart = (msg.message && String(msg.message).trim()) ? `<div class="msg-text">${escapeHTML(msg.message)}</div>` : '';
-                                    const div = document.createElement('div');
-                                    div.className = 'message ' + cls;
-                                    div.dataset.idx = msgId;
-                                    div.innerHTML = imgPart + textPart + `<div class="msg-time">${time}</div>`;
-                                    chatContainer.appendChild(div);
-                                    lastMsgId = Math.max(lastMsgId, msgId);
 
-                                    updateChatListWithMessage(chatId, msg);
-                                });
-                                textarea.value = "";
-                                if (fileInput) fileInput.value = "";
+                            if (data.status === "ok" && Array.isArray(data.messages)) {
+                                appendMessages(data.messages);
+                                if (textarea) {
+                                    textarea.value = "";
+                                    autoResize(textarea);
+                                }
+                                if (fileInput) {
+                                    fileInput.value = "";
+                                }
                                 if (previewBox) {
                                     previewBox.innerHTML = "";
+                                    previewBox.classList.remove("is-visible");
                                     previewBox.setAttribute("aria-hidden", "true");
                                 }
-                                autoResize();
-                                updateButtonState();
-                                if (chatContainer && !isNearBottom(chatContainer, 50)) {
-                                    const sb = document.querySelector(".scroll-down-btn");
-                                    if (sb) sb.style.display = "block";
-                                }
-                                if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+                            } else if (data.msg) {
+                                alert(data.msg);
                             }
-                        } catch (err) {
-                            console.error("Send error:", err);
+                        } catch (error) {
+                            console.error(error);
+                            alert("Не вдалося надіслати повідомлення.");
                         } finally {
-                            formEl._sending = false;
-                            updateButtonState();
+                            updateComposeState();
+                            scrollMessagesToBottom();
                         }
                     });
+
+                    updateComposeState();
+                    updateComposeMetrics();
                 }
 
-                function initChatFor(newChatId, html) {
-                    stopPolling();
-                    chatId = parseInt(newChatId) || 0;
+                function bindChatScroll() {
+                    const chatMessages = document.getElementById("chatMessages");
+                    const scrollButton = document.getElementById("chatScrollBottom");
+                    if (!chatMessages || chatMessages.dataset.bound === "1") return;
+                    chatMessages.dataset.bound = "1";
 
-                    if (html !== undefined && html !== null) {
-                        if (window.innerWidth <= 600 && mobileWindowWrap) {
-                            mobileWindowWrap.innerHTML = html;
-                            const type = new URLSearchParams(window.location.search).get("type") || 1;
-                            fetch(`messenger.php?action=get_chat_info&type=${type}&chat=${chatId}`)
-                                .then(r => r.text())
-                                .then(infoHtml => {
-                                    const content = mobileInfoWrap?.querySelector(".mobile-chat-info-content");
-                                    if (content) {
-                                        content.innerHTML = infoHtml;
-                                        bindChatInfoButtons();
-                                    }
-                                })
-                                .catch(() => {});
-                        } else {
-                            const desktopWrapper = document.querySelector(".chat-window");
-                            if (desktopWrapper) desktopWrapper.innerHTML = html;
-                        }
-                    }
+                    chatMessages.addEventListener("scroll", function () {
+                        saveScrollPosition();
+                        updateScrollBottomButton();
+                    });
 
-                    chatContainer = document.getElementById("chatMessages");
-                    chatForm = document.getElementById("chatForm");
-
-                    lastMsgId = 0;
-                    if (chatContainer) {
-                        chatContainer.querySelectorAll(".message").forEach(m => {
-                            const id = parseInt(m.dataset.idx || 0);
-                            if (id) lastMsgId = Math.max(lastMsgId, id);
-                        });
-                    }
-
-                    // кнопка вниз
-                    let scrollBtn = document.querySelector(".scroll-down-btn");
-                    if (!scrollBtn && chatContainer && chatContainer.parentElement) {
-                        scrollBtn = document.createElement("button");
-                        scrollBtn.className = "scroll-down-btn";
-                        scrollBtn.innerHTML = '<img src="/assets/images/avaarrow.png" alt="Вниз" style="width:20px;height:20px">';
-                        Object.assign(scrollBtn.style, {
-                            position: "absolute",
-                            bottom: "80px",
-                            right: "20px",
-                            zIndex: "9",
-                            width: "50px",
-                            height: "50px",
-                            borderRadius: "50%",
-                            background: "#e4e4e4",
-                            border: "none",
-                            cursor: "pointer",
-                            display: "none",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.4)"
-                        });
-                        chatContainer.parentElement.appendChild(scrollBtn);
-                        scrollBtn.addEventListener("click", () => {
-                            if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
-                            scrollBtn.style.display = "none";
-                        });
-                    }
-
-                    if (chatContainer) {
-                        restoreScrollPositionWithRetry();
-                        chatContainer.style.visibility = "visible";
-                    }
-
-                    if (chatContainer && !chatContainer._hasScroll) {
-                        chatContainer._hasScroll = true;
-                        chatContainer.addEventListener("scroll", () => {
-                            userIsScrolling = !isNearBottom(chatContainer, 50);
+                    if (scrollButton && scrollButton.dataset.bound !== "1") {
+                        scrollButton.dataset.bound = "1";
+                        scrollButton.addEventListener("click", function () {
+                            scrollMessagesToBottom();
                             saveScrollPosition();
-                            clearTimeout(scrollTimer);
-                            scrollTimer = setTimeout(() => {
-                                userIsScrolling = false;
-                            }, 3000);
+                            updateScrollBottomButton();
+                        });
+                    }
+                }
 
-                            if (document.activeElement !== (chatForm ? chatForm.querySelector("textarea") : null)) {
-                                const sb = document.querySelector(".scroll-down-btn");
-                                if (sb) sb.style.display = isNearBottom(chatContainer, 50) ? "none" : "block";
-                            }
+                function bindMobileNav() {
+                    const backBtn = root.querySelector(".chat-back-btn");
+                    const infoBtn = root.querySelector(".chat-info-btn");
+                    const infoBackBtn = root.querySelector(".chat-info-back-btn");
+
+                    if (backBtn && backBtn.dataset.bound !== "1") {
+                        backBtn.dataset.bound = "1";
+                        backBtn.addEventListener("click", function () {
+                            if (!isMobile()) return;
+                            setMobileView("list");
+                            history.pushState(null, "", "/messenger.php?type=2");
                         });
                     }
 
-                    if (chatForm) bindFormHandlers(chatForm);
+                    if (infoBtn && infoBtn.dataset.bound !== "1") {
+                        infoBtn.dataset.bound = "1";
+                        infoBtn.addEventListener("click", function () {
+                            if (!isMobile()) return;
+                            setMobileView("info");
+                        });
+                    }
 
-                    if (pollingTimer) clearInterval(pollingTimer);
-                    pollingTimer = setInterval(fetchNewMessages, pollingInterval);
-
-                    bindChatInfoButtons();
-
+                    if (infoBackBtn && infoBackBtn.dataset.bound !== "1") {
+                        infoBackBtn.dataset.bound = "1";
+                        infoBackBtn.addEventListener("click", function () {
+                            if (!isMobile()) return;
+                            setMobileView("chat");
+                        });
+                    }
                 }
-                function bindChatInfoButtons() {
+
+                function bindDeleteChat() {
                     const deleteBtn = document.getElementById("deleteChatBtn");
-                    if (deleteBtn && !deleteBtn._hasClick) {
-                        deleteBtn._hasClick = true;
+                    const confirmBtn = document.getElementById("confirmDeleteBtn");
+                    const cancelBtn = document.getElementById("cancelDeleteBtn");
+                    if (!deleteBtn || !deleteModal || !confirmBtn || !cancelBtn) return;
+                    if (deleteBtn.dataset.bound === "1") return;
+                    deleteBtn.dataset.bound = "1";
 
-                        const modal = document.getElementById("deleteChatModal");
-                        const modalTitle = modal.querySelector(".modal-header h3");
-                        const modalBody = modal.querySelector(".modal-body");
-                        const modalFooter = modal.querySelector(".modal-footer");
-                        const confirmBtn = document.getElementById("confirmDeleteBtn");
-                        const cancelBtn = document.getElementById("cancelDeleteBtn");
+                    const closeModal = function () {
+                        deleteModal.classList.remove("show");
+                    };
 
-                        const showModal = (title, body, showButtons = true) => {
-                            modalTitle.textContent = title;
-                            modalBody.textContent = body;
-                            if (showButtons) {
-                                modalFooter.classList.remove("hidden");
-                            } else {
-                                modalFooter.classList.add("hidden");
+                    deleteBtn.addEventListener("click", function () {
+                        deleteModal.classList.add("show");
+                    });
+
+                    cancelBtn.onclick = closeModal;
+                    const backdrop = deleteModal.querySelector(".modal-backdrop");
+                    if (backdrop) backdrop.onclick = closeModal;
+
+                    confirmBtn.onclick = async function () {
+                        if (!currentChatId) return;
+
+                        try {
+                            const res = await fetch("messenger.php", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                                body: new URLSearchParams({
+                                    action: "delete_chat",
+                                    chat_id: currentChatId
+                                }),
+                                credentials: "same-origin"
+                            });
+                            const data = await res.json();
+                            if (data.status !== "ok") {
+                                alert(data.msg || "Не вдалося видалити чат.");
+                                return;
                             }
-                            modal.classList.add("show");
-                        };
 
-                        const hideModal = () => {
-                            modal.classList.remove("show");
-                            setTimeout(() => {
-                                modalTitle.textContent = "Підтвердження видалення";
-                                modalBody.textContent = "Ви впевнені, що хочете видалити цей чат?";
-                                modalFooter.classList.remove("hidden");
-                            }, 250);
-                        };
+                            closeModal();
+                            location.href = "/messenger.php?type=2";
+                        } catch (error) {
+                            console.error(error);
+                            alert("Не вдалося видалити чат.");
+                        }
+                    };
+                }
 
-                        deleteBtn.addEventListener("click", () => {
-                            if (!chatId) return;
-                            showModal("Підтвердження видалення", "Ви впевнені, що хочете видалити цей чат?");
-                        });
+                async function loadChat(chatId, updateHistory, preserveScroll) {
+                    if (!chatId) return;
 
-                        cancelBtn.addEventListener("click", hideModal);
-                        modal.querySelector(".modal-backdrop").addEventListener("click", hideModal);
+                    try {
+                        const [threadRes, infoRes] = await Promise.all([
+                            fetch("messenger.php?action=get_chat_html&type=2&chat=" + encodeURIComponent(chatId), {
+                                credentials: "same-origin",
+                                cache: "no-store"
+                            }),
+                            fetch("messenger.php?action=get_chat_info&type=2&chat=" + encodeURIComponent(chatId), {
+                                credentials: "same-origin",
+                                cache: "no-store"
+                            })
+                        ]);
 
-                        confirmBtn.addEventListener("click", async () => {
-                            modalBody.textContent = "Видалення...";
-                            modalFooter.classList.add("hidden");
-                            try {
-                                const res = await fetch("messenger.php", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                                    body: new URLSearchParams({ action: "delete_chat", chat_id: chatId })
-                                });
+                        const threadHtml = await threadRes.text();
+                        const infoHtml = await infoRes.text();
 
-                                const text = await res.text();
-                                let data;
-                                try {
-                                    data = JSON.parse(text);
-                                } catch (e) {
-                                    console.error("Invalid JSON from server:", text);
-                                    showModal("Помилка", "Помилка сервера: неправильний формат відповіді", false);
-                                    setTimeout(hideModal, 1500);
-                                    return;
-                                }
+                        threadPanel.innerHTML = threadHtml;
+                        infoPanel.innerHTML = infoHtml;
+                        currentChatId = chatId;
+                        root.dataset.chatId = String(chatId);
+                        setLastMessageId();
+                        bindCompose();
+                        bindChatScroll();
+                        bindMobileNav();
+                        bindDeleteChat();
+                        bindLightbox();
+                        updateActiveListItem();
+                        startPolling();
+                        restoreScrollPosition(!!preserveScroll ? false : true);
+                        queueLayoutRefresh(false);
 
-                                if (data.status === "ok") {
-                                    showModal("Успіх", "Чат успішно видалено!", false);
-                                    const item = document.querySelector(`.chat-item[data-chat-id="${chatId}"]`);
-                                    if (item) {
-                                        item.style.transition = "opacity 0.3s";
-                                        item.style.opacity = "0";
-                                        setTimeout(() => item.remove(), 300);
-                                    }
+                        if (isMobile()) {
+                            setMobileView("chat");
+                        }
 
-                                    const messengerContainer = document.querySelector(".messenger-container");
-                                    if (messengerContainer) messengerContainer.classList.add("no-chat-selected");
-
-                                    const chatWindow = document.querySelector(".chat-window");
-                                    if (chatWindow)
-                                        chatWindow.innerHTML = "<div class='chat-empty'>Виберіть чат, щоб почати переписку</div>";
-
-                                    const userInfo = document.querySelector(".chat-info");
-                                    if (userInfo) userInfo.innerHTML = "";
-
-                                    chatId = 0;
-                                    stopPolling();
-                                    showChatList();
-                                    setTimeout(hideModal, 1500);
-                                } else {
-                                    console.error("Server error:", data.sql_error || data.msg);
-                                    showModal("Помилка", "Помилка при видаленні чату", false);
-                                    setTimeout(hideModal, 1500);
-                                }
-                            } catch (err) {
-                                console.error("Delete error:", err);
-                                showModal("Помилка", "Помилка зв’язку з сервером", false);
-                                setTimeout(hideModal, 1500);
-                            }
-                        });
-                    }
-
-                    const endBtn = document.querySelector(".chat-info-bottom .btn-end-chat");
-                    if (endBtn && !endBtn._hasClick) {
-                        endBtn._hasClick = true;
-
-                        endBtn.addEventListener("click", async () => {
-                            if (!chatId) return;
-                            const msgIdx = "sys-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
-
-                            try {
-                                const res = await fetch("messenger.php", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                                    body: new URLSearchParams({
-                                        action: "end_chat",
-                                        chat_id: chatId,
-                                        msg_idx: msgIdx
-                                    })
-                                });
-
-                                const data = await res.json();
-
-                                if (data.status === "ok") {
-                                    window.__lastSystemMsg = msgIdx;
-                                } else if (data.status === "no_join_message") {
-                                    alert("Неможливо завершити чат — спеціаліст ще не приєднався.");
-                                } else {
-                                    alert("Помилка при завершенні чату");
-                                }
-                            } catch (e) {
-                                console.error(e);
-                                alert("Помилка зв’язку з сервером");
-                            }
-                        });
+                        if (updateHistory) {
+                            history.pushState(null, "", "/messenger.php?type=2&chat=" + chatId);
+                        }
+                    } catch (error) {
+                        console.error(error);
                     }
                 }
 
-
-                function attachChatItemHandlers() {
-                    document.querySelectorAll(".chat-item").forEach(item => {
-                        if (item._hasClick) return;
-                        item._hasClick = true;
-                        item.addEventListener("click", async e => {
-                            e.preventDefault();
-                            const id = item.dataset.chatId;
-                            const link = item.dataset.link;
-                            if (!id) return;
-
-                            const linkParams = new URLSearchParams(link.split("?")[1] || "");
-                            const type = linkParams.get("type") ? parseInt(linkParams.get("type")) : 0;
-                            chatType = type;
-
-                            const newUrl = `messenger.php?type=${type}&chat=${id}`;
-                            history.pushState(null, "", newUrl);
-
-                            if (window.innerWidth <= 600) {
-                                showChatWindow();
-                            } else {
-                                return window.location = newUrl;
-                            }
-
-                            try {
-                                const res = await fetch(`messenger.php?action=get_chat_html&type=${type}&chat=${id}`);
-                                const html = await res.text();
-                                initChatFor(id, html);
-                                attachBackButton();
-                                attachInfoButton();
-                            } catch (err) {
-                                console.error("Ошибка загрузки чата:", err);
-                            }
+                function bindChatList() {
+                    root.querySelectorAll(".chat-item").forEach(function (item) {
+                        if (item.dataset.bound === "1") return;
+                        item.dataset.bound = "1";
+                        item.addEventListener("click", function () {
+                            const chatId = parseInt(item.dataset.chatId || "0", 10) || 0;
+                            if (!chatId) return;
+                            loadChat(chatId, true, false);
                         });
                     });
                 }
 
-                function attachBackButton() {
-                    const backBtn = document.querySelector(".chat-back-btn");
-                    if (backBtn && !backBtn._hasClick) {
-                        backBtn._hasClick = true;
-                        backBtn.addEventListener("click", () => {
-                            if (window.innerWidth <= 600) {
-                                const urlParams = new URLSearchParams(window.location.search);
-                                const type = urlParams.get("type") || "1";
-                                history.pushState(null, "", "messenger.php?type=" + type);
-                                showChatList();
-                            }
-                        });
+                async function handlePopState() {
+                    const params = new URLSearchParams(window.location.search);
+                    const chatId = parseInt(params.get("chat") || "0", 10) || 0;
+
+                    if (!chatId) {
+                        currentChatId = 0;
+                        root.dataset.chatId = "0";
+                        if (isMobile()) {
+                            setMobileView("list");
+                        } else {
+                            updateMobileChrome();
+                            location.reload();
+                        }
+                        return;
                     }
-                    const infoBackBtn = document.querySelector(".mobile-info-back-btn");
-                    if (infoBackBtn && !infoBackBtn._hasClick) {
-                        infoBackBtn._hasClick = true;
-                        infoBackBtn.addEventListener("click", () => {
-                            if (window.innerWidth <= 600) showChatWindow();
-                        });
-                    }
+
+                    await loadChat(chatId, false, true);
                 }
 
-                function attachInfoButton() {
-                    const infoButton = document.querySelector(".chat-header-right .info-toggle-btn");
-                    if (infoButton && !infoButton._hasClick) {
-                        infoButton._hasClick = true;
-                        infoButton.addEventListener("click", () => {
-                            if (window.innerWidth <= 600) showChatInfo();
-                        });
-                    }
+                bindLightbox();
+                bindChatList();
+                bindCompose();
+                bindChatScroll();
+                bindMobileNav();
+                bindDeleteChat();
+                updateActiveListItem();
+                setLastMessageId();
+                startPolling();
+                syncViewWithState();
+                updateMobileChrome();
+                updateViewportMetrics();
+                updateComposeMetrics();
+                if (!initialScrollRestored) {
+                    restoreScrollPosition(currentChatId > 0);
+                    initialScrollRestored = true;
                 }
+                queueLayoutRefresh(false);
 
-                if (window.innerWidth <= 600) {
-                    showChatList(); // на мобильном изначально всегда список чатов
-                    updateBodyScrollLock();
-                } else {
-                    chatList?.classList.add("active");
-                    chatWindow?.classList.add("active");
-                    chatInfo?.classList.add("active");
-                }
-
-                attachChatItemHandlers();
-                attachBackButton();
-                attachInfoButton();
-
-                if (chatId) {
-                    if (chatContainer) {
-                        initChatFor(chatId, null);
-                    } else {
-                        (async () => {
-                            try {
-                                const res = await fetch(`messenger.php?action=get_chat_html&chat=${chatId}`);
-                                const html = await res.text();
-                                initChatFor(chatId, html);
-                                attachBackButton();
-                                attachInfoButton();
-                            } catch (err) {
-                                console.error("Ошибка загрузки начального чата:", err);
-                            }
-                        })();
-                    }
-                }
-
-                window.addEventListener("popstate", () => {
-                    if (window.innerWidth <= 600) {
-                        showChatList();
-                    } else {
-                        location.reload();
-                    }
+                window.addEventListener("popstate", handlePopState);
+                window.addEventListener("resize", function () {
+                    syncViewWithState();
+                    updateViewportMetrics();
+                    updateComposeMetrics();
+                    normalizeMobilePageScroll();
                 });
-
-                window.addEventListener("resize", () => {
-                    if (window.innerWidth > 600) {
-                        chatList?.classList.add("active");
-                        chatWindow?.classList.add("active");
-                        chatInfo?.classList.add("active");
-                        updateBodyScrollLock();
-                    } else {
-                        const urlParams2 = new URLSearchParams(window.location.search);
-                        const currentChatId = urlParams2.get("chat");
-                        currentChatId ? showChatWindow() : showChatList();
-                    }
-                    attachChatItemHandlers();
-                    attachBackButton();
-                    attachInfoButton();
-                });
-
-                setTimeout(() => {
-                    attachChatItemHandlers();
-                    attachBackButton();
-                    attachInfoButton();
-                    chatForm = document.getElementById("chatForm");
-                    if (chatForm) bindFormHandlers(chatForm);
-                }, 200);
+                window.addEventListener("scroll", normalizeMobilePageScroll, { passive: true });
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener("resize", updateViewportMetrics);
+                    window.visualViewport.addEventListener("resize", updateComposeMetrics);
+                    window.visualViewport.addEventListener("scroll", updateViewportMetrics);
+                    window.visualViewport.addEventListener("scroll", updateComposeMetrics);
+                    window.visualViewport.addEventListener("resize", normalizeMobilePageScroll);
+                    window.visualViewport.addEventListener("scroll", normalizeMobilePageScroll);
+                }
+                window.addEventListener("beforeunload", saveScrollPosition);
             });
         </script>
         <?php

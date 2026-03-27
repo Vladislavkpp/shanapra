@@ -17,7 +17,7 @@ function sendJson($data): void
         ob_clean();
     }
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 
@@ -69,18 +69,14 @@ $device = function_exists('detectDevice')
     ? detectDevice($_SERVER['HTTP_USER_AGENT'] ?? '')
     : ['type' => 'desktop'];
 
-if (!$isAjax && (($device['type'] ?? 'desktop') === 'mobile') && $type !== 3) {
-    $_GET['from'] = (string)($_SERVER['REQUEST_URI'] ?? '/messenger.php');
-    require $_SERVER['DOCUMENT_ROOT'] . '/maintenance.php';
-    exit;
-}
-
 if (!$isAjax && !isset($_GET['type'])) {
-    header('Location: ' . PublicUrl('/messenger.php?type=1'));
+    header('Location: ' . PublicUrl('/messenger.php?type=2'));
     exit;
 }
 
-$user_id = isset($_SESSION['uzver']) ? (int)$_SESSION['uzver'] : null;
+$user_id = (isset($_SESSION['logged']) && (int)$_SESSION['logged'] === 1 && isset($_SESSION['uzver']))
+    ? (int)$_SESSION['uzver']
+    : null;
 if (!isset($_SESSION['guest_id'])) {
     if (isset($_COOKIE['guest_id'])) {
         $guest_id = (int)$_COOKIE['guest_id'];
@@ -107,9 +103,27 @@ if ($user_id === null && $type !== 3 && !$isAjax) {
     exit;
 }
 
+if ($type === 1) {
+    $type = 2;
+    $_GET['type'] = 2;
+    if (!$isAjax) {
+        $redirectChatId = (int)($_GET['chat'] ?? 0);
+        $redirectUrl = '/messenger.php?type=2';
+        if ($redirectChatId > 0) {
+            $redirectUrl .= '&chat=' . $redirectChatId;
+        }
+        header('Location: ' . PublicUrl($redirectUrl));
+        exit;
+    }
+}
+
+if ($type !== 2 && $type !== 3) {
+    $type = 2;
+    $_GET['type'] = 2;
+}
+
 if ($type === 3) {
     $supportTicketId = (int)($_GET['chat'] ?? ($_GET['ticket_id'] ?? $_POST['ticket_id'] ?? 0));
-    $supportSocketConfig = $supportDesk->getSocketConfig();
 
     if (isset($_GET['action'])) {
         try {
@@ -167,6 +181,16 @@ if ($type === 3) {
                     'messages' => $supportDesk->getMessages((int)$result['ticket']['id']),
                 ]);
             }
+
+            if ($_GET['action'] === 'support_confirm_resolution' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                $result = $supportDesk->confirmResolutionByClient($supportTicketId, $user_id, $guest_id);
+                sendJson([
+                    'status' => 'ok',
+                    'ticket' => $result['ticket'],
+                    'message' => $result['message'],
+                    'messages' => $supportDesk->getMessages((int)$result['ticket']['id']),
+                ]);
+            }
         } catch (Throwable $e) {
             sendJson(['status' => 'error', 'msg' => $e->getMessage()]);
         }
@@ -180,7 +204,10 @@ if ($type === 3) {
     View_Add(Page_Up('Підтримка'));
     View_Add(Menu_Up());
     View_Add('<div class="outmsg">');
-    View_Add(NormalizePublicMarkup($supportRender->renderClientPage($ticket, $messages, $supportSocketConfig)));
+    View_Add(NormalizePublicMarkup($supportRender->renderClientPage($ticket, $messages, [
+        'is_authenticated' => $user_id !== null,
+        'captcha_passed' => isset($_SESSION['captcha_passed']) && $_SESSION['captcha_passed'] === true,
+    ])));
     View_Add('</div>');
     View_Out();
     exit;
@@ -190,7 +217,7 @@ if (($_POST['action'] ?? '') === 'delete_chat') {
     $chat_id = (int)($_POST['chat_id'] ?? 0);
     $resp = ['status' => 'error'];
 
-    if ($chat_id > 0) {
+    if ($chat_id > 0 && $chats->isParticipant($chat_id, $currentUser)) {
         $res1 = mysqli_query($dblink, "DELETE FROM chatsmsg WHERE chat_idx = $chat_id");
         if (!$res1) {
             $resp['sql_error'] = mysqli_error($dblink);
@@ -213,7 +240,7 @@ if (($_POST['action'] ?? '') === 'end_chat') {
     $chat_id = (int)($_POST['chat_id'] ?? 0);
     $resp = ['status' => 'error'];
 
-    if ($chat_id > 0) {
+    if ($chat_id > 0 && $chats->isParticipant($chat_id, $currentUser)) {
         $resCheck = mysqli_query($dblink, "
             SELECT idx FROM chatsmsg
             WHERE chat_idx = $chat_id
@@ -255,6 +282,9 @@ if (($_POST['action'] ?? '') === 'end_chat') {
 if (isset($_GET['action'])) {
     if ($_GET['action'] === 'get_chat_html' && isset($_GET['chat'])) {
         $chatId = (int)$_GET['chat'];
+        if (!$chats->isParticipant($chatId, $currentUser)) {
+            sendJson(['status' => 'error', 'msg' => 'Чат недоступний']);
+        }
         $messages = $chats->getMessages($chatId);
         echo NormalizePublicMarkup($renderer->renderChatWindow($currentUser, $chats->getChatById($chatId), $messages, $chatId, $type));
         exit;
@@ -262,6 +292,9 @@ if (isset($_GET['action'])) {
 
     if ($_GET['action'] === 'get_chat_info' && isset($_GET['chat'])) {
         $chatId = (int)$_GET['chat'];
+        if (!$chats->isParticipant($chatId, $currentUser)) {
+            sendJson(['status' => 'error', 'msg' => 'Чат недоступний']);
+        }
         $chat = $chats->getChatById($chatId);
         echo NormalizePublicMarkup($renderer->renderChatInfo($currentUser, $chat));
         exit;
@@ -270,6 +303,9 @@ if (isset($_GET['action'])) {
     if ($_GET['action'] === 'get_new_messages' && isset($_GET['chat'], $_GET['last_msg_id'])) {
         $chat_id = (int)$_GET['chat'];
         $last_msg_id = (int)$_GET['last_msg_id'];
+        if (!$chats->isParticipant($chat_id, $currentUser)) {
+            sendJson(['status' => 'error', 'msg' => 'Чат недоступний']);
+        }
         sendJson(['status' => 'ok', 'messages' => $chats->getNewMessages($chat_id, $last_msg_id)]);
     }
 
@@ -277,6 +313,10 @@ if (isset($_GET['action'])) {
         $chat_idx = (int)($_POST['chat_idx'] ?? 0);
         $message = trim((string)($_POST['message'] ?? ''));
         $imgPath = '';
+
+        if (!$chats->isParticipant($chat_idx, $currentUser)) {
+            sendJson(['status' => 'error', 'msg' => 'Чат недоступний']);
+        }
 
         if (!empty($_FILES['img']['name'])) {
             try {
@@ -299,19 +339,21 @@ if (isset($_GET['action'])) {
 $chat_id = isset($_GET['chat']) ? (int)$_GET['chat'] : 0;
 $userChats = [];
 $currentChat = null;
-$pageTitle = 'Мої чати';
+$pageTitle = 'Робочі чати';
+$messages = [];
 
-if ($type === 1 || $type === 2) {
-    $userChats = $chats->getChatsByType((int)$user_id, $type);
-    $pageTitle = $type === 1 ? "Особисті чати" : "Робочі чати";
-    $currentChat = $chat_id ? $chats->getChatById($chat_id) : null;
-    $messages = $chat_id ? $chats->getMessages($chat_id) : [];
-} else {
-    $allChats = $chats->getUserChats((int)$user_id, 0);
-    $userChats = array_filter($allChats, static fn($c) => in_array((int)$c['type'], [1, 2], true));
-    $pageTitle = "Усі чати";
-    $currentChat = $chat_id ? $chats->getChatById($chat_id) : null;
-    $messages = $chat_id ? $chats->getMessages($chat_id) : [];
+$userChats = $chats->getChatsByType((int)$user_id, 2);
+
+if ($chat_id > 0 && $chats->isParticipant($chat_id, $currentUser)) {
+    $currentChat = $chats->getChatById($chat_id);
+    if ((int)($currentChat['type'] ?? 0) !== 2) {
+        $currentChat = null;
+    }
+}
+
+if ($currentChat) {
+    $chat_id = (int)($currentChat['idx'] ?? 0);
+    $messages = $chats->getMessages($chat_id);
 }
 
 View_Add(Page_Up($pageTitle));

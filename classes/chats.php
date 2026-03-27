@@ -133,7 +133,7 @@ class Chats
     /**
      * Создать чат между двумя пользователями
      */
-    public function createChat($user_one, $user_two, $type = 1)
+    public function createChat($user_one, $user_two, $type = 2)
     {
         $user_one = (int)$user_one;
         $user_two = (int)$user_two;
@@ -286,5 +286,26 @@ class Chats
             "INSERT INTO chatsmsg (chat_idx, sender_idx, message, idtadd)
              VALUES ($chat_idx, $sender_idx, '$message', NOW())"
         );
+    }
+
+    public function isParticipant($chat_idx, $user_id)
+    {
+        $chat_idx = (int)$chat_idx;
+        $user_id = (int)$user_id;
+
+        if ($chat_idx <= 0) {
+            return false;
+        }
+
+        $res = mysqli_query(
+            $this->dblink,
+            "SELECT idx
+             FROM chats
+             WHERE idx = {$chat_idx}
+               AND (user_one = {$user_id} OR user_two = {$user_id})
+             LIMIT 1"
+        );
+
+        return $res && mysqli_num_rows($res) === 1;
     }
 }

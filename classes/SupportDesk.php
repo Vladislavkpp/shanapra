@@ -2,6 +2,8 @@
 
 class SupportDesk
 {
+    private const RESOLUTION_CONFIRMATION_TIMEOUT_HOURS = 24;
+
     private mysqli $dblink;
     /** @var array<int, string> */
     private array $userNameCache = [];
@@ -84,6 +86,8 @@ class SupportDesk
      */
     public function findActiveTicketForClient(?int $userId, ?int $guestId): ?array
     {
+        $this->maybeCloseExpiredResolutionConfirmations();
+
         if (($userId ?? 0) > 0) {
             return $this->findLatestTicketByRequester('requester_user_id', (int)$userId, $this->activeClientStatuses);
         }
@@ -107,10 +111,12 @@ class SupportDesk
 
         $safeColumn = $column === 'requester_user_id' ? 'requester_user_id' : 'requester_guest_id';
         $statusSql = $this->buildEnumList($statuses);
+        $ownershipSql = $safeColumn === 'requester_guest_id' ? ' AND requester_user_id IS NULL' : '';
 
         $sql = "SELECT *
                 FROM support_tickets
                 WHERE {$safeColumn} = {$value}
+                  {$ownershipSql}
                   AND status IN ({$statusSql})
                 ORDER BY updated_at DESC, id DESC
                 LIMIT 1";
@@ -131,6 +137,8 @@ class SupportDesk
         if ($ticketId <= 0) {
             return null;
         }
+
+        $this->maybeCloseExpiredResolutionConfirmations($ticketId);
 
         $sql = "SELECT * FROM support_tickets WHERE id = {$ticketId} LIMIT 1";
         $res = mysqli_query($this->dblink, $sql);
@@ -156,7 +164,11 @@ class SupportDesk
             return $ticket;
         }
 
-        if ($guestId !== null && (int)($ticket['requester_guest_id'] ?? 0) === (int)$guestId) {
+        if (
+            $guestId !== null
+            && (int)($ticket['requester_guest_id'] ?? 0) === (int)$guestId
+            && (int)($ticket['requester_user_id'] ?? 0) === 0
+        ) {
             return $ticket;
         }
 
@@ -181,7 +193,9 @@ class SupportDesk
     public function createTicket(?int $userId, ?int $guestId, string $source = 'messenger', ?string $subject = null): array
     {
         $requesterUserId = ($userId ?? 0) > 0 ? (int)$userId : 'NULL';
-        $requesterGuestId = $guestId !== null ? (int)$guestId : 'NULL';
+        $requesterGuestId = ($userId ?? 0) > 0
+            ? 'NULL'
+            : ($guestId !== null ? (int)$guestId : 'NULL');
         $subjectSql = $subject !== null && trim($subject) !== ''
             ? "'" . mysqli_real_escape_string($this->dblink, trim($subject)) . "'"
             : 'NULL';
@@ -273,22 +287,35 @@ class SupportDesk
         }
 
         $currentStatus = (string)($ticket['status'] ?? 'new');
-        if (in_array($currentStatus, ['waiting_customer', 'resolved'], true)) {
-            $this->changeStatusInternal((int)$ticket['id'], 'open', null, 'reopened', [
-                'reason' => 'customer_reply',
-            ]);
-        }
+        $pendingResolutionRequest = $currentStatus === 'waiting_customer'
+            ? $this->getPendingResolutionConfirmation((int)$ticket['id'])
+            : null;
 
         $inserted = $this->insertMessage(
             (int)$ticket['id'],
             'customer',
             ($userId ?? 0) > 0 ? (int)$userId : null,
-            $guestId,
+            ($userId ?? 0) > 0 ? null : $guestId,
             $message,
             $imagePath
         );
 
         $this->touchTicketAfterMessage((int)$ticket['id'], 'customer');
+
+        if ($pendingResolutionRequest !== null) {
+            $nextStatus = $this->isResolutionConfirmedMessage($message) ? 'resolved' : 'open';
+            $nextReason = $nextStatus === 'resolved'
+                ? 'customer_confirmed_resolution'
+                : 'customer_reply_after_resolution_request';
+            $this->changeStatusInternal((int)$ticket['id'], $nextStatus, ($userId ?? 0) > 0 ? (int)$userId : null, 'status_changed', [
+                'reason' => $nextReason,
+            ]);
+        } elseif (in_array($currentStatus, ['waiting_customer', 'resolved'], true)) {
+            $this->changeStatusInternal((int)$ticket['id'], 'open', ($userId ?? 0) > 0 ? (int)$userId : null, 'reopened', [
+                'reason' => 'customer_reply',
+            ]);
+        }
+
         $freshTicket = $this->getTicketById((int)$ticket['id']);
         if (!$freshTicket) {
             throw new RuntimeException('Не вдалося оновити звернення.');
@@ -336,19 +363,36 @@ class SupportDesk
             throw new RuntimeException('Порожнє повідомлення');
         }
 
+        $hadStaffMessages = $this->hasStaffMessages($ticketId);
         $oldAssignee = (int)($ticket['assignee_user_id'] ?? 0);
         if ($oldAssignee <= 0) {
             $this->assignTicketInternal($ticketId, null, $staffUserId, $staffUserId, 'auto_claim_from_reply', 'claimed');
         }
 
-        if ((string)($ticket['status'] ?? 'new') === 'new') {
-            $this->changeStatusInternal($ticketId, 'open', $staffUserId, 'status_changed', [
-                'reason' => 'staff_reply',
-            ]);
+        $joinedMessage = null;
+        if (!$hadStaffMessages) {
+            $joinedMessage = $this->insertMessage(
+                $ticketId,
+                'system',
+                null,
+                null,
+                'Спеціаліст приєднався до чату.',
+                null
+            );
         }
 
         $inserted = $this->insertMessage($ticketId, 'staff', $staffUserId, null, $message, $imagePath);
         $this->touchTicketAfterMessage($ticketId, 'staff');
+
+        if ($this->messageRequestsCustomerInfo($message)) {
+            $this->changeStatusInternal($ticketId, 'waiting_customer', $staffUserId, 'status_changed', [
+                'reason' => 'needs_customer_info',
+            ]);
+        } elseif ((string)($ticket['status'] ?? 'new') !== 'open') {
+            $this->changeStatusInternal($ticketId, 'open', $staffUserId, 'status_changed', [
+                'reason' => 'staff_reply',
+            ]);
+        }
 
         if ($templateId !== null && $templateId > 0) {
             $this->logEvent($ticketId, 'template_used', $staffUserId, null, null, [
@@ -361,6 +405,9 @@ class SupportDesk
             throw new RuntimeException('Не вдалося оновити звернення.');
         }
 
+        if ($joinedMessage !== null) {
+            $this->publishMessageRealtime($freshTicket, $joinedMessage);
+        }
         $this->publishMessageRealtime($freshTicket, $inserted);
 
         return [
@@ -456,6 +503,112 @@ class SupportDesk
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function requestResolutionConfirmation(int $ticketId, int $staffUserId): array
+    {
+        if (!$this->isWebmaster($staffUserId)) {
+            throw new RuntimeException('Доступ заборонено.');
+        }
+
+        $ticket = $this->getTicketById($ticketId);
+        if (!$ticket) {
+            throw new RuntimeException('Звернення не знайдено.');
+        }
+
+        $status = (string)($ticket['status'] ?? 'new');
+        if (in_array($status, ['resolved', 'closed', 'spam'], true)) {
+            throw new RuntimeException('Для цього звернення підтвердження вирішення вже недоступне.');
+        }
+
+        if ($this->getPendingResolutionConfirmation($ticketId) !== null) {
+            $freshTicket = $this->getTicketById($ticketId);
+            if (!$freshTicket) {
+                throw new RuntimeException('Не вдалося оновити звернення.');
+            }
+
+            return [
+                'ticket' => $freshTicket,
+                'message' => null,
+            ];
+        }
+
+        $assigneeUserId = (int)($ticket['assignee_user_id'] ?? 0);
+        if ($assigneeUserId <= 0) {
+            $this->assignTicketInternal($ticketId, null, $staffUserId, $staffUserId, 'auto_claim_before_resolution_confirmation', 'claimed');
+        }
+
+        $systemMessage = $this->insertMessage(
+            $ticketId,
+            'system',
+            null,
+            null,
+            'Підтримка повідомила, що проблему вирішено. Якщо все гаразд, підтвердьте це кнопкою нижче або напишіть у чат. Якщо питання ще актуальне, просто надішліть повідомлення.',
+            null
+        );
+
+        $this->changeStatusInternal($ticketId, 'waiting_customer', $staffUserId, 'status_changed', [
+            'reason' => 'resolution_confirmation',
+            'timeout_hours' => self::RESOLUTION_CONFIRMATION_TIMEOUT_HOURS,
+            'deadline_at' => date('Y-m-d H:i:s', time() + (self::RESOLUTION_CONFIRMATION_TIMEOUT_HOURS * 3600)),
+        ]);
+
+        $freshTicket = $this->getTicketById($ticketId);
+        if (!$freshTicket) {
+            throw new RuntimeException('Не вдалося оновити звернення.');
+        }
+
+        $this->publishMessageRealtime($freshTicket, $systemMessage);
+        $this->publishTicketRealtime($ticketId, 'support:ticket:status_changed', $freshTicket);
+
+        return [
+            'ticket' => $freshTicket,
+            'message' => $systemMessage,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function confirmResolutionByClient(int $ticketId, ?int $userId, ?int $guestId): array
+    {
+        $ticket = $this->getTicketForClient($ticketId, $userId, $guestId);
+        if (!$ticket) {
+            throw new RuntimeException('Звернення не знайдено.');
+        }
+
+        if ($this->getPendingResolutionConfirmation($ticketId) === null) {
+            throw new RuntimeException('Підтвердження для цього звернення вже неактуальне.');
+        }
+
+        $message = $this->insertMessage(
+            $ticketId,
+            'customer',
+            ($userId ?? 0) > 0 ? (int)$userId : null,
+            ($userId ?? 0) > 0 ? null : $guestId,
+            'Так, проблему вирішено. Дякую!',
+            null
+        );
+        $this->touchTicketAfterMessage($ticketId, 'customer');
+        $this->changeStatusInternal($ticketId, 'resolved', ($userId ?? 0) > 0 ? (int)$userId : null, 'status_changed', [
+            'reason' => 'customer_confirmed_resolution',
+        ]);
+
+        $freshTicket = $this->getTicketById($ticketId);
+        if (!$freshTicket) {
+            throw new RuntimeException('Не вдалося оновити звернення.');
+        }
+
+        $this->publishMessageRealtime($freshTicket, $message);
+        $this->publishTicketRealtime($ticketId, 'support:ticket:status_changed', $freshTicket);
+
+        return [
+            'ticket' => $freshTicket,
+            'message' => $message,
+        ];
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function listTicketsByBucket(int $staffUserId, string $bucket): array
@@ -463,6 +616,8 @@ class SupportDesk
         if (!$this->isWebmaster($staffUserId)) {
             return [];
         }
+
+        $this->maybeCloseExpiredResolutionConfirmations();
 
         $where = '1=0';
         switch ($bucket) {
@@ -511,6 +666,8 @@ class SupportDesk
      */
     public function getBucketCounts(int $staffUserId): array
     {
+        $this->maybeCloseExpiredResolutionConfirmations();
+
         return [
             'queue' => $this->countTicketsForWhere("status = 'new' AND assignee_user_id IS NULL"),
             'my' => $this->countTicketsForWhere("status = 'open' AND assignee_user_id = " . $staffUserId),
@@ -640,39 +797,21 @@ class SupportDesk
 
     public function getSocketConfig(): array
     {
-        $socketUrl = trim((string)($_ENV['SOCKET_IO_URL'] ?? ''));
-        $internalUrl = trim((string)($_ENV['SOCKET_INTERNAL_URL'] ?? ''));
         return [
-            'socket_url' => $socketUrl,
-            'internal_url' => $internalUrl,
-            'enabled' => $socketUrl !== '',
+            'socket_url' => '',
+            'internal_url' => '',
+            'enabled' => false,
         ];
     }
 
     public function publishMessageRealtime(array $ticket, array $message): void
     {
-        $payload = [
-            'event' => 'support:message:new',
-            'ticket' => $ticket,
-            'message' => $message,
-        ];
-        $this->postInternalRealtime('/internal/support/message', $payload);
-        $this->postInternalRealtime('/internal/support/ticket-update', [
-            'event' => 'support:ticket:update',
-            'ticket' => $ticket,
-        ]);
+        return;
     }
 
     public function publishTicketRealtime(int $ticketId, string $event, array $ticket): void
     {
-        if ($ticketId <= 0) {
-            return;
-        }
-
-        $this->postInternalRealtime('/internal/support/ticket-update', [
-            'event' => $event,
-            'ticket' => $ticket,
-        ]);
+        return;
     }
 
     /**
@@ -696,8 +835,106 @@ class SupportDesk
             ? mb_strimwidth($lastMessage['body'], 0, 120, '...')
             : ($lastMessage['image_path'] !== '' ? '[Зображення]' : '');
         $ticket['last_message_at'] = $lastMessage['created_at'] !== '' ? $lastMessage['created_at'] : (string)($ticket['updated_at'] ?? '');
+        $ticket = array_merge($ticket, $this->resolveRequesterMeta($ticket));
+        $ticket['resolution_confirmation_pending'] = false;
+        $ticket['resolution_confirmation_deadline_at'] = '';
+        if ((string)($ticket['status'] ?? '') === 'waiting_customer') {
+            $pendingResolutionRequest = $this->getPendingResolutionConfirmation($ticketId);
+            if ($pendingResolutionRequest !== null) {
+                $ticket['resolution_confirmation_pending'] = true;
+                $ticket['resolution_confirmation_deadline_at'] = (string)($pendingResolutionRequest['deadline_at'] ?? '');
+            }
+        }
 
         return $ticket;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolveRequesterMeta(array $ticket): array
+    {
+        $userId = (int)($ticket['requester_user_id'] ?? 0);
+        $guestId = (int)($ticket['requester_guest_id'] ?? 0);
+        $name = (string)($ticket['requester_label'] ?? 'Клієнт');
+
+        $meta = [
+            'requester_email' => '',
+            'requester_phone' => '',
+            'requester_avatar' => '',
+            'requester_initial' => $this->buildInitial($name),
+            'requester_since' => $this->getRequesterFirstTicketDate($userId, $guestId),
+            'requester_tickets_count' => $this->countTicketsForRequester($userId, $guestId),
+        ];
+
+        if ($userId > 0) {
+            $sql = "SELECT email, tel, avatar, fname, lname
+                    FROM users
+                    WHERE idx = {$userId}
+                    LIMIT 1";
+            $res = mysqli_query($this->dblink, $sql);
+            $row = $res ? mysqli_fetch_assoc($res) : null;
+            if ($row) {
+                $resolvedName = trim((string)($row['fname'] ?? '') . ' ' . (string)($row['lname'] ?? ''));
+                if ($resolvedName !== '') {
+                    $meta['requester_initial'] = $this->buildInitial($resolvedName);
+                }
+                $meta['requester_email'] = (string)($row['email'] ?? '');
+                $meta['requester_phone'] = (string)($row['tel'] ?? '');
+                $meta['requester_avatar'] = (string)($row['avatar'] ?? '');
+            }
+        }
+
+        return $meta;
+    }
+
+    private function buildInitial(string $name): string
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return 'K';
+        }
+
+        if (function_exists('mb_substr') && function_exists('mb_strtoupper')) {
+            return mb_strtoupper(mb_substr($name, 0, 1));
+        }
+
+        return strtoupper(substr($name, 0, 1));
+    }
+
+    private function countTicketsForRequester(int $userId, int $guestId): int
+    {
+        if ($userId > 0) {
+            return $this->countTicketsForWhere("requester_user_id = {$userId}");
+        }
+        if ($guestId !== 0) {
+            return $this->countTicketsForWhere("requester_guest_id = {$guestId} AND requester_user_id IS NULL");
+        }
+
+        return 0;
+    }
+
+    private function getRequesterFirstTicketDate(int $userId, int $guestId): string
+    {
+        $where = '';
+        if ($userId > 0) {
+            $where = "requester_user_id = {$userId}";
+        } elseif ($guestId !== 0) {
+            $where = "requester_guest_id = {$guestId} AND requester_user_id IS NULL";
+        }
+
+        if ($where === '') {
+            return '';
+        }
+
+        $sql = "SELECT created_at
+                FROM support_tickets
+                WHERE {$where}
+                ORDER BY created_at ASC, id ASC
+                LIMIT 1";
+        $res = mysqli_query($this->dblink, $sql);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        return (string)($row['created_at'] ?? '');
     }
 
     /**
@@ -835,6 +1072,83 @@ class SupportDesk
         return $this->decorateMessage($row);
     }
 
+    private function hasStaffMessages(int $ticketId): bool
+    {
+        $sql = "SELECT id
+                FROM support_messages
+                WHERE ticket_id = {$ticketId}
+                  AND sender_type = 'staff'
+                LIMIT 1";
+        $res = mysqli_query($this->dblink, $sql);
+        return $res && mysqli_num_rows($res) > 0;
+    }
+
+    private function messageRequestsCustomerInfo(string $message): bool
+    {
+        $normalized = $this->normalizeMessageText($message);
+        if ($normalized === '') {
+            return false;
+        }
+
+        $patterns = [
+            '/уточн/u',
+            '/додатков/u',
+            '/детал/u',
+            '/більше інформа/u',
+            '/больше информа/u',
+            '/надішліть/u',
+            '/пришлите/u',
+            '/вкажіть/u',
+            '/укажите/u',
+            '/повідомте/u',
+            '/сообщите/u',
+            '/скрін/u',
+            '/скрин/u',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $normalized)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isResolutionConfirmedMessage(string $message): bool
+    {
+        $normalized = $this->normalizeMessageText($message);
+        if ($normalized === '') {
+            return false;
+        }
+
+        if (preg_match('/\b(не|ні|нет)\b/u', $normalized)) {
+            return false;
+        }
+
+        if (preg_match('/^(так|да|ок|okay|добре|добро|дякую|спасибо|підтверджую|подтверждаю|готово|вирішено|решено|працює)([[:punct:]\s]|$)/u', $normalized)) {
+            return true;
+        }
+
+        return preg_match('/(проблему вирішено|проблема вирішена|все добре|все працює|усе добре|вопрос решен|всё работает|все работает)/u', $normalized) === 1;
+    }
+
+    private function normalizeMessageText(string $message): string
+    {
+        $message = trim($message);
+        if ($message === '') {
+            return '';
+        }
+
+        if (function_exists('mb_strtolower')) {
+            $message = mb_strtolower($message, 'UTF-8');
+        } else {
+            $message = strtolower($message);
+        }
+
+        return preg_replace('/\s+/u', ' ', $message) ?? $message;
+    }
+
     private function touchTicketAfterMessage(int $ticketId, string $senderType): void
     {
         $field = $senderType === 'staff' ? 'last_staff_message_at' : 'last_customer_message_at';
@@ -920,6 +1234,122 @@ class SupportDesk
         mysqli_query($this->dblink, $sql);
 
         $this->logEvent($ticketId, $eventType, $actorUserId, $oldStatus, $newStatus, $payload);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function getPendingResolutionConfirmation(int $ticketId): ?array
+    {
+        if ($ticketId <= 0) {
+            return null;
+        }
+
+        $sql = "SELECT created_at, payload_json
+                FROM support_ticket_events
+                WHERE ticket_id = {$ticketId}
+                  AND to_status = 'waiting_customer'
+                  AND payload_json LIKE '%\"reason\":\"resolution_confirmation\"%'
+                ORDER BY id DESC
+                LIMIT 1";
+        $res = mysqli_query($this->dblink, $sql);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        if (!$row) {
+            return null;
+        }
+
+        $payload = [];
+        if (!empty($row['payload_json'])) {
+            $decoded = json_decode((string)$row['payload_json'], true);
+            if (is_array($decoded)) {
+                $payload = $decoded;
+            }
+        }
+
+        $deadlineAt = (string)($payload['deadline_at'] ?? '');
+        if ($deadlineAt === '') {
+            $timestamp = strtotime((string)($row['created_at'] ?? ''));
+            if ($timestamp !== false) {
+                $deadlineAt = date('Y-m-d H:i:s', $timestamp + (self::RESOLUTION_CONFIRMATION_TIMEOUT_HOURS * 3600));
+            }
+        }
+
+        return [
+            'created_at' => (string)($row['created_at'] ?? ''),
+            'deadline_at' => $deadlineAt,
+        ];
+    }
+
+    private function maybeCloseExpiredResolutionConfirmations(?int $ticketId = null): void
+    {
+        $ticketFilter = $ticketId !== null && $ticketId > 0 ? " AND t.id = " . (int)$ticketId : '';
+        $hours = self::RESOLUTION_CONFIRMATION_TIMEOUT_HOURS;
+        $sql = "SELECT t.id
+                FROM support_tickets t
+                INNER JOIN support_ticket_events e
+                    ON e.id = (
+                        SELECT e2.id
+                        FROM support_ticket_events e2
+                        WHERE e2.ticket_id = t.id
+                          AND e2.to_status = 'waiting_customer'
+                        ORDER BY e2.id DESC
+                        LIMIT 1
+                    )
+                WHERE t.status = 'waiting_customer'
+                  AND e.payload_json LIKE '%\"reason\":\"resolution_confirmation\"%'
+                  AND e.created_at <= DATE_SUB(NOW(), INTERVAL {$hours} HOUR)
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM support_messages sm
+                        WHERE sm.ticket_id = t.id
+                          AND sm.sender_type = 'customer'
+                          AND sm.created_at > e.created_at
+                    ){$ticketFilter}";
+        $res = mysqli_query($this->dblink, $sql);
+        if (!$res) {
+            return;
+        }
+
+        while ($row = mysqli_fetch_assoc($res)) {
+            $expiredTicketId = (int)($row['id'] ?? 0);
+            if ($expiredTicketId <= 0) {
+                continue;
+            }
+
+            mysqli_query(
+                $this->dblink,
+                "UPDATE support_tickets
+                 SET status = 'closed',
+                     closed_at = NOW(),
+                     updated_at = NOW()
+                 WHERE id = {$expiredTicketId}
+                   AND status = 'waiting_customer'
+                 LIMIT 1"
+            );
+
+            if ((int)mysqli_affected_rows($this->dblink) <= 0) {
+                continue;
+            }
+
+            $this->logEvent($expiredTicketId, 'status_changed', null, 'waiting_customer', 'closed', [
+                'reason' => 'resolution_confirmation_timeout',
+            ]);
+
+            $systemMessage = $this->insertMessage(
+                $expiredTicketId,
+                'system',
+                null,
+                null,
+                'Звернення закрито, оскільки клієнт не підтвердив вирішення протягом 24 годин.',
+                null
+            );
+
+            $freshTicket = $this->getTicketById($expiredTicketId);
+            if ($freshTicket) {
+                $this->publishMessageRealtime($freshTicket, $systemMessage);
+                $this->publishTicketRealtime($expiredTicketId, 'support:ticket:status_changed', $freshTicket);
+            }
+        }
     }
 
     private function logEvent(int $ticketId, string $eventType, ?int $actorUserId, ?string $fromStatus, ?string $toStatus, ?array $payload): void

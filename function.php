@@ -225,9 +225,10 @@ function DbConnect(): mysqli|bool|null
         die('Ошибка подключения к базе данных: ' . mysqli_connect_error());
     }
 
-    mysqli_query($dblink, "SET NAMES 'utf8'");
-    mysqli_query($dblink, "SET CHARACTER SET 'utf8'");
-    mysqli_query($dblink, "SET SESSION collation_connection = 'utf8_general_ci'");
+    mysqli_set_charset($dblink, 'utf8mb4');
+    mysqli_query($dblink, "SET NAMES 'utf8mb4'");
+    mysqli_query($dblink, "SET CHARACTER SET 'utf8mb4'");
+    mysqli_query($dblink, "SET SESSION collation_connection = 'utf8mb4_unicode_ci'");
 
     return $dblink;
 }
