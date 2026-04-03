@@ -5,16 +5,29 @@
     font-family: "Manrope", "Segoe UI", Tahoma, sans-serif !important;
 }
 
+.out-xsearch {
+    min-height: calc(100vh - 64px);
+    min-height: calc(100dvh - 64px);
+    box-sizing: border-box;
+}
+
 .menu-up-new,
 .menu-up-new * {
-    font-family: "Segoe UI", Tahoma, sans-serif !important;
+    font-family: "Manrope", "Segoe UI", Tahoma, sans-serif !important;
 }
 
 .out-xsearch .cardk-out {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(560px, 1fr));
+    align-content: start;
     gap: 18px;
     padding: 20px;
+}
+
+.out-xsearch .cardk-out:has(.no-results-wrap) {
+    display: block;
+    min-height: auto;
+    padding: 20px 0;
 }
 
 .out-xsearch .kcard {

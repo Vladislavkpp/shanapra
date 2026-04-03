@@ -608,9 +608,14 @@ function cardOutTestRenderSaveIcon(bool $active): string
 function cardOutTestRenderGallery(array $photos, string $alt): string
 {
     $count = count($photos);
-    $isPlaceholderOnly = $count === 1 && ($photos[0] ?? '') === '/graves/noimage.jpg';
+    $galleryPlaceholder = '/graves/nophotograve.png';
+    $isDefaultPlaceholderOnly = $count === 1 && ($photos[0] ?? '') === '/graves/noimage.jpg';
+    if ($isDefaultPlaceholderOnly) {
+        $photos[0] = $galleryPlaceholder;
+    }
+    $isPlaceholderOnly = $count === 1 && in_array(($photos[0] ?? ''), ['/graves/noimage.jpg', $galleryPlaceholder], true);
     $out = '<div class="grvdet-gallery" data-gallery>';
-    $out .= '<div class="grvdet-gallery-stage">';
+    $out .= '<div class="grvdet-gallery-stage' . ($isPlaceholderOnly ? ' grvdet-gallery-stage--empty' : '') . '">';
 
     foreach ($photos as $index => $photo) {
         $activeClass = $index === 0 ? ' is-active' : '';
@@ -635,6 +640,9 @@ function cardOutTestRenderGallery(array $photos, string $alt): string
         $out .= '</div>';
     }
     $out .= '</div>';
+    if ($isPlaceholderOnly) {
+        $out .= '<span class="grvdet-gallery-note">Фото поховання не встановлено</span>';
+    }
     $out .= '</div>';
 
     $out .= '</div>';
@@ -2598,14 +2606,6 @@ ob_start();
                 </div>
                 <div class="grvdet-author-pop__actions">
                     <a class="grvdet-author-pop__link" href="<?= cardOutTestEsc($authorProfileUrl) ?>" data-author-profile>Переглянути профіль</a>
-                    <div class="grvdet-author-pop__link grvdet-author-pop__link--ghost" data-author-chat-form aria-disabled="true">Особисті чати вимкнено</div>
-                    <a class="grvdet-author-pop__link grvdet-author-pop__link--self is-hidden" href="/profile.php" data-author-self-link>До профілю</a>
-                    <a class="grvdet-author-pop__link grvdet-author-pop__link--ghost" href="/auth.php" data-author-login>
-                        <span class="grvdet-author-pop__btn-icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-message"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h8" /><path d="M8 13h6" /><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12" /></svg>
-                        </span>
-                        <span>Увійти щоб написати</span>
-                    </a>
                 </div>
             </div>
 
@@ -2902,12 +2902,7 @@ ob_start();
                     var avatarNode = authorPop.querySelector("[data-author-avatar]");
                     var nameNode = authorPop.querySelector("[data-author-name]");
                     var profileLink = authorPop.querySelector("[data-author-profile]");
-                    var chatForm = authorPop.querySelector("[data-author-chat-form]");
-                    var chatInput = chatForm ? chatForm.querySelector("input[name='target_user']") : null;
-                    var loginLink = authorPop.querySelector("[data-author-login]");
-                    var selfLink = authorPop.querySelector("[data-author-self-link]");
                     var closeBtn = authorPop.querySelector("[data-author-pop-close]");
-                    var currentUserId = <?= $currentUserId ?>;
                     var shareTitleNode = sharePop ? sharePop.querySelector("[data-share-title]") : null;
                     var shareInput = sharePop ? sharePop.querySelector("[data-share-link-input]") : null;
                     var shareCopyBtn = sharePop ? sharePop.querySelector("[data-share-copy]") : null;
@@ -2968,11 +2963,9 @@ ob_start();
                     }
 
                     function openAuthorPop(btn, event) {
-                        var authorId = btn.getAttribute("data-author-id") || "";
                         var authorName = btn.getAttribute("data-author-name") || "";
                         var authorAvatar = btn.getAttribute("data-author-avatar") || "";
                         var authorProfile = btn.getAttribute("data-author-profile") || "#";
-                        var isSelf = btn.getAttribute("data-author-self") === "1";
 
                         if (avatarNode) {
                             avatarNode.src = authorAvatar;
@@ -2983,43 +2976,6 @@ ob_start();
                         }
                         if (profileLink) {
                             profileLink.setAttribute("href", authorProfile);
-                        }
-                        if (chatInput) {
-                            chatInput.value = authorId;
-                        }
-
-                        if (currentUserId > 0) {
-                            if (isSelf) {
-                                if (chatForm) {
-                                    chatForm.classList.add("is-hidden");
-                                }
-                                if (loginLink) {
-                                    loginLink.classList.add("is-hidden");
-                                }
-                                if (selfLink) {
-                                    selfLink.classList.remove("is-hidden");
-                                }
-                            } else {
-                                if (chatForm) {
-                                    chatForm.classList.remove("is-hidden");
-                                }
-                                if (loginLink) {
-                                    loginLink.classList.add("is-hidden");
-                                }
-                                if (selfLink) {
-                                    selfLink.classList.add("is-hidden");
-                                }
-                            }
-                        } else {
-                            if (chatForm) {
-                                chatForm.classList.add("is-hidden");
-                            }
-                            if (loginLink) {
-                                loginLink.classList.remove("is-hidden");
-                            }
-                            if (selfLink) {
-                                selfLink.classList.add("is-hidden");
-                            }
                         }
 
                         closeSharePop();

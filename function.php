@@ -42,20 +42,36 @@ if (!empty($_SESSION['account_not_found_notice'])) {
     unset($_SESSION['account_not_found_notice']);
 }
 
+function loadAuthenticatedUserRow(mysqli $dblink, int $userId): ?array
+{
+    if ($userId <= 0) {
+        return null;
+    }
+
+    $sql = 'SELECT idx, status FROM users WHERE idx = ' . $userId . ' LIMIT 1';
+    $res = mysqli_query($dblink, $sql);
+    if (!$res) {
+        return null;
+    }
+
+    $row = mysqli_fetch_assoc($res);
+    return is_array($row) ? $row : null;
+}
+
 if ((!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) && isset($_COOKIE[$auth_cookie_name])) {
     $cookieUserId = (int)$_COOKIE[$auth_cookie_name];
-    $accountExists = false;
+    $accountRow = null;
 
     if ($cookieUserId !== 0) {
         $dblink = DbConnect();
-        $sql = 'SELECT idx FROM users WHERE idx = ' . $cookieUserId . ' LIMIT 1';
-        $res = mysqli_query($dblink, $sql);
-        $accountExists = $res && mysqli_num_rows($res) === 1;
+        $accountRow = loadAuthenticatedUserRow($dblink, $cookieUserId);
+        mysqli_close($dblink);
     }
 
-    if ($accountExists) {
+    if ($accountRow) {
         $_SESSION['logged'] = 1;
         $_SESSION['uzver'] = $cookieUserId;
+        $_SESSION['status'] = (int)($accountRow['status'] ?? 0);
 
         // Створюємо сесію в базі даних, якщо її немає
         if (function_exists('createUserSession')) {
@@ -69,7 +85,7 @@ if ((!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) && isset($_COOKIE[
                 }
             }
             if (!$sessionExists) {
-                $ip = $_SERVER['REMOTE_ADDR'];
+                $ip = $_SERVER['REMOTE_ADDR'] ?? '';
                 $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
                 createUserSession($cookieUserId, $sessionId, $ip, $userAgent);
             }
@@ -90,16 +106,19 @@ if ((!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) && isset($_COOKIE[
 
 if (isset($_SESSION['logged']) && (int)$_SESSION['logged'] === 1) {
     $currentUserId = (int)($_SESSION['uzver'] ?? 0);
-    $accountExists = false;
+    $accountRow = null;
 
     if ($currentUserId !== 0) {
         $dblink = DbConnect();
-        $sql = 'SELECT idx FROM users WHERE idx = ' . $currentUserId . ' LIMIT 1';
-        $res = mysqli_query($dblink, $sql);
-        $accountExists = $res && mysqli_num_rows($res) === 1;
+        $accountRow = loadAuthenticatedUserRow($dblink, $currentUserId);
+        mysqli_close($dblink);
     }
 
-    if (!$accountExists) {
+    if ($accountRow) {
+        $_SESSION['status'] = (int)($accountRow['status'] ?? 0);
+    }
+
+    if (!$accountRow) {
         $_SESSION['account_not_found_notice'] = 1;
         $account_not_found_notice = true;
 
@@ -141,7 +160,7 @@ if (isset($_SESSION['logged']) && $_SESSION['logged'] == 1) {
         
         if (!$sessionExists) {
             // Створюємо сесію, якщо її немає
-            $ip = $_SERVER['REMOTE_ADDR'];
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
             $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
             createUserSession($userId, $sessionId, $ip, $userAgent);
         } else {
@@ -331,11 +350,108 @@ function deleteAllUserSessions($userId, $exceptSessionId = null): bool
 
 function notificationsTableExists($dblink): bool
 {
+    return dbTableExists($dblink, 'user_notifications');
+}
+
+function dbTableExists($dblink, string $tableName): bool
+{
     if (!$dblink) {
         return false;
     }
-    $res = mysqli_query($dblink, "SHOW TABLES LIKE 'user_notifications'");
+    $tableName = trim($tableName);
+    if ($tableName === '') {
+        return false;
+    }
+
+    $escapedTableName = mysqli_real_escape_string($dblink, $tableName);
+    $res = mysqli_query($dblink, "SHOW TABLES LIKE '{$escapedTableName}'");
     return $res && mysqli_num_rows($res) > 0;
+}
+
+function getPendingModerationCount(): int
+{
+    $dblink = DbConnect();
+    if (!$dblink) {
+        return 0;
+    }
+
+    $count = 0;
+
+    if (dbTableExists($dblink, 'grave')) {
+        $res = mysqli_query(
+            $dblink,
+            "SELECT COUNT(*) AS cnt FROM grave WHERE COALESCE(moderation_status, 'pending') = 'pending'"
+        );
+        if ($res && ($row = mysqli_fetch_assoc($res))) {
+            $count += (int)($row['cnt'] ?? 0);
+        }
+    }
+
+    if (dbTableExists($dblink, 'cemetery')) {
+        $res = mysqli_query(
+            $dblink,
+            "SELECT COUNT(*) AS cnt FROM cemetery WHERE COALESCE(moderation_status, 'pending') = 'pending'"
+        );
+        if ($res && ($row = mysqli_fetch_assoc($res))) {
+            $count += (int)($row['cnt'] ?? 0);
+        }
+    }
+
+    return $count;
+}
+
+function getSupportDeskAttentionCount(int $staffUserId): int
+{
+    $staffUserId = (int)$staffUserId;
+    if ($staffUserId <= 0) {
+        return 0;
+    }
+
+    $dblink = DbConnect();
+    if (!$dblink || !dbTableExists($dblink, 'support_tickets') || !dbTableExists($dblink, 'support_messages')) {
+        return 0;
+    }
+
+    $count = 0;
+
+    $newTicketsRes = mysqli_query(
+        $dblink,
+        "SELECT COUNT(*) AS cnt
+         FROM support_tickets
+         WHERE status = 'new' AND assignee_user_id IS NULL"
+    );
+    if ($newTicketsRes && ($row = mysqli_fetch_assoc($newTicketsRes))) {
+        $count += (int)($row['cnt'] ?? 0);
+    }
+
+    $needsReplyRes = mysqli_query(
+        $dblink,
+        "SELECT COUNT(*) AS cnt
+         FROM support_tickets t
+         WHERE t.status = 'open'
+           AND t.assignee_user_id = {$staffUserId}
+           AND (
+                SELECT sm.sender_type
+                FROM support_messages sm
+                WHERE sm.ticket_id = t.id
+                ORDER BY sm.created_at DESC, sm.id DESC
+                LIMIT 1
+           ) = 'customer'"
+    );
+    if ($needsReplyRes && ($row = mysqli_fetch_assoc($needsReplyRes))) {
+        $count += (int)($row['cnt'] ?? 0);
+    }
+
+    return $count;
+}
+
+function renderHeaderAlertMarker(int $count): string
+{
+    if ($count <= 0) {
+        return '';
+    }
+
+    return '<span class="menu-button__alert-dot" aria-hidden="true"></span>';
 }
 
 function getUnreadNotificationCount(int $userId): int
@@ -352,7 +468,11 @@ function getUnreadNotificationCount(int $userId): int
 
     $res = mysqli_query(
         $dblink,
-        "SELECT COUNT(*) AS cnt FROM user_notifications WHERE user_id = " . $userId . " AND status = 'unread'"
+        "SELECT COUNT(*) AS cnt
+         FROM user_notifications
+         WHERE user_id = " . $userId . "
+           AND status = 'unread'
+           AND created_at >= DATE_SUB(NOW(), INTERVAL 20 DAY)"
     );
     if ($res && ($row = mysqli_fetch_assoc($res))) {
         return (int)$row['cnt'];
@@ -572,15 +692,37 @@ function addWalletTransaction(
 
         if ($userId > 0) {
             $amountLabel = number_format($amount, 0, '.', ' ');
+            $notificationTitle = 'Надходження внутрішньої валюти';
+            $notificationBody = 'На ваш рахунок зараховано ' . $amountLabel . ' внутрішньої валюти.';
+            $notificationSourceType = 'wallet_transaction';
+
+            if ($sourceType === 'welcome_bonus') {
+                $notificationTitle = 'Бонус за реєстрацію';
+                $notificationBody = 'На ваш рахунок зараховано стартовий бонус ' . $amountLabel . ' внутрішньої валюти.';
+                $notificationSourceType = 'welcome_bonus';
+            } elseif ($sourceType === 'daily_login_bonus') {
+                $notificationTitle = 'Щоденний бонус за вхід';
+                $notificationBody = 'На ваш рахунок зараховано щоденний бонус ' . $amountLabel . ' внутрішньої валюти.';
+                $notificationSourceType = 'daily_login_bonus';
+            } elseif ($sourceType === 'grave_approved_bonus') {
+                $notificationTitle = 'Бонус за схвалення поховання';
+                $notificationBody = 'На ваш рахунок зараховано ' . $amountLabel . ' внутрішньої валюти за схвалене поховання.';
+                $notificationSourceType = 'grave_approved_bonus';
+            } elseif ($sourceType === 'cemetery_approved_bonus') {
+                $notificationTitle = 'Бонус за схвалення кладовища';
+                $notificationBody = 'На ваш рахунок зараховано ' . $amountLabel . ' внутрішньої валюти за схвалене кладовище.';
+                $notificationSourceType = 'cemetery_approved_bonus';
+            }
+
             createUserNotification(
                 $userId,
-                'Надходження внутрішньої валюти',
-                'На ваш рахунок зараховано ' . $amountLabel . ' внутрішньої валюти.',
+                $notificationTitle,
+                $notificationBody,
                 'wallet',
                 'normal',
                 '/profile.php?md=4',
                 'Перейти до гаманця',
-                'wallet_transaction',
+                $notificationSourceType,
                 $txId,
                 null,
                 null,
@@ -766,6 +908,409 @@ function ensureUserWalletWithWelcomeBonus(int $userId, float $amount = 500.0, $d
     }
 
     return true;
+}
+
+function getUserInternalBalance(int $userId, $dblink = null): float
+{
+    $userId = (int)$userId;
+    if ($userId <= 0) {
+        return 0.0;
+    }
+
+    if (!$dblink) {
+        $dblink = DbConnect();
+    }
+    if (!$dblink) {
+        return 0.0;
+    }
+
+    $walletRes = @mysqli_query(
+        $dblink,
+        "SELECT internal_balance FROM wallets WHERE user_id = " . $userId . " ORDER BY id ASC LIMIT 1"
+    );
+    if ($walletRes === false) {
+        return 0.0;
+    }
+
+    $walletRow = mysqli_fetch_assoc($walletRes);
+
+    return (float)($walletRow['internal_balance'] ?? 0);
+}
+
+function grantModerationApprovalInternalBonus(
+    int $userId,
+    string $entityType,
+    int $entityId,
+    float $amount = 10.0,
+    $dblink = null
+): bool
+{
+    $userId = (int)$userId;
+    $entityId = (int)$entityId;
+    $entityType = in_array($entityType, ['grave', 'cemetery'], true) ? $entityType : '';
+    $amount = (float)$amount;
+
+    if ($userId <= 0 || $entityId <= 0 || $entityType === '' || $amount <= 0) {
+        return false;
+    }
+
+    if (!$dblink) {
+        $dblink = DbConnect();
+    }
+    if (!$dblink) {
+        return false;
+    }
+
+    $walletProbe = @mysqli_query($dblink, "SELECT id FROM wallets LIMIT 1");
+    $txProbe = @mysqli_query($dblink, "SELECT id FROM wallet_transactions LIMIT 1");
+    if ($walletProbe === false || $txProbe === false) {
+        return false;
+    }
+
+    $sourceType = $entityType === 'grave' ? 'grave_approved_bonus' : 'cemetery_approved_bonus';
+    $entityLabel = $entityType === 'grave' ? 'поховання' : 'кладовище';
+    $sourceTypeSql = mysqli_real_escape_string($dblink, $sourceType);
+    $lockName = 'approval_bonus_' . $entityType . '_' . $entityId;
+    $lockNameSql = mysqli_real_escape_string($dblink, $lockName);
+    $lockResult = @mysqli_query($dblink, "SELECT GET_LOCK('" . $lockNameSql . "', 5) AS lock_status");
+    $lockAcquired = false;
+    if ($lockResult && ($lockRow = mysqli_fetch_assoc($lockResult))) {
+        $lockAcquired = ((int)($lockRow['lock_status'] ?? 0) === 1);
+    }
+
+    if (!$lockAcquired) {
+        return false;
+    }
+
+    $granted = false;
+
+    try {
+        if (!mysqli_begin_transaction($dblink)) {
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        $existingBonusRes = mysqli_query(
+            $dblink,
+            "SELECT wt.id
+             FROM wallet_transactions wt
+             INNER JOIN wallets w ON w.id = wt.wallet_id
+             WHERE w.user_id = " . $userId . "
+               AND wt.currency = 'INTERNAL'
+               AND wt.direction = 'in'
+               AND wt.source_type = '" . $sourceTypeSql . "'
+               AND wt.source_id = " . $entityId . "
+             ORDER BY wt.id DESC
+             LIMIT 1"
+        );
+
+        if ($existingBonusRes === false) {
+            mysqli_rollback($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        if (mysqli_fetch_assoc($existingBonusRes)) {
+            mysqli_commit($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        $walletId = 0;
+        $walletRes = mysqli_query(
+            $dblink,
+            "SELECT id
+             FROM wallets
+             WHERE user_id = " . $userId . "
+             ORDER BY id ASC
+             LIMIT 1
+             FOR UPDATE"
+        );
+
+        if ($walletRes && ($walletRow = mysqli_fetch_assoc($walletRes))) {
+            $walletId = (int)($walletRow['id'] ?? 0);
+        } elseif ($walletRes === false) {
+            mysqli_rollback($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        if ($walletId <= 0) {
+            $stmtCreateWallet = mysqli_prepare(
+                $dblink,
+                "INSERT INTO wallets (user_id, internal_balance) VALUES (?, 0)"
+            );
+            if (!$stmtCreateWallet) {
+                mysqli_rollback($dblink);
+                @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+                return false;
+            }
+
+            mysqli_stmt_bind_param($stmtCreateWallet, 'i', $userId);
+            $walletCreated = mysqli_stmt_execute($stmtCreateWallet);
+            $walletId = $walletCreated ? (int)mysqli_insert_id($dblink) : 0;
+            mysqli_stmt_close($stmtCreateWallet);
+
+            if (!$walletCreated || $walletId <= 0) {
+                mysqli_rollback($dblink);
+                @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+                return false;
+            }
+        }
+
+        $stmtUpdateWallet = mysqli_prepare(
+            $dblink,
+            "UPDATE wallets
+             SET internal_balance = COALESCE(internal_balance, 0) + ?
+             WHERE id = ?
+             LIMIT 1"
+        );
+        if (!$stmtUpdateWallet) {
+            mysqli_rollback($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        mysqli_stmt_bind_param($stmtUpdateWallet, 'di', $amount, $walletId);
+        $walletUpdated = mysqli_stmt_execute($stmtUpdateWallet);
+        mysqli_stmt_close($stmtUpdateWallet);
+
+        if (!$walletUpdated) {
+            mysqli_rollback($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        $txId = addWalletTransaction(
+            $walletId,
+            'in',
+            $amount,
+            'INTERNAL',
+            'Бонус за схвалення модерацією',
+            'Схвалено ' . $entityLabel . ' #' . $entityId,
+            $sourceType,
+            $entityId,
+            $dblink
+        );
+
+        if ($txId <= 0) {
+            mysqli_rollback($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        $granted = mysqli_commit($dblink);
+    } catch (Throwable $e) {
+        mysqli_rollback($dblink);
+        $granted = false;
+    }
+
+    @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+
+    return $granted;
+}
+
+function grantDailyLoginInternalBonus(int $userId, float $amount = 10.0, $dblink = null): bool
+{
+    $userId = (int)$userId;
+    if ($userId <= 0) {
+        return false;
+    }
+
+    $amount = (float)$amount;
+    if ($amount <= 0) {
+        return false;
+    }
+
+    if (!$dblink) {
+        $dblink = DbConnect();
+    }
+    if (!$dblink) {
+        return false;
+    }
+
+    $walletProbe = @mysqli_query($dblink, "SELECT id FROM wallets LIMIT 1");
+    $txProbe = @mysqli_query($dblink, "SELECT id FROM wallet_transactions LIMIT 1");
+    if ($walletProbe === false || $txProbe === false) {
+        return false;
+    }
+
+    $timezone = null;
+    foreach (['Europe/Kyiv', 'Europe/Kiev', date_default_timezone_get()] as $timezoneId) {
+        if (!is_string($timezoneId) || trim($timezoneId) === '') {
+            continue;
+        }
+
+        try {
+            $timezone = new DateTimeZone($timezoneId);
+            break;
+        } catch (Throwable $e) {
+            continue;
+        }
+    }
+
+    if (!$timezone) {
+        $timezone = new DateTimeZone('UTC');
+    }
+
+    $dayStart = (new DateTimeImmutable('now', $timezone))->setTime(0, 0, 0);
+    $nextDayStart = $dayStart->modify('+1 day');
+    $dayStartSql = mysqli_real_escape_string($dblink, $dayStart->format('Y-m-d H:i:s'));
+    $nextDayStartSql = mysqli_real_escape_string($dblink, $nextDayStart->format('Y-m-d H:i:s'));
+
+    $lockName = 'daily_login_bonus_' . $userId;
+    $lockNameSql = mysqli_real_escape_string($dblink, $lockName);
+    $lockResult = @mysqli_query($dblink, "SELECT GET_LOCK('" . $lockNameSql . "', 5) AS lock_status");
+    $lockAcquired = false;
+    if ($lockResult && ($lockRow = mysqli_fetch_assoc($lockResult))) {
+        $lockAcquired = ((int)($lockRow['lock_status'] ?? 0) === 1);
+    }
+
+    if (!$lockAcquired) {
+        return false;
+    }
+
+    $granted = false;
+
+    try {
+        if (!mysqli_begin_transaction($dblink)) {
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        $walletId = 0;
+        $currentBalance = 0.0;
+        $walletRes = mysqli_query(
+            $dblink,
+            "SELECT id, internal_balance
+             FROM wallets
+             WHERE user_id = " . $userId . "
+             ORDER BY id ASC
+             LIMIT 1
+             FOR UPDATE"
+        );
+
+        if ($walletRes && ($walletRow = mysqli_fetch_assoc($walletRes))) {
+            $walletId = (int)($walletRow['id'] ?? 0);
+            $currentBalance = (float)($walletRow['internal_balance'] ?? 0);
+        } elseif ($walletRes === false) {
+            mysqli_rollback($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        if ($walletId <= 0) {
+            $stmtCreateWallet = mysqli_prepare(
+                $dblink,
+                "INSERT INTO wallets (user_id, internal_balance) VALUES (?, 0)"
+            );
+            if (!$stmtCreateWallet) {
+                mysqli_rollback($dblink);
+                @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+                return false;
+            }
+
+            mysqli_stmt_bind_param($stmtCreateWallet, 'i', $userId);
+            $walletCreated = mysqli_stmt_execute($stmtCreateWallet);
+            $walletId = $walletCreated ? (int)mysqli_insert_id($dblink) : 0;
+            mysqli_stmt_close($stmtCreateWallet);
+
+            if (!$walletCreated || $walletId <= 0) {
+                mysqli_rollback($dblink);
+                @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+                return false;
+            }
+        }
+
+        $bonusExistsRes = mysqli_query(
+            $dblink,
+            "SELECT id
+             FROM wallet_transactions
+             WHERE wallet_id = " . $walletId . "
+               AND currency = 'INTERNAL'
+               AND source_type = 'daily_login_bonus'
+               AND created_at >= '" . $dayStartSql . "'
+               AND created_at < '" . $nextDayStartSql . "'
+             ORDER BY id DESC
+             LIMIT 1"
+        );
+
+        if ($bonusExistsRes === false) {
+            mysqli_rollback($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        if (mysqli_fetch_assoc($bonusExistsRes)) {
+            mysqli_commit($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        $stmtUpdateWallet = mysqli_prepare(
+            $dblink,
+            "UPDATE wallets
+             SET internal_balance = COALESCE(internal_balance, 0) + ?
+             WHERE id = ?
+             LIMIT 1"
+        );
+        if (!$stmtUpdateWallet) {
+            mysqli_rollback($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        mysqli_stmt_bind_param($stmtUpdateWallet, 'di', $amount, $walletId);
+        $updated = mysqli_stmt_execute($stmtUpdateWallet);
+        mysqli_stmt_close($stmtUpdateWallet);
+
+        if (!$updated) {
+            mysqli_rollback($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        $createdAtLabel = $dayStart->format('d.m.Y');
+        $txId = addWalletTransaction(
+            $walletId,
+            'in',
+            $amount,
+            'INTERNAL',
+            'Щоденний бонус за вхід',
+            'Нарахування за авторизацію ' . $createdAtLabel,
+            'daily_login_bonus',
+            $userId,
+            $dblink
+        );
+
+        if ($txId <= 0) {
+            $stmtRevertWallet = mysqli_prepare(
+                $dblink,
+                "UPDATE wallets
+                 SET internal_balance = ?
+                 WHERE id = ?
+                 LIMIT 1"
+            );
+            if ($stmtRevertWallet) {
+                mysqli_stmt_bind_param($stmtRevertWallet, 'di', $currentBalance, $walletId);
+                mysqli_stmt_execute($stmtRevertWallet);
+                mysqli_stmt_close($stmtRevertWallet);
+            }
+
+            mysqli_rollback($dblink);
+            @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+            return false;
+        }
+
+        $granted = mysqli_commit($dblink);
+    } catch (Throwable $e) {
+        mysqli_rollback($dblink);
+        $granted = false;
+    }
+
+    @mysqli_query($dblink, "SELECT RELEASE_LOCK('" . $lockNameSql . "')");
+
+    return $granted;
 }
 
 function detectDevice($userAgent): array
@@ -1153,9 +1698,11 @@ function Menu_Up_Old(): string {
         $dblink = DbConnect();
         $sql = 'SELECT avatar, cash, fname, lname FROM users WHERE idx = ' . intval($_SESSION['uzver']);
         $res = mysqli_query($dblink, $sql);
+        $formattedInternalBalance = '0';
         if ($res && $user = mysqli_fetch_assoc($res)) {
             $avatar = ($user['avatar'] != '') ? $user['avatar'] : '/avatars/ava.png';
             $formattedCash = number_format($user['cash'], 0, '', '.');
+            $formattedInternalBalance = number_format(getUserInternalBalance((int)$_SESSION['uzver'], $dblink), 0, '', '.');
             $firstName = $user['fname'];
             $lastName = $user['lname'];
             $lastNameShort = mb_substr($lastName, 0, 1) . '.';
@@ -1278,7 +1825,13 @@ function Menu_Up_Old(): string {
           <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5H0zm11.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM0 11v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1z"/>
         </svg>
     </span>
-    Баланс: ' . $formattedCash . ' ₴
+    <span class="menu-balance-summary">
+        <span class="menu-balance-primary">Баланс: ' . $formattedCash . ' ₴</span>
+        <span class="menu-balance-secondary">
+            <img src="/assets/images/finance/internal-coin.png" alt="Внутрішня валюта" class="menu-balance-coin">
+            ' . $formattedInternalBalance . '
+        </span>
+    </span>
 </a>
 
 <a href="/messenger.php?type=3"> 
@@ -3319,6 +3872,12 @@ function Menu_Up(): string
     }
     $safeInitial = htmlspecialchars(mb_strtoupper($initialRaw), ENT_QUOTES, 'UTF-8');
     $formattedCash = number_format($cash, 0, '', '.');
+    $formattedInternalBalance = number_format(
+        $isLogged && isset($_SESSION['uzver']) ? getUserInternalBalance((int)$_SESSION['uzver'], $dblink ?? null) : 0,
+        0,
+        '',
+        '.'
+    );
 
     $uid = substr(md5(uniqid('', true)), 0, 10);
     $profileToggleId = 'menu-up-new-profile-' . $uid;
@@ -3372,15 +3931,23 @@ function Menu_Up(): string
         && defined('ROLE_WEBMASTER')
         && hasRole($_SESSION['status'], ROLE_WEBMASTER);
 
+    $moderationAttentionCount = $canSeeModeration ? getPendingModerationCount() : 0;
+    $supportDeskAttentionCount = $canSeeSupportDesk ? getSupportDeskAttentionCount((int)($_SESSION['uzver'] ?? 0)) : 0;
+
     $moderationButton = '';
     if ($canSeeModeration) {
+        $moderationAlertMarker = renderHeaderAlertMarker($moderationAttentionCount);
+        $moderationAriaLabel = $moderationAttentionCount > 0
+            ? 'Панель модерації, є матеріали на модерації'
+            : 'Панель модерації';
         $moderationButton = '
-            <a href="/moderation-panel.php" class="menu-button menu-up-new-desktop-only" data-tooltip="Панель модерації" aria-label="Панель модерації">
+            <a href="/moderation-panel.php" class="menu-button menu-up-new-desktop-only' . ($moderationAttentionCount > 0 ? ' menu-button--alert' : '') . '" data-tooltip="Панель модерації" aria-label="' . $moderationAriaLabel . '">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-shield-half">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                     <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />
                     <path d="M12 3v18" />
                 </svg>
+                ' . $moderationAlertMarker . '
             </a>';
     }
 
@@ -3405,14 +3972,19 @@ function Menu_Up(): string
 
     $supportDeskButton = '';
     if ($canSeeSupportDesk) {
+        $supportDeskAlertMarker = renderHeaderAlertMarker($supportDeskAttentionCount);
+        $supportDeskAriaLabel = $supportDeskAttentionCount > 0
+            ? 'Панель підтримки, є нові або не опрацьовані звернення'
+            : 'Панель підтримки';
         $supportDeskButton = '
-            <a href="/support-desk.php" class="menu-button menu-up-new-desktop-only" data-tooltip="Support Desk" aria-label="Support Desk">
+            <a href="/support-desk.php" class="menu-button menu-up-new-desktop-only' . ($supportDeskAttentionCount > 0 ? ' menu-button--alert' : '') . '" data-tooltip="Панель підтримки" aria-label="' . $supportDeskAriaLabel . '">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-headset">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                     <path d="M4 14v-3a8 8 0 1 1 16 0v3" />
                     <path d="M18 19a3 3 0 0 0 3 -3v-1a2 2 0 0 0 -2 -2h-3v6h2z" />
                     <path d="M6 19a3 3 0 0 1 -3 -3v-1a2 2 0 0 1 2 -2h3v6h-2z" />
                 </svg>
+                ' . $supportDeskAlertMarker . '
             </a>';
     }
 
@@ -3491,7 +4063,13 @@ function Menu_Up(): string
                                 <path d="M20 12v4h-4a2 2 0 0 1 0 -4h4" />
                             </svg>
                         </span>
-                        Баланс: ' . $formattedCash . ' ₴
+                        <span class="menu-balance-summary">
+                            <span class="menu-balance-primary">Баланс: ' . $formattedCash . ' ₴</span>
+                            <span class="menu-balance-secondary">
+                                <img src="/assets/images/finance/internal-coin.png" alt="Внутрішня валюта" class="menu-balance-coin">
+                                ' . $formattedInternalBalance . '
+                            </span>
+                        </span>
                     </a>
 
                     <a href="/messenger.php?type=3">
@@ -3514,7 +4092,7 @@ function Menu_Up(): string
                                 <path d="M6 19a3 3 0 0 1 -3 -3v-1a2 2 0 0 1 2 -2h3v6h-2z" />
                             </svg>
                         </span>
-                        Support Desk
+                        Панель підтримки
                     </a>' : '') . '
 
                     <div class="menu-separator"></div>
@@ -3614,6 +4192,11 @@ document.addEventListener("DOMContentLoaded", function () {
     let lastScrollY = window.scrollY || 0;
     let scrollTicking = false;
 
+    function syncDesktopHeaderState(currentY) {
+        const scrolled = !mobileMedia.matches && currentY > 18;
+        header.classList.toggle("menu-up-new--desktop-scrolled", scrolled);
+    }
+
     function syncMobileHeaderState() {
         const isHidden = mobileMedia.matches && header.classList.contains("menu-up-new--mobile-hidden");
         document.documentElement.classList.toggle("menu-mobile-header-hidden", isHidden);
@@ -3622,6 +4205,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function updateMobileHeaderVisibility() {
         scrollTicking = false;
         const currentY = window.scrollY || 0;
+        syncDesktopHeaderState(currentY);
         if (!mobileMedia.matches || currentY <= 8) {
             header.classList.remove("menu-up-new--mobile-hidden");
             syncMobileHeaderState();

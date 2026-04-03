@@ -1038,7 +1038,7 @@ class LentaGrave
         $badge = trim((string)($options['badge'] ?? ''));
         $cardClass = trim((string)($options['card_class'] ?? ''));
         $commentUrl = (string)($options['comment_url'] ?? $this->buildBranchHref($idxabon, $postId));
-        $shareUrl = (string)($options['share_url'] ?? $this->buildBranchHref($idxabon, $postId));
+        $shareUrl = (string)($options['share_url'] ?? ($this->buildBranchUrl($idxabon, $postId) . '&shared=1#publications'));
         $commentLabel = (string)($options['comment_label'] ?? 'Коментарі');
         $showCommentAction = !array_key_exists('show_comment_action', $options) || (bool)$options['show_comment_action'];
 
@@ -1250,7 +1250,7 @@ class LentaGrave
         $cardClass = trim((string)($options['card_class'] ?? ''));
         $badge = trim((string)($options['badge'] ?? ''));
         $branchUrl = (string)($options['branch_url'] ?? $this->buildBranchHref($idxabon, $postId, $commentId));
-        $shareUrl = (string)($options['share_url'] ?? ($this->buildBranchUrl($idxabon, $postId, $commentId) . '#ltt-comment-' . $commentId));
+        $shareUrl = (string)($options['share_url'] ?? ($this->buildBranchUrl($idxabon, $postId, $commentId) . '&shared=1' . '#ltt-comment-' . $commentId));
         $replyUrl = (string)($options['reply_url'] ?? $this->buildBranchUrl($idxabon, $postId, $commentId, $commentId) . '#ltt-comment-form');
         $showReplyButton = !array_key_exists('show_reply_button', $options) || (bool)$options['show_reply_button'];
         $showBranchButton = !array_key_exists('show_branch_button', $options) || (bool)$options['show_branch_button'];

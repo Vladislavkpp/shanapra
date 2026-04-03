@@ -30,15 +30,37 @@ function showNotification(message, type = 'success') {
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchUsers');
     if (searchInput) {
-        searchInput.addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('.users-table tbody tr');
-            
+        const rows = Array.from(document.querySelectorAll('.users-table tbody tr'));
+        const visibleCountEl = document.getElementById('usersVisibleCount');
+        const emptyState = document.getElementById('adminUsersEmptyState');
+
+        const updateUsersTableState = (searchTerm) => {
+            let visibleCount = 0;
+
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
+                const shouldShow = text.includes(searchTerm);
+                row.style.display = shouldShow ? '' : 'none';
+                if (shouldShow) {
+                    visibleCount++;
+                }
             });
+
+            if (visibleCountEl) {
+                visibleCountEl.textContent = String(visibleCount);
+            }
+
+            if (emptyState) {
+                emptyState.hidden = visibleCount !== 0;
+            }
+        };
+
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            updateUsersTableState(searchTerm);
         });
+
+        updateUsersTableState(searchInput.value.toLowerCase());
     }
     
     // Обработка формы редактирования

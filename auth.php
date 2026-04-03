@@ -222,6 +222,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             if (function_exists('ensureUserWalletWithWelcomeBonus')) {
                                 ensureUserWalletWithWelcomeBonus((int)$userId, 500.0, $dblink);
                             }
+                            if (function_exists('grantDailyLoginInternalBonus')) {
+                                grantDailyLoginInternalBonus((int)$userId, 10.0, $dblink);
+                            }
                             mysqli_close($dblink);
 
                             session_regenerate_id(true);

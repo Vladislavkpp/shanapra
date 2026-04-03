@@ -23,10 +23,13 @@ class SupportRender
         $out .= '<div class="chat-window support-chat-window">';
         $out .= '<header class="chat-header support-chat-header">';
         $out .= '<div class="chat-header__meta support-chat-header__meta">';
+        $out .= '<div class="support-chat-header__lead">';
+        $out .= '<a class="support-chat-header__home" href="/" aria-label="Повернутися на головну"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-home" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l-2 0l9 -9l9 9l-2 0" /><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" /><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" /></svg></a>';
         $out .= '<span class="support-chat-header__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-messages"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 14l-3 -3h-7a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1h9a1 1 0 0 1 1 1v10" /><path d="M14 15v2a1 1 0 0 1 -1 1h-7l-3 3v-10a1 1 0 0 1 1 -1h2" /></svg></span>';
+        $out .= '</div>';
         $out .= '<div class="support-chat-header__copy">';
-        $out .= '<p class="messenger-list__eyebrow support-chat-header__eyebrow">Технічна підтримка</p>';
-        $out .= '<strong>Клієнтський чат підтримки</strong>';
+        $out .= '<p class="messenger-list__eyebrow support-chat-header__eyebrow">Служба Shana</p>';
+        $out .= '<strong>Технічна підтримка</strong>';
         $out .= '<span>Пишіть прямо тут. Якщо звернення вже відкрите, ви потрапите в поточний діалог.</span>';
         $out .= '</div>';
         $out .= '</div>';
@@ -193,6 +196,7 @@ class SupportRender
         $out .= $this->renderStaffInfo($selectedTicket);
         $out .= '</aside>';
         $out .= $this->renderStaffTemplatesModal();
+        $out .= $this->renderStaffTransferModal();
         $out .= $this->renderStaffSpamModal();
         $out .= '<script src="/assets/js/support-desk.js"></script>';
         $out .= '</div>';
@@ -218,13 +222,12 @@ class SupportRender
             $out .= '<span class="support-ticket-list-avatar" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /><path d="M15 19l2 2l4 -4" /></svg>
             </span>';
-            $out .= '<span class="support-ticket-badge support-ticket-badge--' . htmlspecialchars($status, ENT_QUOTES, 'UTF-8') . ' support-ticket-badge--list">' . htmlspecialchars($this->statusLabel($status), ENT_QUOTES, 'UTF-8') . '</span>';
             $out .= '</span>';
             $out .= '<span class="chat-item__body">';
             $out .= '<span class="chat-item__top"><strong>' . htmlspecialchars((string)($ticket['requester_label'] ?? 'Клієнт'), ENT_QUOTES, 'UTF-8') . '</strong><span class="chat-item__time">' . htmlspecialchars($this->formatTicketMoment((string)($ticket['last_message_at'] ?? '')), ENT_QUOTES, 'UTF-8') . '</span></span>';
             $out .= '<span class="chat-item__bottom"><span class="chat-item__preview">' . htmlspecialchars((string)($ticket['last_message_preview'] ?? 'Без повідомлень'), ENT_QUOTES, 'UTF-8') . '</span></span>';
-            $out .= '<span class="support-ticket-list-meta"><span class="support-ticket-list-code">#' . $ticketId . '</span></span>';
             $out .= '</span>';
+            $out .= '<span class="support-ticket-list-meta"><span class="support-ticket-list-badges"><span class="support-ticket-badge support-ticket-badge--' . htmlspecialchars($status, ENT_QUOTES, 'UTF-8') . ' support-ticket-badge--list">' . htmlspecialchars($this->statusLabel($status), ENT_QUOTES, 'UTF-8') . '</span>' . $this->renderTransferredListBadge($ticket) . '</span><span class="support-ticket-list-code">#' . $ticketId . '</span></span>';
             $out .= '</button>';
         }
         return $out;
@@ -239,7 +242,7 @@ class SupportRender
     public function renderStaffDetail(?array $ticket, array $messages, array $webmasters, array $templates, int $currentUserId = 0): string
     {
         if (!$ticket) {
-            return '<div class="chat-window support-desk-chat-window"><div class="chat-empty"><div class="chat-empty__card"><p class="chat-empty__eyebrow">Support Desk</p><h2>Оберіть звернення</h2><p>Відкрийте діалог у лівій колонці, щоб побачити листування та дії по зверненню.</p></div></div></div>';
+            return '<div class="chat-window support-desk-chat-window"><div class="chat-empty support-desk-empty-state"><div class="chat-empty__card support-desk-empty-state__card"><span class="support-desk-empty-state__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-message-circle-search"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M11.303 19.955a9.818 9.818 0 0 1 -3.603 -.955l-4.7 1l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c1.73 1.476 2.665 3.435 2.76 5.433" /><path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M20.2 20.2l1.8 1.8" /></svg></span><p class="chat-empty__eyebrow support-desk-empty-state__eyebrow">Support Desk</p><h2>Оберіть звернення</h2><p>Відкрийте діалог у лівій колонці, щоб побачити листування, статус і дії по зверненню.</p><div class="support-desk-empty-state__hint"><span>Ліворуч доступні всі звернення за статусами: нові, в роботі, очікують відповіді та завершені.</span></div></div></div></div>';
         }
 
         $ticketId = (int)($ticket['id'] ?? 0);
@@ -263,9 +266,9 @@ class SupportRender
         $out .= '<div class="support-desk-ticket-side">';
         $out .= '<div class="support-desk-ticket-meta">';
         $out .= '<span class="support-ticket-badge support-ticket-badge--' . htmlspecialchars($status, ENT_QUOTES, 'UTF-8') . '" data-ticket-status-badge>' . htmlspecialchars($this->statusLabel($status), ENT_QUOTES, 'UTF-8') . '</span>';
-        $out .= '<span class="support-desk-ticket-assignee" data-ticket-assignee>' . ($assignee > 0 ? htmlspecialchars((string)($ticket['assignee_label'] ?? ''), ENT_QUOTES, 'UTF-8') : 'Без виконавця') . '</span>';
+        $out .= $this->renderStaffAssigneeMeta($ticket);
         $out .= '</div>';
-        $out .= '<div class="support-desk-ticket-actions" data-ticket-header-actions>' . $this->renderStaffResolveButton($ticket, $currentUserId) . '</div>';
+        $out .= '<div class="support-desk-ticket-actions" data-ticket-header-actions>' . $this->renderStaffHeaderActions($ticket, $webmasters, $currentUserId) . '</div>';
         $out .= '</div>';
         $out .= '</header>';
         $out .= '<div class="chat-messages support-desk-messages" id="supportDeskMessages">' . $this->renderMessages($messages, 'staff') . '</div>';
@@ -273,8 +276,8 @@ class SupportRender
         $out .= '<form id="supportDeskReplyForm" class="chat-input support-desk-compose" enctype="multipart/form-data">';
         $out .= '<input type="hidden" name="ticket_id" value="' . $ticketId . '">';
         $out .= '<div class="chat-input__row support-desk-compose-row">';
-        $out .= '<button type="button" class="chat-input__attach support-desk-action-trigger support-desk-template-trigger" title="Відкрити шаблони відповідей" aria-label="Відкрити шаблони відповідей"><span class="support-desk-action-trigger__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /><path d="M9 9l1 0" /><path d="M9 13l6 0" /><path d="M9 17l6 0" /></svg></span><span class="support-desk-action-trigger__label">Шаблон</span></button>';
-        $out .= '<button type="button" class="chat-input__attach support-desk-action-trigger support-desk-action-trigger--danger support-desk-spam-trigger" title="Позначити звернення як спам" aria-label="Позначити звернення як спам" data-ticket-spam><span class="support-desk-action-trigger__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-flag"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9" /><path d="M5 21v-7" /></svg></span><span class="support-desk-action-trigger__label">Спам</span></button>';
+        $out .= '<button type="button" class="chat-input__attach support-desk-action-trigger support-desk-template-trigger support-desk-tooltip-trigger" data-tooltip="Відкрити шаблони відповідей" aria-label="Відкрити шаблони відповідей"><span class="support-desk-action-trigger__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /><path d="M9 9l1 0" /><path d="M9 13l6 0" /><path d="M9 17l6 0" /></svg></span><span class="support-desk-action-trigger__label">Шаблон</span></button>';
+        $out .= '<button type="button" class="chat-input__attach support-desk-action-trigger support-desk-action-trigger--danger support-desk-spam-trigger support-desk-tooltip-trigger" data-tooltip="Позначити звернення як спам" aria-label="Позначити звернення як спам" data-ticket-spam><span class="support-desk-action-trigger__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-flag"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9" /><path d="M5 21v-7" /></svg></span><span class="support-desk-action-trigger__label">Спам</span></button>';
         $out .= '<textarea name="message" id="supportDeskReplyMessage" placeholder="Відповідь клієнту..." rows="1" maxlength="2000"></textarea>';
         $out .= '<input type="hidden" name="template_id" id="supportDeskTemplateId" value="">';
         $out .= '<button type="submit" id="supportDeskSendBtn" disabled><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14l11 -11" /><path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5" /></svg></button>';
@@ -327,6 +330,14 @@ class SupportRender
         $since = $this->formatInfoDate((string)($ticket['requester_since'] ?? ''));
         $ticketsCount = (int)($ticket['requester_tickets_count'] ?? 0);
         $currentTicketCreated = $this->formatInfoDate((string)($ticket['created_at'] ?? ''));
+        $deviceName = trim((string)($ticket['requester_device_name'] ?? ''));
+        $deviceType = trim((string)($ticket['requester_device_type'] ?? ''));
+        $browser = trim((string)($ticket['requester_browser'] ?? ''));
+        $operatingSystem = trim((string)($ticket['requester_os'] ?? ''));
+        $engine = trim((string)($ticket['requester_engine'] ?? ''));
+        $cpu = trim((string)($ticket['requester_cpu'] ?? ''));
+        $location = trim((string)($ticket['requester_location'] ?? ''));
+        $lastActivity = $this->formatInfoDateTime((string)($ticket['requester_last_activity'] ?? ''));
 
         $out .= '<div class="support-desk-info__head">';
         $out .= '<h2>Інформація про клієнта</h2>';
@@ -358,6 +369,23 @@ class SupportRender
         $out .= '</div>';
         $out .= '</div>';
 
+        $out .= '<div class="chat-info__section support-desk-info__section">';
+        $out .= '<h3>Пристрій та сесія</h3>';
+        $out .= '<div class="support-desk-info__device-grid">';
+        $out .= $this->renderInfoDetailCard('Пристрій', $deviceName !== '' ? $deviceName : 'Немає даних', $deviceType !== '' ? $deviceType : 'Тип не визначено');
+        $browserHint = $operatingSystem !== '' ? $operatingSystem : 'Система не визначена';
+        if ($engine !== '') {
+            $browserHint .= ($browserHint !== '' ? ' • ' : '') . 'Engine: ' . $engine;
+        }
+        $out .= $this->renderInfoDetailCard('Браузер', $browser !== '' ? $browser : 'Немає даних', $browserHint);
+        $locationHint = $lastActivity !== '' ? ('Активність: ' . $lastActivity) : 'Час активності невідомий';
+        if ($cpu !== '') {
+            $locationHint .= ' • CPU: ' . $cpu;
+        }
+        $out .= $this->renderInfoDetailCard('Локація', $location !== '' ? $location : 'Немає даних', $locationHint);
+        $out .= '</div>';
+        $out .= '</div>';
+
         $out .= '</div>';
         return $out;
     }
@@ -368,6 +396,9 @@ class SupportRender
     public function renderMessages(array $messages, string $context = 'client'): string
     {
         if (empty($messages)) {
+            if ($context === 'client') {
+                return $this->renderClientEmptyState();
+            }
             return '<div class="chat-empty-thread">Повідомлень поки немає. Напишіть першим.</div>';
         }
 
@@ -405,6 +436,17 @@ class SupportRender
             }
             $out .= '</article>';
         }
+        return $out;
+    }
+
+    private function renderClientEmptyState(): string
+    {
+        $out = '<div class="chat-empty-thread support-chat-empty-state">';
+        $out .= '<span class="support-chat-empty-state__icon" aria-hidden="true"><img src="/assets/images/suppchat.gif" alt="" class="support-chat-empty-state__icon-image"></span>';
+        $out .= '<span class="support-chat-empty-state__eyebrow">Технічна підтримка</span>';
+        $out .= '<strong>Ваше звернення почнеться тут</strong>';
+        $out .= '<span>Опишіть питання нижче, і ми відкриємо діалог з підтримкою. Уся переписка залишиться в цьому чаті.</span>';
+        $out .= '</div>';
         return $out;
     }
 
@@ -482,6 +524,20 @@ class SupportRender
         return date('d.m.Y', $timestamp);
     }
 
+    private function formatInfoDateTime(string $dateTime): string
+    {
+        if ($dateTime === '') {
+            return '';
+        }
+
+        $timestamp = strtotime($dateTime);
+        if ($timestamp === false) {
+            return $dateTime;
+        }
+
+        return date('d.m.Y H:i', $timestamp);
+    }
+
     private function renderInfoContactCard(string $label, string $value, string $type): string
     {
         $icon = $type === 'phone'
@@ -502,6 +558,16 @@ class SupportRender
         $out .= '<span class="support-desk-info__contact-icon" aria-hidden="true">' . $icon . '</span>';
         $out .= '<div class="support-desk-info__contact-copy"><span>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span><strong>' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</strong></div>';
         $out .= $action;
+        $out .= '</div>';
+        return $out;
+    }
+
+    private function renderInfoDetailCard(string $label, string $value, string $hint): string
+    {
+        $out = '<div class="support-desk-info__detail-card">';
+        $out .= '<span>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>';
+        $out .= '<strong>' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</strong>';
+        $out .= '<small>' . htmlspecialchars($hint, ENT_QUOTES, 'UTF-8') . '</small>';
         $out .= '</div>';
         return $out;
     }
@@ -539,6 +605,49 @@ class SupportRender
     /**
      * @param array<string, mixed>|null $ticket
      */
+    private function isTransferredTicket(?array $ticket): bool
+    {
+        return !empty($ticket['is_transferred']) && trim((string)($ticket['transferred_by_label'] ?? '')) !== '';
+    }
+
+    /**
+     * @param array<string, mixed>|null $ticket
+     */
+    private function renderTransferredListBadge(?array $ticket): string
+    {
+        if (!$this->isTransferredTicket($ticket)) {
+            return '';
+        }
+
+        return '<span class="support-ticket-transfer-badge">Передано</span>';
+    }
+
+    /**
+     * @param array<string, mixed>|null $ticket
+     */
+    private function renderStaffAssigneeMeta(?array $ticket): string
+    {
+        $assigneeUserId = (int)($ticket['assignee_user_id'] ?? 0);
+        $assigneeLabel = $assigneeUserId > 0
+            ? trim((string)($ticket['assignee_label'] ?? ''))
+            : 'Без виконавця';
+        if ($assigneeLabel === '') {
+            $assigneeLabel = 'Без виконавця';
+        }
+
+        $out = '<span class="support-desk-ticket-assignee" data-ticket-assignee>';
+        $out .= '<span class="support-desk-ticket-assignee__name">' . htmlspecialchars($assigneeLabel, ENT_QUOTES, 'UTF-8') . '</span>';
+        if ($this->isTransferredTicket($ticket)) {
+            $out .= '<span class="support-desk-ticket-assignee__meta">Передав: ' . htmlspecialchars((string)($ticket['transferred_by_label'] ?? ''), ENT_QUOTES, 'UTF-8') . '</span>';
+        }
+        $out .= '</span>';
+
+        return $out;
+    }
+
+    /**
+     * @param array<string, mixed>|null $ticket
+     */
     private function renderStaffResolveButton(?array $ticket, int $currentUserId = 0): string
     {
         $assigneeUserId = (int)($ticket['assignee_user_id'] ?? 0);
@@ -551,7 +660,45 @@ class SupportRender
             return '';
         }
 
-        return '<button type="button" class="support-desk-resolve-btn" data-ticket-resolve><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-check"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l5 5l10 -10" /></svg><span>Відзначити як вирішено</span></button>';
+        return '<button type="button" class="support-desk-resolve-btn support-desk-tooltip-trigger" data-ticket-resolve data-tooltip="Відзначити звернення як вирішене"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-check"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l5 5l10 -10" /></svg><span>Відзначити як вирішено</span></button>';
+    }
+
+    /**
+     * @param array<string, mixed>|null $ticket
+     * @param array<int, array<string, mixed>> $webmasters
+     */
+    private function renderStaffHeaderActions(?array $ticket, array $webmasters, int $currentUserId = 0): string
+    {
+        if (!$ticket) {
+            return '';
+        }
+
+        return $this->renderStaffTransferButton($ticket, $webmasters, $currentUserId)
+            . $this->renderStaffResolveButton($ticket, $currentUserId);
+    }
+
+    /**
+     * @param array<string, mixed>|null $ticket
+     * @param array<int, array<string, mixed>> $webmasters
+     */
+    private function renderStaffTransferButton(?array $ticket, array $webmasters, int $currentUserId = 0): string
+    {
+        if (!$ticket) {
+            return '';
+        }
+
+        $assigneeUserId = (int)($ticket['assignee_user_id'] ?? 0);
+        $hasTransferTargets = false;
+        foreach ($webmasters as $webmaster) {
+            $webmasterId = (int)($webmaster['id'] ?? 0);
+            if ($webmasterId <= 0 || $webmasterId === $currentUserId || $webmasterId === $assigneeUserId) {
+                continue;
+            }
+            $hasTransferTargets = true;
+            break;
+        }
+
+        return '<button type="button" class="support-desk-transfer-btn support-desk-tooltip-trigger" data-ticket-transfer aria-label="Передати звернення іншому спеціалісту" data-tooltip="Передати іншому спеціалісту"' . ($hasTransferTargets ? '' : ' disabled') . '><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-transfer"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M20 10h-16l5.5 -6" /><path d="M4 14h16l-5.5 6" /></svg></button>';
     }
 
     private function renderStaffTemplatesModal(): string
@@ -567,6 +714,35 @@ class SupportRender
         $out .= '<div class="support-desk-templates-modal__search"><span class="support-desk-templates-modal__search-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3 -4.3"/></svg></span><input type="search" id="supportDeskTemplateSearch" placeholder="Пошук шаблону або введіть команду (наприклад /привіт)..." autocomplete="off"></div>';
         $out .= '<div class="support-desk-templates-modal__filters" id="supportDeskTemplateFilters"></div>';
         $out .= '<div class="support-desk-templates-modal__list" id="supportDeskTemplateList"></div>';
+        $out .= '</div>';
+        $out .= '</div>';
+        return $out;
+    }
+
+    private function renderStaffTransferModal(): string
+    {
+        $out = '<div class="modal support-desk-transfer-modal" id="supportDeskTransferModal" aria-hidden="true">';
+        $out .= '<div class="modal-backdrop" data-transfer-modal-close></div>';
+        $out .= '<div class="modal-content support-desk-transfer-modal__content" role="dialog" aria-modal="true" aria-labelledby="supportDeskTransferTitle">';
+        $out .= '<div class="support-desk-transfer-modal__header">';
+        $out .= '<div class="support-desk-transfer-modal__title"><span class="support-desk-transfer-modal__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M20 10h-16l5.5 -6" /><path d="M4 14h16l-5.5 6" /></svg></span>';
+        $out .= '<div><h3 id="supportDeskTransferTitle">Передача звернення</h3><p>Оберіть спеціаліста, якому потрібно передати цей чат.</p></div></div>';
+        $out .= '<button type="button" class="support-desk-transfer-modal__close" data-transfer-modal-close aria-label="Закрити"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button>';
+        $out .= '</div>';
+        $out .= '<div class="support-desk-transfer-modal__body">';
+        $out .= '<div class="support-desk-transfer-modal__field">';
+        $out .= '<span class="support-desk-transfer-modal__label">Кому передати</span>';
+        $out .= '<div class="support-desk-transfer-modal__select" id="supportDeskTransferSelect">';
+        $out .= '<button type="button" class="support-desk-transfer-modal__trigger" id="supportDeskTransferTrigger" aria-haspopup="listbox" aria-expanded="false"><span class="support-desk-transfer-modal__trigger-text" data-transfer-trigger-text>Оберіть спеціаліста</span><span class="support-desk-transfer-modal__trigger-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6l6 -6"/></svg></span></button>';
+        $out .= '<div class="support-desk-transfer-modal__options" id="supportDeskTransferOptions" role="listbox" hidden></div>';
+        $out .= '</div>';
+        $out .= '</div>';
+        $out .= '<div class="support-desk-transfer-modal__summary" id="supportDeskTransferSummary">Оберіть спеціаліста зі списку, щоб підтвердити передачу звернення.</div>';
+        $out .= '</div>';
+        $out .= '<div class="modal-footer support-desk-transfer-modal__footer">';
+        $out .= '<button type="button" class="btn-cancel" data-transfer-modal-close>Скасувати</button>';
+        $out .= '<button type="button" class="btn-confirm support-desk-transfer-modal__confirm" id="supportDeskTransferConfirm" disabled>Підтвердити передачу</button>';
+        $out .= '</div>';
         $out .= '</div>';
         $out .= '</div>';
         return $out;

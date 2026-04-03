@@ -230,9 +230,14 @@ class SupportDesk
             throw new RuntimeException('Не вдалося створити звернення підтримки.');
         }
 
-        $this->logEvent($ticketId, 'created', null, null, 'new', [
+        $createdPayload = [
             'source' => $sourceEsc,
-        ]);
+        ];
+        $requesterContext = $this->captureRequesterContext();
+        if (!empty($requesterContext)) {
+            $createdPayload['requester_context'] = $requesterContext;
+        }
+        $this->logEvent($ticketId, 'created', null, null, 'new', $createdPayload);
         $this->publishTicketRealtime($ticketId, 'support:ticket:new', $ticket);
         return $ticket;
     }
@@ -301,6 +306,12 @@ class SupportDesk
         );
 
         $this->touchTicketAfterMessage((int)$ticket['id'], 'customer');
+        $requesterContext = $this->captureRequesterContext();
+        if (!empty($requesterContext)) {
+            $this->logEvent((int)$ticket['id'], 'requester_context_updated', ($userId ?? 0) > 0 ? (int)$userId : null, null, null, [
+                'requester_context' => $requesterContext,
+            ]);
+        }
 
         if ($pendingResolutionRequest !== null) {
             $nextStatus = $this->isResolutionConfirmedMessage($message) ? 'resolved' : 'open';
@@ -829,6 +840,7 @@ class SupportDesk
         $ticket['assignee_label'] = ((int)($ticket['assignee_user_id'] ?? 0) > 0)
             ? $this->getUserDisplayName((int)$ticket['assignee_user_id'])
             : '';
+        $ticket = array_merge($ticket, $this->resolveLatestAssignmentMeta($ticketId, (int)($ticket['assignee_user_id'] ?? 0)));
 
         $lastMessage = $this->getLastMessageForTicket($ticketId);
         $ticket['last_message_preview'] = $lastMessage['body'] !== ''
@@ -852,6 +864,49 @@ class SupportDesk
     /**
      * @return array<string, mixed>
      */
+    private function resolveLatestAssignmentMeta(int $ticketId, int $currentAssigneeUserId = 0): array
+    {
+        $meta = [
+            'is_transferred' => false,
+            'transferred_by_user_id' => null,
+            'transferred_by_label' => '',
+        ];
+
+        if ($ticketId <= 0) {
+            return $meta;
+        }
+
+        $sql = "SELECT to_user_id, assigned_by_user_id
+                FROM support_ticket_assignments
+                WHERE ticket_id = {$ticketId}
+                ORDER BY id DESC
+                LIMIT 1";
+        $res = mysqli_query($this->dblink, $sql);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        if (!$row) {
+            return $meta;
+        }
+
+        $toUserId = isset($row['to_user_id']) ? (int)$row['to_user_id'] : 0;
+        $assignedByUserId = isset($row['assigned_by_user_id']) ? (int)$row['assigned_by_user_id'] : 0;
+        if ($toUserId <= 0 || $assignedByUserId <= 0 || $assignedByUserId === $toUserId) {
+            return $meta;
+        }
+
+        if ($currentAssigneeUserId > 0 && $toUserId !== $currentAssigneeUserId) {
+            return $meta;
+        }
+
+        $meta['is_transferred'] = true;
+        $meta['transferred_by_user_id'] = $assignedByUserId;
+        $meta['transferred_by_label'] = $this->getUserDisplayName($assignedByUserId);
+
+        return $meta;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     private function resolveRequesterMeta(array $ticket): array
     {
         $userId = (int)($ticket['requester_user_id'] ?? 0);
@@ -865,7 +920,29 @@ class SupportDesk
             'requester_initial' => $this->buildInitial($name),
             'requester_since' => $this->getRequesterFirstTicketDate($userId, $guestId),
             'requester_tickets_count' => $this->countTicketsForRequester($userId, $guestId),
+            'requester_device_name' => '',
+            'requester_device_type' => '',
+            'requester_browser' => '',
+            'requester_os' => '',
+            'requester_location' => '',
+            'requester_last_activity' => '',
+            'requester_engine' => '',
+            'requester_cpu' => '',
         ];
+
+        $ticketId = (int)($ticket['id'] ?? 0);
+        $requesterContext = $ticketId > 0 ? $this->getLatestRequesterContext($ticketId) : [];
+        $contextTimestamp = $this->normalizeDateTimeToTimestamp((string)($requesterContext['captured_at'] ?? ''));
+        if (!empty($requesterContext)) {
+            $meta['requester_device_name'] = trim((string)($requesterContext['device_name'] ?? ''));
+            $meta['requester_device_type'] = trim((string)($requesterContext['device_type_label'] ?? ''));
+            $meta['requester_browser'] = trim((string)($requesterContext['browser'] ?? ''));
+            $meta['requester_os'] = trim((string)($requesterContext['os'] ?? ''));
+            $meta['requester_location'] = trim((string)($requesterContext['location'] ?? ''));
+            $meta['requester_last_activity'] = $this->convertUtcDateTimeToKyiv((string)($requesterContext['captured_at'] ?? ''));
+            $meta['requester_engine'] = trim((string)($requesterContext['engine'] ?? ''));
+            $meta['requester_cpu'] = trim((string)($requesterContext['cpu'] ?? ''));
+        }
 
         if ($userId > 0) {
             $sql = "SELECT email, tel, avatar, fname, lname
@@ -882,6 +959,57 @@ class SupportDesk
                 $meta['requester_email'] = (string)($row['email'] ?? '');
                 $meta['requester_phone'] = (string)($row['tel'] ?? '');
                 $meta['requester_avatar'] = (string)($row['avatar'] ?? '');
+            }
+
+            $sessionSql = "SELECT user_agent, device_name, device_type, location, last_activity
+                           FROM user_sessions
+                           WHERE user_id = {$userId}
+                           ORDER BY is_current DESC, last_activity DESC, id DESC
+                           LIMIT 1";
+            $sessionRes = mysqli_query($this->dblink, $sessionSql);
+            $sessionRow = $sessionRes ? mysqli_fetch_assoc($sessionRes) : null;
+            if ($sessionRow) {
+                $userAgent = trim((string)($sessionRow['user_agent'] ?? ''));
+                $deviceName = trim((string)($sessionRow['device_name'] ?? ''));
+                $deviceType = trim((string)($sessionRow['device_type'] ?? ''));
+                $detailedDeviceName = $this->detectDetailedDeviceName($userAgent, $deviceName);
+                $sessionLastActivity = (string)($sessionRow['last_activity'] ?? '');
+                $sessionTimestamp = $this->normalizeDateTimeToTimestamp($sessionLastActivity);
+                $shouldPreferSession = $sessionTimestamp !== null && ($contextTimestamp === null || $sessionTimestamp >= $contextTimestamp);
+
+                if ($deviceName === '' && $userAgent !== '' && function_exists('detectDevice')) {
+                    $device = detectDevice($userAgent);
+                    $deviceName = trim((string)($device['name'] ?? ''));
+                    $deviceType = trim((string)($device['type'] ?? $deviceType));
+                }
+                if ($detailedDeviceName !== '') {
+                    $deviceName = $detailedDeviceName;
+                }
+
+                if ($meta['requester_device_name'] === '' || $shouldPreferSession) {
+                    $meta['requester_device_name'] = $deviceName;
+                }
+                if ($meta['requester_device_type'] === '' || $shouldPreferSession) {
+                    $meta['requester_device_type'] = $this->deviceTypeLabel($deviceType);
+                }
+                if ($meta['requester_browser'] === '' || $shouldPreferSession) {
+                    $meta['requester_browser'] = $this->detectBrowserName($userAgent);
+                }
+                if ($meta['requester_os'] === '' || $shouldPreferSession) {
+                    $meta['requester_os'] = $this->detectOperatingSystem($userAgent);
+                }
+                if ($meta['requester_engine'] === '' || $shouldPreferSession) {
+                    $meta['requester_engine'] = $this->detectBrowserEngine($userAgent);
+                }
+                if ($meta['requester_cpu'] === '' || $shouldPreferSession) {
+                    $meta['requester_cpu'] = $this->detectCpuArchitecture($userAgent);
+                }
+                if ($meta['requester_location'] === '' || $shouldPreferSession) {
+                    $meta['requester_location'] = trim((string)($sessionRow['location'] ?? ''));
+                }
+                if ($meta['requester_last_activity'] === '' || $shouldPreferSession) {
+                    $meta['requester_last_activity'] = $this->convertUtcDateTimeToKyiv($sessionLastActivity);
+                }
             }
         }
 
@@ -935,6 +1063,289 @@ class SupportDesk
         $res = mysqli_query($this->dblink, $sql);
         $row = $res ? mysqli_fetch_assoc($res) : null;
         return (string)($row['created_at'] ?? '');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function getLatestRequesterContext(int $ticketId): array
+    {
+        if ($ticketId <= 0) {
+            return [];
+        }
+
+        $sql = "SELECT payload_json, created_at
+                FROM support_ticket_events
+                WHERE ticket_id = {$ticketId}
+                  AND payload_json LIKE '%\"requester_context\"%'
+                ORDER BY id DESC
+                LIMIT 1";
+        $res = mysqli_query($this->dblink, $sql);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        if (!$row || empty($row['payload_json'])) {
+            return [];
+        }
+
+        $decoded = json_decode((string)$row['payload_json'], true);
+        if (!is_array($decoded) || !is_array($decoded['requester_context'] ?? null)) {
+            return [];
+        }
+
+        $context = $decoded['requester_context'];
+        return [
+            'device_name' => trim((string)($context['device_name'] ?? '')),
+            'device_type_label' => trim((string)($context['device_type_label'] ?? '')),
+            'browser' => trim((string)($context['browser'] ?? '')),
+            'os' => trim((string)($context['os'] ?? '')),
+            'engine' => trim((string)($context['engine'] ?? '')),
+            'cpu' => trim((string)($context['cpu'] ?? '')),
+            'location' => trim((string)($context['location'] ?? '')),
+            'captured_at' => trim((string)($context['captured_at'] ?? (string)($row['created_at'] ?? ''))),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function captureRequesterContext(): array
+    {
+        $userAgent = trim((string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
+        $ip = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+        if ($userAgent === '' && $ip === '') {
+            return [];
+        }
+
+        $device = function_exists('detectDevice') ? detectDevice($userAgent) : ['name' => '', 'type' => ''];
+        $location = $ip !== '' && function_exists('getLocationFromIP') ? getLocationFromIP($ip) : '';
+
+        return [
+            'device_name' => $this->detectDetailedDeviceName($userAgent, trim((string)($device['name'] ?? ''))),
+            'device_type' => trim((string)($device['type'] ?? '')),
+            'device_type_label' => $this->deviceTypeLabel((string)($device['type'] ?? '')),
+            'browser' => $this->detectBrowserName($userAgent),
+            'os' => $this->detectOperatingSystem($userAgent),
+            'engine' => $this->detectBrowserEngine($userAgent),
+            'cpu' => $this->detectCpuArchitecture($userAgent),
+            'location' => trim((string)$location),
+            'captured_at' => gmdate('Y-m-d H:i:s'),
+        ];
+    }
+
+    private function deviceTypeLabel(string $type): string
+    {
+        switch (strtolower(trim($type))) {
+            case 'mobile':
+                return 'Мобільний пристрій';
+            case 'tablet':
+                return 'Планшет';
+            case 'desktop':
+                return 'Компʼютер';
+            default:
+                return '';
+        }
+    }
+
+    private function detectBrowserName(string $userAgent): string
+    {
+        $agent = trim($userAgent);
+        $agentLower = strtolower($agent);
+        if ($agentLower === '') {
+            return '';
+        }
+
+        $patterns = [
+            'Microsoft Edge' => '/\b(?:edg|edge|edga|edgios)\/([0-9\.]+)/i',
+            'Opera' => '/\b(?:opr|opera)\/([0-9\.]+)/i',
+            'Samsung Internet' => '/\bsamsungbrowser\/([0-9\.]+)/i',
+            'Mozilla Firefox' => '/\b(?:firefox|fxios)\/([0-9\.]+)/i',
+            'Google Chrome' => '/\b(?:chrome|crios)\/([0-9\.]+)/i',
+            'Safari' => '/\bversion\/([0-9\.]+).+safari/i',
+            'Internet Explorer' => '/\b(?:msie\s|rv:)([0-9\.]+)/i',
+        ];
+
+        foreach ($patterns as $name => $pattern) {
+            if (preg_match($pattern, $agent, $matches)) {
+                $version = $this->normalizeVersion($matches[1] ?? '');
+                return $version !== '' ? ($name . ' ' . $version) : $name;
+            }
+        }
+
+        return 'Невідомий браузер';
+    }
+
+    private function detectOperatingSystem(string $userAgent): string
+    {
+        $agent = trim($userAgent);
+        $agentLower = strtolower($agent);
+        if ($agentLower === '') {
+            return '';
+        }
+
+        if (preg_match('/Windows NT 10\.0/i', $agent)) {
+            return 'Windows 10/11';
+        }
+        if (preg_match('/Windows NT 6\.3/i', $agent)) {
+            return 'Windows 8.1';
+        }
+        if (preg_match('/Windows NT 6\.2/i', $agent)) {
+            return 'Windows 8';
+        }
+        if (preg_match('/Windows NT 6\.1/i', $agent)) {
+            return 'Windows 7';
+        }
+        if (preg_match('/Android\s([0-9\.]+)/i', $agent, $matches)) {
+            $version = $this->normalizeVersion($matches[1] ?? '');
+            return $version !== '' ? ('Android ' . $version) : 'Android';
+        }
+        if (preg_match('/(?:CPU (?:iPhone )?OS|iPhone OS|iPad; CPU OS)\s([0-9_]+)/i', $agent, $matches)) {
+            $version = str_replace('_', '.', (string)($matches[1] ?? ''));
+            return $version !== '' ? ('iOS ' . $version) : 'iOS';
+        }
+        if (preg_match('/Mac OS X\s([0-9_\.]+)/i', $agent, $matches)) {
+            $version = str_replace('_', '.', (string)($matches[1] ?? ''));
+            return $version !== '' ? ('macOS ' . $version) : 'macOS';
+        }
+        if (preg_match('/HarmonyOS\s([0-9\.]+)/i', $agent, $matches)) {
+            $version = $this->normalizeVersion($matches[1] ?? '');
+            return $version !== '' ? ('HarmonyOS ' . $version) : 'HarmonyOS';
+        }
+        if (strpos($agentLower, 'linux') !== false) {
+            if (strpos($agentLower, 'ubuntu') !== false) {
+                return 'Ubuntu Linux';
+            }
+            return 'Linux';
+        }
+        if (strpos($agentLower, 'windows') !== false) {
+            return 'Windows';
+        }
+
+        return 'Невідома система';
+    }
+
+    private function detectBrowserEngine(string $userAgent): string
+    {
+        $agent = strtolower(trim($userAgent));
+        if ($agent === '') {
+            return '';
+        }
+
+        if (strpos($agent, 'applewebkit') !== false && (strpos($agent, 'chrome') !== false || strpos($agent, 'chromium') !== false || strpos($agent, 'edg/') !== false || strpos($agent, 'opr/') !== false)) {
+            return 'Blink';
+        }
+        if (strpos($agent, 'applewebkit') !== false) {
+            return 'WebKit';
+        }
+        if (strpos($agent, 'gecko') !== false && strpos($agent, 'like gecko') === false) {
+            return 'Gecko';
+        }
+        if (strpos($agent, 'trident') !== false) {
+            return 'Trident';
+        }
+
+        return '';
+    }
+
+    private function detectCpuArchitecture(string $userAgent): string
+    {
+        $agent = strtolower(trim($userAgent));
+        if ($agent === '') {
+            return '';
+        }
+
+        if (preg_match('/arm64|aarch64/i', $userAgent)) {
+            return 'ARM64';
+        }
+        if (preg_match('/armv?8|armv?7|arm;/i', $userAgent)) {
+            return 'ARM';
+        }
+        if (preg_match('/x86_64|win64|wow64|amd64|x64/i', $userAgent)) {
+            return 'x64';
+        }
+        if (preg_match('/i[3-6]86|x86/i', $userAgent)) {
+            return 'x86';
+        }
+
+        return '';
+    }
+
+    private function detectDetailedDeviceName(string $userAgent, string $fallback = ''): string
+    {
+        $agent = trim($userAgent);
+        if ($agent === '') {
+            return $fallback;
+        }
+
+        if (preg_match('/iPhone/i', $agent)) {
+            return 'iPhone';
+        }
+        if (preg_match('/iPad/i', $agent)) {
+            return 'iPad';
+        }
+        if (preg_match('/Macintosh|Mac OS X/i', $agent)) {
+            return 'Mac';
+        }
+        if (preg_match('/Windows/i', $agent)) {
+            return 'Windows PC';
+        }
+
+        if (preg_match('/Android[^;]*;\s*([^;\/\)]+?)\s+Build\//i', $agent, $matches)) {
+            $model = trim((string)($matches[1] ?? ''));
+            if ($model !== '' && strlen($model) > 1) {
+                return preg_replace('/\s+/', ' ', $model) ?: $model;
+            }
+        }
+
+        if (preg_match('/Android[^;]*;\s*([^;\/\)]+)\)/i', $agent, $matches)) {
+            $model = trim((string)($matches[1] ?? ''));
+            if ($model !== '' && !preg_match('/^(linux|u|wv)$/i', $model)) {
+                return preg_replace('/\s+/', ' ', $model) ?: $model;
+            }
+        }
+
+        return $fallback;
+    }
+
+    private function normalizeVersion(string $version): string
+    {
+        $version = trim($version);
+        if ($version === '') {
+            return '';
+        }
+
+        $parts = preg_split('/\./', $version);
+        if (!is_array($parts) || empty($parts)) {
+            return $version;
+        }
+
+        return implode('.', array_slice($parts, 0, min(2, count($parts))));
+    }
+
+    private function normalizeDateTimeToTimestamp(string $value): ?int
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        $timestamp = strtotime($value);
+        return $timestamp === false ? null : $timestamp;
+    }
+
+    private function convertUtcDateTimeToKyiv(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        try {
+            $utc = new DateTimeZone('UTC');
+            $kyiv = new DateTimeZone('Europe/Kiev');
+            $date = new DateTimeImmutable($value, $utc);
+            return $date->setTimezone($kyiv)->format('Y-m-d H:i:s');
+        } catch (Throwable $e) {
+            return $value;
+        }
     }
 
     /**
@@ -1245,11 +1656,24 @@ class SupportDesk
             return null;
         }
 
+        $ticketRes = mysqli_query($this->dblink, "SELECT status FROM support_tickets WHERE id = {$ticketId} LIMIT 1");
+        $ticketRow = $ticketRes ? mysqli_fetch_assoc($ticketRes) : null;
+        if (!$ticketRow || (string)($ticketRow['status'] ?? '') !== 'waiting_customer') {
+            return null;
+        }
+
         $sql = "SELECT created_at, payload_json
                 FROM support_ticket_events
                 WHERE ticket_id = {$ticketId}
                   AND to_status = 'waiting_customer'
                   AND payload_json LIKE '%\"reason\":\"resolution_confirmation\"%'
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM support_messages sm
+                        WHERE sm.ticket_id = {$ticketId}
+                          AND sm.sender_type = 'customer'
+                          AND sm.created_at > support_ticket_events.created_at
+                    )
                 ORDER BY id DESC
                 LIMIT 1";
         $res = mysqli_query($this->dblink, $sql);

@@ -392,8 +392,10 @@ View_Add('
         </div>
         '.(isset($_SESSION['logged']) && $_SESSION['logged'] == 1 ? '
         <div class="cleaners-list-header-btns">
-            '.($isCleaner ? '<a href="/profile.php?md=10" class="btn-my-cabinet">Мій кабінет</a>' : '<button type="button" class="btn-become-cleaner" id="btn-become-cleaner">Стати працівником</button>').'
-            <button type="button" class="btn-my-orders" id="btn-my-orders">Замовлені прибиральники</button>
+            '.($isCleaner
+                ? '<a href="/profile.php?md=10" class="btn-my-cabinet"><span class="cleaners-header-btn-icon cleaners-header-btn-icon--svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-circle"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" /></svg></span><span class="cleaners-header-btn-label">Мій кабінет</span></a>'
+                : '<button type="button" class="btn-become-cleaner" id="btn-become-cleaner"><span class="cleaners-header-btn-icon" aria-hidden="true"></span><span class="cleaners-header-btn-label">Стати працівником</span></button>').'
+            <button type="button" class="btn-my-orders" id="btn-my-orders"><span class="cleaners-header-btn-icon cleaners-header-btn-icon--svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-basket"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10 14a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M5.001 8h13.999a2 2 0 0 1 1.977 2.304l-1.255 7.152a3 3 0 0 1 -2.966 2.544h-9.512a3 3 0 0 1 -2.965 -2.544l-1.255 -7.152a2 2 0 0 1 1.977 -2.304" /><path d="M17 10l-2 -6" /><path d="M7 10l2 -6" /></svg></span><span class="cleaners-header-btn-label">Замовлені прибиральники</span></button>
         </div>
         ' : '').'
     </div>
@@ -488,7 +490,8 @@ if (empty($cleaners)) {
                             data-cleaner-name="'.$fullName.'"
                             data-cleaner-services=\''.$servicesJson.'\'
                         >
-                            Замовити цього прибиральника
+                            <span class="cleaner-order-btn-icon" aria-hidden="true"></span>
+                            <span class="cleaner-order-btn-label">Замовити</span>
                         </button>').'
                     </div>
                 </div>
@@ -1585,7 +1588,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then(function(data) {
                     if (data.ok) {
                         becomeCleanerModal.style.display = "flex";
-                        btnBecomeCleaner.outerHTML = \'<a href="/profile.php?md=10" class="btn-my-cabinet">Мій кабінет</a>\';
+                        btnBecomeCleaner.outerHTML = \'<a href="/profile.php?md=10" class="btn-my-cabinet"><span class="cleaners-header-btn-icon cleaners-header-btn-icon--svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-circle"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" /></svg></span><span class="cleaners-header-btn-label">Мій кабінет</span></a>\';
                     }
                 });
         });

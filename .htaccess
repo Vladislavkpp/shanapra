@@ -32,9 +32,9 @@ RewriteRule ^searchcem/addcemetery/?$ searchcem.php?view=add [L,QSA]
 RewriteRule ^cemetery/editcemform/?$ cemetery.php?view=edit [L,QSA]
 RewriteRule ^accounting/?$ profile.php?md=12&tool=accounting [L,QSA]
 RewriteRule ^accounting/stats/?$ profile.php?md=12&tool=stats [L,QSA]
-RewriteRule ^profile/admin-tools/?$ profile.php?md=12&tool=accounting [L,QSA]
-RewriteRule ^profile/admin-tools/accounting/?$ profile.php?md=12&tool=accounting [L,QSA]
-RewriteRule ^profile/admin-tools/stats/?$ profile.php?md=12&tool=stats [L,QSA]
+RewriteRule ^accounting/wallets/?$ profile.php?md=12&tool=wallets [L,QSA]
+RewriteRule ^accounting/transactions/?$ profile.php?md=12&tool=transactions [L,QSA]
+RewriteRule ^accounting/accruals/?$ profile.php?md=12&tool=accruals [L,QSA]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

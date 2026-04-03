@@ -3770,6 +3770,36 @@ filter: brightness(80%);
     transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
 }
 
+.menu-balance-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+}
+
+.menu-balance-primary {
+    display: inline-flex;
+    align-items: center;
+}
+
+.menu-balance-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #64748b;
+    padding-left: 10px;
+    border-left: 1px solid #dbe3ea;
+}
+
+.menu-balance-coin {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
 .dropdown-menu.block > a:hover {
     background: #f8fafc;
     border-color: #e5e7eb;
@@ -4472,7 +4502,6 @@ filter: brightness(80%);
     flex: 1 0 auto;
     min-height: 0;
     width: 100%;
-    background: #9f9f9f;
     overflow-y: visible;
     overflow-x: hidden;
 }
@@ -4525,6 +4554,11 @@ filter: brightness(80%);
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-weight: 500;
     line-height: 1.4;
+}
+
+.Menu_Profile,
+.Menu_Profile * {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .Menu_Profile .menu-link {
@@ -7395,6 +7429,7 @@ select.form-input-kladb option[value=""] {
 
 
 .execution-time{
+    z-index: 99999;
     padding: 10px 20px;
     max-width: 100%;
     font-size: 14px;

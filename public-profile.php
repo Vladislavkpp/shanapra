@@ -278,39 +278,21 @@ if (!$user) {
                         <span class="pubprof-badge">Публічний профіль</span>
                     </div>
                     <h1 class="pubprof-name">' . publicProfileEsc($fullName) . '</h1>
-                    <p class="pubprof-note">Публічна сторінка користувача. Тут можна ознайомитися з основною інформацією та швидко зв\'язатися.</p>
+                    <p class="pubprof-note">Публічна сторінка користувача. Тут можна ознайомитися з основною інформацією та переглянути останні публікації.</p>
                 </div>
-                <div class="pubprof-actions">
     ');
 
     if ($currentUserId > 0 && $currentUserId === (int)$user['idx']) {
         View_Add('
-            <a href="/profile.php" class="pubprof-btn pubprof-btn--primary">
-                <span>До профілю</span>
-            </a>
-        ');
-    } elseif ($currentUserId > 0) {
-        View_Add('
-            <div class="pubprof-btn pubprof-btn--primary pubprof-btn--disabled" aria-disabled="true">
-                <span class="pubprof-btn__icon" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-message-off"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h2" /><path d="M8 13h4" /><path d="M14 18h4a3 3 0 0 0 3 -3v-6m0 -4a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -3 3v8a3 3 0 0 0 3 3h2v3l3 -3" /><path d="M3 3l18 18" /></svg>
-                </span>
-                <span>Особисті чати вимкнено</span>
-            </div>
-        ');
-    } elseif ($currentUserId <= 0) {
-        View_Add('
-            <a href="/auth.php" class="pubprof-btn pubprof-btn--primary">
-                <span class="pubprof-btn__icon" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-message"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h8" /><path d="M8 13h6" /><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12" /></svg>
-                </span>
-                <span>Увійти щоб написати</span>
-            </a>
+                <div class="pubprof-actions">
+                    <a href="/profile.php" class="pubprof-btn pubprof-btn--primary">
+                        <span>До профілю</span>
+                    </a>
+                </div>
         ');
     }
 
     View_Add('
-                </div>
             </div>
         </section>
         <section class="pubprof-posts" data-public-posts data-user-id="' . $userId . '" data-total="' . $gravesTotal . '">

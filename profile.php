@@ -32,7 +32,19 @@ function profileResolvePageTitle(string $mdParam, string $toolParam = 'accountin
         case '10':
             return 'Кабінет прибиральника';
         case '12':
-            return $toolParam === 'stats' ? 'Статистика' : 'Бухгалтерія';
+            if ($toolParam === 'stats') {
+                return 'Статистика';
+            }
+            if ($toolParam === 'wallets') {
+                return 'Гаманці';
+            }
+            if ($toolParam === 'transactions') {
+                return 'Транзакції';
+            }
+            if ($toolParam === 'accruals') {
+                return 'Внутрішні нарахування';
+            }
+            return 'Бухгалтерія';
         case '73':
             return 'Скидання пароля';
         default:
@@ -58,7 +70,10 @@ if ($md === '010') {
     $md = '4';
 }
 
-$pageMdParam = isset($md) ? (string)$md : ((string)($_GET['md'] ?? '0'));
+$pageMdParam = isset($_GET['md']) ? (string)$_GET['md'] : ((isset($_POST['md']) ? (string)$_POST['md'] : (isset($md) ? (string)$md : '0')));
+if ($pageMdParam === '010') {
+    $pageMdParam = '4';
+}
 $pageToolParam = strtolower(trim((string)($_GET['tool'] ?? 'accounting')));
 $pageTitle = profileResolvePageTitle($pageMdParam, $pageToolParam);
 
@@ -161,15 +176,29 @@ function profileCanAccessAdminTools(int $status): bool
     return hasAnyRole($status, [ROLE_ACCOUNTANT, ROLE_CREATOR, ROLE_WEBMASTER]);
 }
 
+function profileCanAccessWalletsAdmin(int $status): bool
+{
+    return hasAnyRole($status, [ROLE_ACCOUNTANT, ROLE_CREATOR]);
+}
+
 function profileAdminToolsUrl(string $tool = 'accounting'): string
 {
     $normalizedTool = strtolower(trim($tool));
-    if (!in_array($normalizedTool, ['accounting', 'stats'], true)) {
+    if (!in_array($normalizedTool, ['accounting', 'stats', 'wallets', 'transactions', 'accruals'], true)) {
         $normalizedTool = 'accounting';
     }
 
     if ($normalizedTool === 'stats') {
         return '/accounting/stats';
+    }
+    if ($normalizedTool === 'wallets') {
+        return '/accounting/wallets';
+    }
+    if ($normalizedTool === 'transactions') {
+        return '/accounting/transactions';
+    }
+    if ($normalizedTool === 'accruals') {
+        return '/accounting/accruals';
     }
 
     return '/accounting';
@@ -191,17 +220,24 @@ function profileAdminToolsTableExists(mysqli $dblink, string $tableName): bool
     return $result instanceof mysqli_result && mysqli_num_rows($result) > 0;
 }
 
-function profileRenderAdminToolsNav(string $currentTool): string
+function profileRenderAdminToolsNav(string $currentTool, int $status): string
 {
     $tools = [
         'accounting' => 'Бухгалтерія',
         'stats' => 'Статистика',
     ];
 
-    $out = '<nav class="admin-tools-nav" aria-label="Фінансовий модуль">';
+    if (profileCanAccessWalletsAdmin($status)) {
+        $tools['wallets'] = 'Гаманці';
+    }
+
+    $tools['transactions'] = 'Транзакції';
+    $tools['accruals'] = 'Нарахування';
+
+    $out = '<nav class="admin-tools-nav profile-view-tabs admin-tools-nav--tabs" aria-label="Фінансовий модуль">';
     foreach ($tools as $tool => $label) {
-        $activeClass = $tool === $currentTool ? ' is-active' : '';
-        $out .= '<a class="admin-tools-nav-link' . $activeClass . '" href="' . htmlspecialchars(profileAdminToolsUrl($tool), ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+        $activeClass = $tool === $currentTool ? ' active is-active' : '';
+        $out .= '<a class="admin-tools-nav-link profile-view-tab-btn' . $activeClass . '" data-admin-tool-tab="' . htmlspecialchars($tool, ENT_QUOTES, 'UTF-8') . '" href="' . htmlspecialchars(profileAdminToolsUrl($tool), ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
     }
     $out .= '</nav>';
 
@@ -1361,6 +1397,20 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
         }
         $services[] = $s;
     }
+    $servicesSeed = array_map(static function(array $service): array {
+        return [
+            'name' => (string)($service['service_name'] ?? ''),
+            'price_type' => (string)($service['price_type'] ?? 'exact'),
+            'price_amount' => (string)($service['price_amount'] ?? ''),
+        ];
+    }, $services);
+    $servicesSeedJson = json_encode(
+        $servicesSeed,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    );
+    if ($servicesSeedJson === false) {
+        $servicesSeedJson = '[]';
+    }
     
     // Получение привязанных кладбищ
     $cemeteries = [];
@@ -1496,60 +1546,150 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
                     <h2>Мої послуги</h2>
                     <button type="button" id="add-service-btn" class="btn-add-service">+ Додати послугу</button>
                 </div>
-                <div id="services-list">');
-    
-    $priceTypeSelectTpl = function($selExact, $selFrom, $triggerText) {
-        return '<select name="services[price_type][]" class="service-price-type-select" style="display:none;">
-                            <option value="exact"'.$selExact.'>Точна</option>
-                            <option value="from"'.$selFrom.'>Від</option>
+                <div class="cleaner-services-card">
+                    <div class="cleaner-services-card-head">
+                        <div class="cleaner-services-card-copy">
+                            <span class="cleaner-services-card-kicker">Каталог послуг</span>
+                            <p>Додавайте, редагуйте та видаляйте послуги через окрему форму. У списку залишаються лише охайні позиції з ціною.</p>
+                        </div>
+                        <div class="cleaner-services-card-count" id="services-count-badge">0 послуг</div>
+                    </div>
+                    <div class="cleaner-services-table-wrap" id="services-table-wrap">
+                        <table class="cleaner-services-table" aria-label="Список послуг прибиральника">
+                            <thead>
+                                <tr>
+                                    <th>Послуга</th>
+                                    <th>Формат ціни</th>
+                                    <th>Вартість</th>
+                                    <th class="cleaner-services-table-actions-head">Дії</th>
+                                </tr>
+                            </thead>
+                            <tbody id="services-table-body"></tbody>
+                        </table>
+                        <div class="cleaner-services-empty" id="services-empty-state" hidden>
+                            <div class="cleaner-services-empty-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                    <path d="M7 4h10a2 2 0 0 1 2 2v11a3 3 0 0 1 -3 3h-8a3 3 0 0 1 -3 -3v-11a2 2 0 0 1 2 -2"></path>
+                                    <path d="M9 8h6"></path>
+                                    <path d="M9 12h6"></path>
+                                    <path d="M9 16h4"></path>
+                                </svg>
+                            </div>
+                            <strong>Послуги ще не додані</strong>
+                            <p>Натисніть “Додати послугу”, щоб оформити першу позицію у каталозі.</p>
+                        </div>
+                    </div>
+                    <div id="services-hidden-inputs">');
+    if (!empty($servicesSeed)) {
+        foreach ($servicesSeed as $serviceSeed) {
+            View_Add('<input type="hidden" name="services[name][]" value="' . htmlspecialchars((string)$serviceSeed['name'], ENT_QUOTES, 'UTF-8') . '">');
+            View_Add('<input type="hidden" name="services[price_type][]" value="' . htmlspecialchars((string)$serviceSeed['price_type'], ENT_QUOTES, 'UTF-8') . '">');
+            View_Add('<input type="hidden" name="services[price_amount][]" value="' . htmlspecialchars((string)$serviceSeed['price_amount'], ENT_QUOTES, 'UTF-8') . '">');
+        }
+    }
+    View_Add('
+                    </div>
+                </div>
+            </div>
+            
+            <div class="cleaner-section cleaner-section-submit">
+                <div class="cleaner-submit-card">
+                    <div class="cleaner-submit-copy">
+                        <span class="cleaner-submit-kicker">Збереження змін</span>
+                        <strong>Щоб зміни відобразилися в кабінеті, збережіть профіль</strong>
+                        <p>Після редагування місця роботи, послуг, контактів та інших даних натисніть кнопку нижче, щоб оновлена інформація збереглася і відображалася в профілі.</p>
+                    </div>
+                    <button type="submit" class="btn-save cleaner-submit-btn">
+                        <span class="cleaner-submit-btn__icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-check">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+                                <path d="M9 12l2 2l4 -4"></path>
+                            </svg>
+                        </span>
+                        <span>Зберегти профіль</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="cleaner-service-modal" id="cleanerServiceModal" aria-hidden="true">
+        <div class="cleaner-service-modal__backdrop" data-service-modal-close></div>
+        <div class="cleaner-service-modal__content" role="dialog" aria-modal="true" aria-labelledby="cleanerServiceModalTitle">
+            <div class="cleaner-service-modal__header">
+                <div class="cleaner-service-modal__title-wrap">
+                    <span class="cleaner-service-modal__icon" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                            <path d="M7 12h10"></path>
+                            <path d="M12 7v10"></path>
+                            <path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2"></path>
+                        </svg>
+                    </span>
+                    <div class="cleaner-service-modal__title-copy">
+                        <h3 id="cleanerServiceModalTitle">Нова послуга</h3>
+                        <p id="cleanerServiceModalSubtitle">Заповніть назву, формат ціни та вартість. Зміни застосуються після збереження профілю.</p>
+                    </div>
+                </div>
+                <button type="button" class="cleaner-service-modal__close" data-service-modal-close aria-label="Закрити">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6l-12 12"></path>
+                        <path d="M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="cleaner-service-modal__body">
+                <div class="cleaner-service-modal__field">
+                    <label class="cleaner-service-modal__label" for="service-modal-name">Назва послуги</label>
+                    <input type="text" id="service-modal-name" class="cleaner-service-modal__input" placeholder="Наприклад: Прибирання могили" maxlength="255">
+                </div>
+                <div class="cleaner-service-modal__field">
+                    <span class="cleaner-service-modal__label">Швидкий вибір</span>
+                    <div class="cleaner-service-modal__presets" id="service-modal-presets">
+                        <button type="button" class="cleaner-service-preset" data-service-preset="Прибирання могили">Прибирання могили</button>
+                        <button type="button" class="cleaner-service-preset" data-service-preset="Миття памʼятника">Миття памʼятника</button>
+                        <button type="button" class="cleaner-service-preset" data-service-preset="Очищення від бурʼянів">Очищення від бурʼянів</button>
+                        <button type="button" class="cleaner-service-preset" data-service-preset="Висадка квітів">Висадка квітів</button>
+                        <button type="button" class="cleaner-service-preset" data-service-preset="Полив квітів">Полив квітів</button>
+                        <button type="button" class="cleaner-service-preset cleaner-service-preset--custom" data-service-preset-custom="1">Своя послуга</button>
+                    </div>
+                </div>
+                <div class="cleaner-service-modal__grid">
+                    <div class="cleaner-service-modal__field">
+                        <label class="cleaner-service-modal__label" for="service-modal-price-type">Формат ціни</label>
+                        <select id="service-modal-price-type" class="cleaner-service-modal__select cleaner-service-modal__select-native" style="display:none;">
+                            <option value="exact">Точна</option>
+                            <option value="from">Від</option>
                         </select>
-                        <div class="custom-select-wrapper service-price-type-wrapper">
-                            <div class="custom-select-trigger">'.$triggerText.'</div>
+                        <div class="custom-select-wrapper cleaner-service-modal__select-wrap" id="service-modal-price-type-wrapper">
+                            <div class="custom-select-trigger">Точна</div>
                             <div class="custom-options">
                                 <span class="custom-option" data-value="exact">Точна</span>
                                 <span class="custom-option" data-value="from">Від</span>
                             </div>
-                        </div>';
-    };
-    if (!empty($services)) {
-        foreach ($services as $service) {
-            $amt = htmlspecialchars($service['price_amount'] ?? '');
-            $type = $service['price_type'] ?? 'exact';
-            $selFrom = $type === 'from' ? ' selected' : '';
-            $selExact = $type === 'exact' ? ' selected' : '';
-            $triggerText = $type === 'from' ? 'Від' : 'Точна';
-            View_Add('
-                    <div class="service-item">
-                        <input type="text" name="services[name][]" class="form-group input" placeholder="Назва послуги" value="'.htmlspecialchars($service['service_name']).'" required>
-                        '.$priceTypeSelectTpl($selExact, $selFrom, $triggerText).'
-                        <div class="service-price-amount-wrap">
-                            <input type="number" name="services[price_amount][]" class="form-group input service-price-amount" placeholder="ціна" value="'.$amt.'" min="1" step="1" required>
-                            <span class="service-price-grn"'.($amt ? '' : ' style="display:none"').'>грн</span>
                         </div>
-                        <button type="button" class="btn-remove-service">Видалити</button>
-                    </div>');
-        }
-    } else {
-        View_Add('
-                    <div class="service-item">
-                        <input type="text" name="services[name][]" class="form-group input" placeholder="Назва послуги" required>
-                        '.$priceTypeSelectTpl(' selected', '', 'Точна').'
-                        <div class="service-price-amount-wrap">
-                            <input type="number" name="services[price_amount][]" class="form-group input service-price-amount" placeholder="ціна" min="1" step="1" required>
-                            <span class="service-price-grn" style="display:none">грн</span>
+                    </div>
+                    <div class="cleaner-service-modal__field">
+                        <label class="cleaner-service-modal__label" for="service-modal-price-amount">Сума</label>
+                        <div class="cleaner-service-modal__price">
+                            <input type="number" id="service-modal-price-amount" class="cleaner-service-modal__input" placeholder="Наприклад: 700" min="1" step="1">
+                            <span>грн</span>
                         </div>
-                        <button type="button" class="btn-remove-service">Видалити</button>
-                    </div>');
-    }
-    
-    View_Add('
+                    </div>
                 </div>
+                <div class="cleaner-service-modal__summary" id="cleanerServiceModalSummary">
+                    <strong>Попередній вигляд</strong>
+                    <span>Послуга ще не заповнена.</span>
+                </div>
+                <div class="cleaner-service-modal__error" id="cleanerServiceModalError" hidden></div>
             </div>
-            
-            <div class="cleaner-section">
-                <button type="submit" class="btn-save">Зберегти профіль</button>
+            <div class="cleaner-service-modal__footer">
+                <button type="button" class="cleaner-service-modal__cancel" data-service-modal-close>Скасувати</button>
+                <button type="button" class="cleaner-service-modal__confirm" id="cleanerServiceModalSave">Зберегти послугу</button>
             </div>
-        </form>
+        </div>
     </div>
     
     <div class="cleaner-tab-content" id="tab-orders" style="display: ' . ($activeTab === 'orders' ? 'block' : 'none') . ';">
@@ -1753,6 +1893,8 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    document.title = "ІПС Shana | Кабінет прибиральника";
+
     // Переключение табов
     const tabButtons = document.querySelectorAll(".cleaner-tab-btn");
     const tabContents = document.querySelectorAll(".cleaner-tab-content");
@@ -2147,9 +2289,6 @@ document.addEventListener("DOMContentLoaded", function() {
         initCustomSelect(regionWrapper);
     }
     
-    // Инициализируем custom select для price_type в послугах
-    document.querySelectorAll(".service-price-type-wrapper").forEach(function(w) { initCustomSelect(w); });
-    
     // Кастомний селект сортування замовлень (селект — previousElementSibling від wrapper)
     const sortWrapper = document.getElementById("cleaner-orders-sort-wrapper");
     if (sortWrapper) {
@@ -2160,17 +2299,6 @@ document.addEventListener("DOMContentLoaded", function() {
             sortTrigger.textContent = sortSelect.options[sortSelect.selectedIndex].text;
         }
     }
-    
-    // Підказка грн при вводі суми
-    document.querySelectorAll(".service-price-amount").forEach(function(inp) {
-        inp.addEventListener("input", function() {
-            var grn = this.closest(".service-price-amount-wrap");
-            if (grn) {
-                var span = grn.querySelector(".service-price-grn");
-                if (span) span.style.display = this.value ? "inline" : "none";
-            }
-        });
-    });
     
     // Загрузка районов
     function loadDistricts(regionId, selectedDistrict = null) {
@@ -2383,51 +2511,334 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
     
-    // Добавление услуги
+    const servicesTableBody = document.getElementById("services-table-body");
+    const servicesHiddenInputs = document.getElementById("services-hidden-inputs");
+    const servicesEmptyState = document.getElementById("services-empty-state");
+    const servicesTableWrap = document.getElementById("services-table-wrap");
+    const servicesCountBadge = document.getElementById("services-count-badge");
     const addServiceBtn = document.getElementById("add-service-btn");
-    if (addServiceBtn) {
-        addServiceBtn.addEventListener("click", function() {
-            const servicesList = document.getElementById("services-list");
-            if (!servicesList) return;
-            const serviceItem = document.createElement("div");
-            serviceItem.className = "service-item";
-            serviceItem.innerHTML = `
-                <input type="text" name="services[name][]" class="form-group input" placeholder="Назва послуги" required>
-                <select name="services[price_type][]" class="service-price-type-select" style="display:none;">
-                    <option value="exact" selected>Точна</option>
-                    <option value="from">Від</option>
-                </select>
-                <div class="custom-select-wrapper service-price-type-wrapper">
-                    <div class="custom-select-trigger">Точна</div>
-                    <div class="custom-options">
-                        <span class="custom-option" data-value="exact">Точна</span>
-                        <span class="custom-option" data-value="from">Від</span>
-                    </div>
-                </div>
-                <div class="service-price-amount-wrap">
-                    <input type="number" name="services[price_amount][]" class="form-group input service-price-amount" placeholder="ціна" min="1" step="1" required>
-                    <span class="service-price-grn" style="display:none">грн</span>
-                </div>
-                <button type="button" class="btn-remove-service">Видалити</button>
-            `;
-            servicesList.appendChild(serviceItem);
-            serviceItem.querySelectorAll(".service-price-type-wrapper").forEach(function(w) { initCustomSelect(w); });
-            serviceItem.querySelector(".service-price-amount").addEventListener("input", function() {
-                var grn = this.closest(".service-price-amount-wrap").querySelector(".service-price-grn");
-                if (grn) grn.style.display = this.value ? "inline" : "none";
+    const serviceModal = document.getElementById("cleanerServiceModal");
+    const serviceModalName = document.getElementById("service-modal-name");
+    const serviceModalPriceType = document.getElementById("service-modal-price-type");
+    const serviceModalPriceTypeWrapper = document.getElementById("service-modal-price-type-wrapper");
+    const serviceModalPriceAmount = document.getElementById("service-modal-price-amount");
+    const servicePresetButtons = document.querySelectorAll(".cleaner-service-preset");
+    const serviceModalSummary = document.getElementById("cleanerServiceModalSummary");
+    const serviceModalError = document.getElementById("cleanerServiceModalError");
+    const serviceModalTitle = document.getElementById("cleanerServiceModalTitle");
+    const serviceModalSubtitle = document.getElementById("cleanerServiceModalSubtitle");
+    const serviceModalSave = document.getElementById("cleanerServiceModalSave");
+    const initialServices = '.$servicesSeedJson.';
+    let servicesState = Array.isArray(initialServices) ? initialServices.map(function(service) {
+        return {
+            name: String(service && service.name ? service.name : "").trim(),
+            price_type: service && service.price_type === "from" ? "from" : "exact",
+            price_amount: String(service && service.price_amount ? service.price_amount : "").replace(/\D/g, "")
+        };
+    }).filter(function(service) {
+        return service.name !== "" && service.price_amount !== "";
+    }) : [];
+    let editingServiceIndex = null;
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/\'/g, "&#039;");
+    }
+
+    function formatServicePrice(service) {
+        const amount = String(service && service.price_amount ? service.price_amount : "").replace(/\D/g, "");
+        if (!amount) {
+            return "Ціну не вказано";
+        }
+        return (service && service.price_type === "from" ? "Від " : "") + amount + " грн";
+    }
+
+    function syncServicePriceTypeTrigger() {
+        if (!serviceModalPriceType || !serviceModalPriceTypeWrapper) return;
+        const trigger = serviceModalPriceTypeWrapper.querySelector(".custom-select-trigger");
+        if (!trigger) return;
+        trigger.textContent = serviceModalPriceType.value === "from" ? "Від" : "Точна";
+    }
+
+    if (serviceModalPriceTypeWrapper && serviceModalPriceTypeWrapper.classList.contains("custom-select-wrapper")) {
+        initCustomSelect(serviceModalPriceTypeWrapper);
+        syncServicePriceTypeTrigger();
+    }
+
+    function syncServicePresetState() {
+        if (!servicePresetButtons.length || !serviceModalName) return;
+        const currentName = serviceModalName.value.trim();
+        let matchedPreset = false;
+
+        servicePresetButtons.forEach(function(button) {
+            const presetName = button.dataset.servicePreset || "";
+            const isCustom = button.dataset.servicePresetCustom === "1";
+            const isActive = !isCustom && currentName !== "" && currentName === presetName;
+            button.classList.toggle("is-active", isActive);
+            if (isActive) {
+                matchedPreset = true;
+            }
+        });
+
+        servicePresetButtons.forEach(function(button) {
+            if (button.dataset.servicePresetCustom === "1") {
+                button.classList.toggle("is-active", currentName === "" || !matchedPreset);
+            }
+        });
+    }
+
+    function updateServiceSummary() {
+        if (!serviceModalSummary) return;
+        const name = serviceModalName ? serviceModalName.value.trim() : "";
+        const priceType = serviceModalPriceType ? serviceModalPriceType.value : "exact";
+        const amount = serviceModalPriceAmount ? String(serviceModalPriceAmount.value || "").replace(/\D/g, "") : "";
+        const title = name !== "" ? name : "Послуга ще не заповнена";
+        const details = amount !== "" ? ((priceType === "from" ? "Від " : "Точна ціна ") + amount + " грн") : "Вкажіть суму, щоб побачити фінальний вигляд картки.";
+        serviceModalSummary.innerHTML = "<strong>" + escapeHtml(title) + "</strong><span>" + escapeHtml(details) + "</span>";
+    }
+
+    function setServiceModalError(message) {
+        if (!serviceModalError) return;
+        if (!message) {
+            serviceModalError.hidden = true;
+            serviceModalError.textContent = "";
+            serviceModalError.style.display = "none";
+            return;
+        }
+        serviceModalError.hidden = false;
+        serviceModalError.textContent = message;
+        serviceModalError.style.display = "block";
+    }
+
+    function syncServicesHiddenInputs() {
+        if (!servicesHiddenInputs) return;
+        servicesHiddenInputs.innerHTML = "";
+        servicesState.forEach(function(service) {
+            ["name", "price_type", "price_amount"].forEach(function(key) {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = key === "name" ? "services[name][]" : (key === "price_type" ? "services[price_type][]" : "services[price_amount][]");
+                input.value = service[key] || "";
+                servicesHiddenInputs.appendChild(input);
             });
         });
     }
-    
-    // Удаление услуги
-    document.addEventListener("click", function(e) {
-        if (e.target.classList.contains("btn-remove-service")) {
-            const serviceItem = e.target.closest(".service-item");
-            if (serviceItem) {
-                serviceItem.remove();
-            }
+
+    function renderServicesTable() {
+        if (!servicesTableBody || !servicesEmptyState || !servicesCountBadge || !servicesTableWrap) return;
+
+        const count = servicesState.length;
+        const badgeLabel = count === 1 ? "1 послуга" : (count >= 2 && count <= 4 ? count + " послуги" : count + " послуг");
+        servicesCountBadge.textContent = badgeLabel;
+        servicesTableBody.innerHTML = "";
+
+        if (!count) {
+            servicesTableWrap.classList.add("is-empty");
+            servicesEmptyState.hidden = false;
+            servicesEmptyState.style.display = "grid";
+            syncServicesHiddenInputs();
+            return;
         }
-    });
+
+        servicesTableWrap.classList.remove("is-empty");
+        servicesEmptyState.hidden = true;
+        servicesEmptyState.style.display = "none";
+
+        servicesState.forEach(function(service, index) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td data-label="Послуга">
+                    <div class="cleaner-service-name-cell">
+                        <strong>${escapeHtml(service.name)}</strong>
+                        <span>${escapeHtml(formatServicePrice(service))}</span>
+                    </div>
+                </td>
+                <td data-label="Формат ціни">
+                    <span class="cleaner-service-price-type ${service.price_type === "from" ? "is-from" : "is-exact"}">${service.price_type === "from" ? "Від" : "Точна"}</span>
+                </td>
+                <td data-label="Вартість">
+                    <span class="cleaner-service-price-value">${escapeHtml(formatServicePrice(service))}</span>
+                </td>
+                <td data-label="Дії" class="cleaner-services-actions-cell">
+                    <div class="cleaner-services-actions">
+                        <button type="button" class="cleaner-service-action cleaner-service-action--edit" data-service-action="edit" data-service-index="${index}">
+                            <span class="cleaner-service-action__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"></path><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415"></path><path d="M16 5l3 3"></path></svg></span>
+                            <span>Редагувати</span>
+                        </button>
+                        <button type="button" class="cleaner-service-action cleaner-service-action--delete" data-service-action="delete" data-service-index="${index}">
+                            <span class="cleaner-service-action__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M4 7l16 0"></path><path d="M10 11l0 6"></path><path d="M14 11l0 6"></path><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"></path><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"></path></svg></span>
+                            <span>Видалити</span>
+                        </button>
+                    </div>
+                </td>
+            `;
+            servicesTableBody.appendChild(row);
+        });
+
+        syncServicesHiddenInputs();
+    }
+
+    function openServiceModal(index) {
+        if (!serviceModal || !serviceModalName || !serviceModalPriceType || !serviceModalPriceAmount) return;
+
+        editingServiceIndex = Number.isInteger(index) ? index : null;
+        const service = editingServiceIndex !== null ? servicesState[editingServiceIndex] : null;
+
+        if (serviceModalTitle) {
+            serviceModalTitle.textContent = service ? "Редагування послуги" : "Нова послуга";
+        }
+        if (serviceModalSubtitle) {
+            serviceModalSubtitle.textContent = service
+                ? "Оновіть назву або ціну. Зміни збережуться після натискання кнопки внизу профілю."
+                : "Заповніть назву, формат ціни та вартість. Зміни застосуються після збереження профілю.";
+        }
+        if (serviceModalSave) {
+            serviceModalSave.textContent = service ? "Оновити послугу" : "Додати послугу";
+        }
+
+        serviceModalName.value = service ? service.name : "";
+        serviceModalPriceType.value = service ? service.price_type : "exact";
+        syncServicePriceTypeTrigger();
+        serviceModalPriceAmount.value = service ? service.price_amount : "";
+        setServiceModalError("");
+        syncServicePresetState();
+        updateServiceSummary();
+
+        serviceModal.classList.add("show");
+        serviceModal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("cleaner-service-modal-open");
+        window.setTimeout(function() {
+            serviceModalName.focus();
+        }, 20);
+    }
+
+    function closeServiceModal() {
+        if (!serviceModal) return;
+        serviceModal.classList.remove("show");
+        serviceModal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("cleaner-service-modal-open");
+        editingServiceIndex = null;
+        setServiceModalError("");
+    }
+
+    function saveServiceFromModal() {
+        if (!serviceModalName || !serviceModalPriceType || !serviceModalPriceAmount) return;
+
+        const payload = {
+            name: serviceModalName.value.trim(),
+            price_type: serviceModalPriceType.value === "from" ? "from" : "exact",
+            price_amount: String(serviceModalPriceAmount.value || "").replace(/\D/g, "")
+        };
+
+        if (payload.name === "") {
+            setServiceModalError("Вкажіть назву послуги.");
+            serviceModalName.focus();
+            return;
+        }
+        if (payload.price_amount === "" || parseInt(payload.price_amount, 10) <= 0) {
+            setServiceModalError("Вкажіть коректну суму послуги.");
+            serviceModalPriceAmount.focus();
+            return;
+        }
+
+        if (editingServiceIndex !== null && servicesState[editingServiceIndex]) {
+            servicesState[editingServiceIndex] = payload;
+        } else {
+            servicesState.push(payload);
+        }
+
+        renderServicesTable();
+        closeServiceModal();
+    }
+
+    if (addServiceBtn) {
+        addServiceBtn.addEventListener("click", function() {
+            openServiceModal();
+        });
+    }
+
+    if (serviceModalName) {
+        serviceModalName.addEventListener("input", function() {
+            setServiceModalError("");
+            syncServicePresetState();
+            updateServiceSummary();
+        });
+    }
+    if (serviceModalPriceType) {
+        serviceModalPriceType.addEventListener("change", function() {
+            setServiceModalError("");
+            syncServicePriceTypeTrigger();
+            updateServiceSummary();
+        });
+    }
+    if (serviceModalPriceAmount) {
+        serviceModalPriceAmount.addEventListener("input", function() {
+            this.value = String(this.value || "").replace(/[^\d]/g, "");
+            setServiceModalError("");
+            updateServiceSummary();
+        });
+    }
+    if (serviceModalSave) {
+        serviceModalSave.addEventListener("click", saveServiceFromModal);
+    }
+    if (servicePresetButtons.length) {
+        servicePresetButtons.forEach(function(button) {
+            button.addEventListener("click", function() {
+                if (!serviceModalName) return;
+                if (button.dataset.servicePresetCustom === "1") {
+                    serviceModalName.value = "";
+                    setServiceModalError("");
+                    syncServicePresetState();
+                    updateServiceSummary();
+                    serviceModalName.focus();
+                    return;
+                }
+
+                serviceModalName.value = button.dataset.servicePreset || "";
+                setServiceModalError("");
+                syncServicePresetState();
+                updateServiceSummary();
+                if (serviceModalPriceAmount && String(serviceModalPriceAmount.value || "").trim() === "") {
+                    serviceModalPriceAmount.focus();
+                } else {
+                    serviceModalName.focus();
+                }
+            });
+        });
+    }
+    if (serviceModal) {
+        serviceModal.querySelectorAll("[data-service-modal-close]").forEach(function(button) {
+            button.addEventListener("click", closeServiceModal);
+        });
+        serviceModal.addEventListener("click", function(event) {
+            if (event.target === serviceModal) {
+                closeServiceModal();
+            }
+        });
+    }
+    if (servicesTableBody) {
+        servicesTableBody.addEventListener("click", function(event) {
+            const actionButton = event.target.closest("[data-service-action]");
+            if (!actionButton) return;
+            const action = actionButton.dataset.serviceAction;
+            const index = parseInt(actionButton.dataset.serviceIndex || "-1", 10);
+            if (index < 0 || !servicesState[index]) return;
+
+            if (action === "edit") {
+                openServiceModal(index);
+                return;
+            }
+            if (action === "delete") {
+                servicesState.splice(index, 1);
+                renderServicesTable();
+            }
+        });
+    }
+    renderServicesTable();
     
     // Закрытие custom select при клике вне его
     document.addEventListener("click", function(e) {
@@ -2458,27 +2869,31 @@ document.addEventListener("DOMContentLoaded", function() {
         profileForm.addEventListener("submit", function(e) {
             const regId = regionSelect ? regionSelect.value : "";
             const distId = districtSelect ? districtSelect.value : "";
-            const names = profileForm.querySelectorAll("input[name=\"services[name][]\"]");
-            const amounts = profileForm.querySelectorAll("input[name=\"services[price_amount][]\"]");
-            let validServices = 0;
-            names.forEach(function(n, i) {
-                const a = amounts[i];
-                const nv = (n.value || "").trim();
-                const av = a ? (a.value || "").replace(/\D/g, "") : "";
-                if (nv !== "" && av !== "") validServices++;
-            });
             if (!regId || !distId) {
                 e.preventDefault();
                 showProfileErrorToast("Вкажіть область та район роботи");
                 return;
             }
-            if (validServices < 1) {
+            if (servicesState.length < 1) {
                 e.preventDefault();
                 showProfileErrorToast("Додайте щонайменше одну послугу з назвою та ціною");
                 return;
             }
         });
     }
+
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" && serviceModal && serviceModal.classList.contains("show")) {
+            closeServiceModal();
+        }
+        if (e.key === "Enter" && serviceModal && serviceModal.classList.contains("show")) {
+            const tagName = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : "";
+            if (tagName !== "textarea") {
+                e.preventDefault();
+                saveServiceFromModal();
+            }
+        }
+    });
 });
 </script>');
 }
@@ -3555,7 +3970,10 @@ if ($md == 4 && $_SESSION['logged'] == 1) {
         <div class="wallet-v2-balance-side">
             <div class="wallet-v2-token">
                 <div class="wallet-v2-token-title">Внутрішня валюта</div>
-                <div class="wallet-v2-token-value">' . $internalBalanceLabel . '</div>
+                <div class="wallet-v2-token-value">
+                    <img src="/assets/images/finance/internal-anim.gif" alt="Внутрішня валюта" class="wallet-v2-token-icon">
+                    <span class="wallet-v2-token-amount">' . $internalBalanceLabel . '</span>
+                </div>
             </div>
             <div class="wallet-v2-insight">
                 <div class="wallet-v2-insight-title">Надходження за місяць</div>
@@ -3625,6 +4043,10 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
     if (!in_array($filter, ['all', 'unread', 'read'], true)) {
         $filter = 'all';
     }
+    $notifyView = (string)($_GET['view'] ?? 'active');
+    if (!in_array($notifyView, ['active', 'archive'], true)) {
+        $notifyView = 'active';
+    }
     $page = max(1, (int)($_GET['page'] ?? 1));
     $perPage = 20;
     $offset = ($page - 1) * $perPage;
@@ -3655,7 +4077,7 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
             );
         }
 
-        header('Location: /profile.php?md=11&filter=' . urlencode($filter) . '&page=' . $page);
+        header('Location: /profile.php?md=11&filter=' . urlencode($filter) . '&view=' . urlencode($notifyView) . '&page=' . $page);
         exit;
     }
 
@@ -3668,11 +4090,16 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
     } elseif ($filter === 'read') {
         $statusSql = " AND status = 'read'";
     }
+    $archiveSql = $notifyView === 'archive'
+        ? " AND created_at < DATE_SUB(NOW(), INTERVAL 20 DAY)"
+        : " AND created_at >= DATE_SUB(NOW(), INTERVAL 20 DAY)";
 
     if ($tableExists && $dblink) {
         $countRes = mysqli_query(
             $dblink,
-            "SELECT COUNT(*) AS cnt FROM user_notifications WHERE user_id = " . $userId . $statusSql
+            "SELECT COUNT(*) AS cnt
+             FROM user_notifications
+             WHERE user_id = " . $userId . $statusSql . $archiveSql
         );
         if ($countRes && ($countRow = mysqli_fetch_assoc($countRes))) {
             $totalCount = (int)($countRow['cnt'] ?? 0);
@@ -3684,9 +4111,9 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
             $offset = ($page - 1) * $perPage;
         }
 
-        $sql = "SELECT id, title, body, category, status, priority, action_url, action_label, created_at, read_at
+        $sql = "SELECT id, title, body, category, status, priority, action_url, action_label, source_type, source_id, created_at, read_at
                 FROM user_notifications
-                WHERE user_id = ? $statusSql
+                WHERE user_id = ? $statusSql $archiveSql
                 ORDER BY created_at DESC
                 LIMIT ? OFFSET ?";
         $stmt = mysqli_prepare($dblink, $sql);
@@ -3703,6 +4130,8 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
                 $notePriority,
                 $noteActionUrl,
                 $noteActionLabel,
+                $noteSourceType,
+                $noteSourceId,
                 $noteCreatedAt,
                 $noteReadAt
             );
@@ -3716,6 +4145,8 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
                     'priority' => $notePriority,
                     'action_url' => $noteActionUrl,
                     'action_label' => $noteActionLabel,
+                    'source_type' => $noteSourceType,
+                    'source_id' => $noteSourceId,
                     'created_at' => $noteCreatedAt,
                     'read_at' => $noteReadAt,
                 ];
@@ -3737,12 +4168,49 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
     if (!$tableExists) {
         $listHtml = '<div class="notify-empty">Розділ повідомлень ще не готовий.</div>';
     } elseif (empty($notifications)) {
-        $listHtml = '<div class="notify-empty">Поки що немає повідомлень.</div>';
+        $listHtml = '<div class="notify-empty">' . ($notifyView === 'archive' ? 'В архіві поки що немає повідомлень.' : 'Поки що немає повідомлень.') . '</div>';
     } else {
+        $bonusIconDir = __DIR__ . '/assets/images/notifications';
+        $bonusUnreadIconPath = '/assets/images/notifications/gift.png';
+        $bonusReadIconPath = '/assets/images/notifications/gift-gray.png';
+        $bonusUnreadIconExists = is_file($bonusIconDir . '/gift.png');
+        $bonusReadIconExists = is_file($bonusIconDir . '/gift-gray.png');
+        $walletTxSourceMap = [];
+
+        if ($dblink && profileAdminToolsTableExists($dblink, 'wallet_transactions')) {
+            $walletTxIds = [];
+            foreach ($notifications as $note) {
+                $sourceType = trim((string)($note['source_type'] ?? ''));
+                $sourceId = (int)($note['source_id'] ?? 0);
+                if ($sourceType === 'wallet_transaction' && $sourceId > 0) {
+                    $walletTxIds[$sourceId] = $sourceId;
+                }
+            }
+
+            if (!empty($walletTxIds)) {
+                $walletTxIdsSql = implode(',', array_map('intval', array_values($walletTxIds)));
+                $walletTxRes = mysqli_query(
+                    $dblink,
+                    "SELECT id, source_type
+                     FROM wallet_transactions
+                     WHERE id IN (" . $walletTxIdsSql . ")"
+                );
+                if ($walletTxRes) {
+                    while ($walletTxRow = mysqli_fetch_assoc($walletTxRes)) {
+                        $walletTxSourceMap[(int)($walletTxRow['id'] ?? 0)] = trim((string)($walletTxRow['source_type'] ?? ''));
+                    }
+                }
+            }
+        }
+
         foreach ($notifications as $note) {
             $noteId = (int)($note['id'] ?? 0);
             $status = (string)($note['status'] ?? 'unread');
             $categoryKey = (string)($note['category'] ?? 'system');
+            $sourceType = trim((string)($note['source_type'] ?? ''));
+            $sourceId = (int)($note['source_id'] ?? 0);
+            $noteTitleText = trim((string)($note['title'] ?? ''));
+            $noteBodyText = trim((string)($note['body'] ?? ''));
             $createdAt = (string)($note['created_at'] ?? '');
             $timeAgo = $createdAt !== '' ? formatTimeAgo($createdAt) : '';
             $actionUrl = trim((string)($note['action_url'] ?? ''));
@@ -3751,29 +4219,68 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
                 $actionLabel = 'Відкрити';
             }
 
+            $effectiveSourceType = $sourceType;
+            if ($sourceType === 'wallet_transaction' && $sourceId > 0 && isset($walletTxSourceMap[$sourceId])) {
+                $effectiveSourceType = $walletTxSourceMap[$sourceId];
+            }
+
+            $bonusNeedle = $noteTitleText . ' ' . $noteBodyText . ' ' . $sourceType . ' ' . $effectiveSourceType;
+            if (function_exists('mb_strtolower')) {
+                $bonusNeedle = mb_strtolower($bonusNeedle, 'UTF-8');
+            } else {
+                $bonusNeedle = strtolower($bonusNeedle);
+            }
+
+            $isApprovedModerationNotification = $categoryKey === 'moderation'
+                && strpos($bonusNeedle, 'схвал') !== false;
+            $isRejectedModerationNotification = $categoryKey === 'moderation'
+                && strpos($bonusNeedle, 'відхил') !== false;
+
+            $isBonusNotification = in_array($effectiveSourceType, ['welcome_bonus', 'daily_login_bonus', 'grave_approved_bonus', 'cemetery_approved_bonus'], true)
+                || strpos($bonusNeedle, 'бонус') !== false
+                || strpos($bonusNeedle, 'щоден') !== false
+                || strpos($bonusNeedle, 'схвален') !== false
+                || strpos($bonusNeedle, 'реєстрац') !== false
+                || strpos($bonusNeedle, 'стартов') !== false;
+
             $iconHtml = '';
-            switch ($categoryKey) {
-                case 'wallet':
-                    $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-wallet"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12" /><path d="M20 12v4h-4a2 2 0 0 1 0 -4h4" /></svg>';
-                    break;
-                case 'moderation':
-                    $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-shield-half"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" /><path d="M12 3v18" /></svg>';
-                    break;
-                case 'account':
-                    $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-circle"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" /></svg>';
-                    break;
-                case 'system':
-                    $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>';
-                    break;
-                case 'manual':
-                    $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-bell"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>';
-                    break;
-                case 'campaign':
-                    $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-mail"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10" /><path d="M3 7l9 6l9 -6" /></svg>';
-                    break;
-                default:
-                    $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-bell"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>';
-                    break;
+            if ($isApprovedModerationNotification) {
+                $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-shield-check"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M11.46 20.846a12 12 0 0 1 -7.96 -14.846a12 12 0 0 0 8.5 -3a12 12 0 0 0 8.5 3a12 12 0 0 1 -.09 7.06" /><path d="M15 19l2 2l4 -4" /></svg>';
+            } elseif ($isRejectedModerationNotification) {
+                $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-shield-x"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M13.252 20.601c-.408 .155 -.826 .288 -1.252 .399a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3a12 12 0 0 0 8.5 3a12 12 0 0 1 -.19 7.357" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>';
+            } elseif ($isBonusNotification) {
+                $bonusIconSrc = $status === 'unread' ? $bonusUnreadIconPath : $bonusReadIconPath;
+                $bonusIconExists = $status === 'unread' ? $bonusUnreadIconExists : $bonusReadIconExists;
+
+                if ($bonusIconExists) {
+                    $iconHtml = '<img class="notify-icon-image" src="' . htmlspecialchars($bonusIconSrc, ENT_QUOTES, 'UTF-8') . '" alt="">';
+                } else {
+                    $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-gift"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 8l-8 0v4a2 2 0 0 0 2 2h3l0 5a1 1 0 0 0 1 1h4" /><path d="M12 8l8 0v4a2 2 0 0 1 -2 2h-3l0 5a1 1 0 0 1 -1 1h-4" /><path d="M12 8l0 13" /><path d="M12 8h3.5a1.5 1.5 0 1 0 0 -3c-.463 0 -.93 .196 -1.237 .512l-2.263 2.488" /><path d="M12 8h-3.5a1.5 1.5 0 1 1 0 -3c.463 0 .93 .196 1.237 .512l2.263 2.488" /></svg>';
+                }
+            } else {
+                switch ($categoryKey) {
+                    case 'wallet':
+                        $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-wallet"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12" /><path d="M20 12v4h-4a2 2 0 0 1 0 -4h4" /></svg>';
+                        break;
+                    case 'moderation':
+                        $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-shield-half"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" /><path d="M12 3v18" /></svg>';
+                        break;
+                    case 'account':
+                        $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-circle"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" /></svg>';
+                        break;
+                    case 'system':
+                        $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>';
+                        break;
+                    case 'manual':
+                        $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-bell"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>';
+                        break;
+                    case 'campaign':
+                        $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-mail"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10" /><path d="M3 7l9 6l9 -6" /></svg>';
+                        break;
+                    default:
+                        $iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-bell"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>';
+                        break;
+                }
             }
 
             $listHtml .= '
@@ -3781,10 +4288,10 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
                 <div class="notify-icon">' . $iconHtml . '</div>
                 <div class="notify-content">
                     <div class="notify-title-row">
-                        <span class="notify-title">' . htmlspecialchars((string)($note['title'] ?? ''), ENT_QUOTES, 'UTF-8') . '</span>'
+                        <span class="notify-title">' . htmlspecialchars($noteTitleText, ENT_QUOTES, 'UTF-8') . '</span>'
                         . ($status === 'unread' ? '<span class="notify-pill">Нове</span>' : '') . '
                     </div>
-                    <div class="notify-body">' . nl2br(htmlspecialchars((string)($note['body'] ?? ''), ENT_QUOTES, 'UTF-8')) . '</div>
+                    <div class="notify-body">' . nl2br(htmlspecialchars($noteBodyText, ENT_QUOTES, 'UTF-8')) . '</div>
                     <div class="notify-meta">
                         ' . ($timeAgo !== '' ? '<span class="notify-time">' . htmlspecialchars($timeAgo, ENT_QUOTES, 'UTF-8') . '</span>' : '') . '
                         <div class="notify-meta-actions">';
@@ -3810,18 +4317,18 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
     if ($totalPages > 1) {
         $paginationHtml .= '<div class="profile-notify-pagination">';
         if ($page > 1) {
-            $paginationHtml .= '<a class="profile-notify-page" href="/profile.php?md=11&filter=' . urlencode($filter) . '&page=' . ($page - 1) . '">Назад</a>';
+            $paginationHtml .= '<a class="profile-notify-page" href="/profile.php?md=11&filter=' . urlencode($filter) . '&view=' . urlencode($notifyView) . '&page=' . ($page - 1) . '">Назад</a>';
         }
         $paginationHtml .= '<span class="profile-notify-page-current">Сторінка ' . $page . ' з ' . $totalPages . '</span>';
         if ($page < $totalPages) {
-            $paginationHtml .= '<a class="profile-notify-page" href="/profile.php?md=11&filter=' . urlencode($filter) . '&page=' . ($page + 1) . '">Далі</a>';
+            $paginationHtml .= '<a class="profile-notify-page" href="/profile.php?md=11&filter=' . urlencode($filter) . '&view=' . urlencode($notifyView) . '&page=' . ($page + 1) . '">Далі</a>';
         }
         $paginationHtml .= '</div>';
     }
 
     $unreadCount = function_exists('getUnreadNotificationCount') ? getUnreadNotificationCount($userId) : 0;
     $markAllHtml = '';
-    if ($tableExists && $totalCount > 0) {
+    if ($tableExists && $totalCount > 0 && $notifyView !== 'archive') {
         $markAllHtml = '
             <form method="post" class="notify-markall">
                 <input type="hidden" name="notify_action" value="mark_all_read">
@@ -3831,6 +4338,21 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
                 </button>
             </form>';
     }
+
+    $cardTitle = $notifyView === 'archive' ? 'Архів повідомлень' : 'Усі повідомлення';
+    $cardSubtitle = $notifyView === 'archive'
+        ? 'Тут зберігаються повідомлення, яким більше 20 днів'
+        : 'Останні оновлення та повідомлення';
+    $toggleUrl = '/profile.php?md=11&filter=' . urlencode($filter) . '&view=' . ($notifyView === 'archive' ? 'active' : 'archive');
+    $toggleLabel = $notifyView === 'archive' ? 'Актуальні' : 'Архів';
+    $toggleIcon = $notifyView === 'archive'
+        ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6l6 6"></path></svg>'
+        : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 6a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2" /><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" /><path d="M10 12l4 0" /></svg>';
+    $archiveToggleHtml = '
+        <a class="notify-archive-btn' . ($notifyView === 'archive' ? ' is-active' : '') . '" href="' . htmlspecialchars($toggleUrl, ENT_QUOTES, 'UTF-8') . '">
+            ' . $toggleIcon . '
+            ' . htmlspecialchars($toggleLabel, ENT_QUOTES, 'UTF-8') . '
+        </a>';
 
     View_Add('
     <section class="notify-page">
@@ -3843,8 +4365,13 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
         </div>
         <div class="notify-card">
             <div class="notify-card-head">
-                <h2>Усі повідомлення</h2>
-                <p>Останні оновлення та повідомлення</p>
+                <div class="notify-card-head-main">
+                    <div class="notify-card-head-copy">
+                        <h2>' . htmlspecialchars($cardTitle, ENT_QUOTES, 'UTF-8') . '</h2>
+                        <p>' . htmlspecialchars($cardSubtitle, ENT_QUOTES, 'UTF-8') . '</p>
+                    </div>
+                    ' . $archiveToggleHtml . '
+                </div>
             </div>
             <div class="notify-list">
                 ' . $listHtml . '
@@ -3858,6 +4385,7 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
 // Admin Tools (md=12)
 if ($md == 12 && $_SESSION['logged'] == 1) {
     View_Add('<link rel="stylesheet" href="/assets/css/profile.css">');
+    View_Add('<link rel="stylesheet" href="/assets/css/accounting-tools.css">');
 
     $status = (int)($_SESSION['status'] ?? ROLE_GUEST);
     if (!profileCanAccessAdminTools($status)) {
@@ -3876,17 +4404,40 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
         </section>');
     } else {
         $tool = strtolower(trim((string)($_GET['tool'] ?? 'accounting')));
-        if (!in_array($tool, ['accounting', 'stats'], true)) {
+        if (!in_array($tool, ['accounting', 'stats', 'wallets', 'transactions', 'accruals'], true)) {
             $tool = 'accounting';
         }
+        $canAccessWalletsAdmin = profileCanAccessWalletsAdmin($status);
 
-        if ($tool === 'stats') {
-            View_Add('<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>');
-        }
+        if ($tool === 'wallets' && !$canAccessWalletsAdmin) {
+            http_response_code(403);
+            View_Add('
+            <section class="admin-tools-page">
+                <div class="admin-tools-shell">
+                    <div class="admin-tools-hero">
+                        <div>
+                            <div class="admin-tools-kicker">Фінансовий модуль</div>
+                            <h1 class="admin-tools-title">Доступ обмежено</h1>
+                            <p class="admin-tools-subtitle">Вкладка перегляду внутрішніх гаманців доступна лише ролям Бухгалтер та Креатор.</p>
+                        </div>
+                    </div>
+                    ' . profileRenderAdminToolsNav('accounting', $status) . '
+                </div>
+            </section>');
+        } else {
+
+        View_Add('<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>');
 
         $hasWalletsTable = $dblink ? profileAdminToolsTableExists($dblink, 'wallets') : false;
         $hasWalletTransactionsTable = $dblink ? profileAdminToolsTableExists($dblink, 'wallet_transactions') : false;
         $hasUsersTable = $dblink ? profileAdminToolsTableExists($dblink, 'users') : false;
+        $walletSearchQuery = trim((string)($_GET['q'] ?? ''));
+        $walletSearchSql = $dblink ? mysqli_real_escape_string($dblink, $walletSearchQuery) : '';
+        $selectedWalletId = max(0, (int)($_GET['wallet_id'] ?? 0));
+        $walletListRows = [];
+        $selectedWalletRow = null;
+        $selectedWalletTransactions = [];
+        $walletsFoundCount = 0;
 
         $today = new DateTimeImmutable('today');
         $currentMonthStart = $today->modify('first day of this month')->setTime(0, 0, 0);
@@ -3913,6 +4464,14 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
             'INTERNAL' => 0.0,
             'UAH' => 0.0,
         ];
+        $transactionsCurrencyFilter = strtolower(trim((string)($_GET['currency'] ?? 'internal')));
+        if (!in_array($transactionsCurrencyFilter, ['internal', 'uah'], true)) {
+            $transactionsCurrencyFilter = 'internal';
+        }
+        $transactionsDateFromInput = trim((string)($_GET['date_from'] ?? ''));
+        $transactionsDateToInput = trim((string)($_GET['date_to'] ?? ''));
+        $transactionsDateFrom = null;
+        $transactionsDateTo = null;
         $roleBreakdown = [
             'Бухгалтери' => 0,
             'Креатори' => 0,
@@ -3925,6 +4484,28 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
         $chartInternalExpense = [];
         $chartUahIncome = [];
         $chartUahExpense = [];
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $transactionsDateFromInput)) {
+            $parsedDateFrom = DateTimeImmutable::createFromFormat('Y-m-d', $transactionsDateFromInput);
+            if ($parsedDateFrom instanceof DateTimeImmutable) {
+                $transactionsDateFrom = $parsedDateFrom->setTime(0, 0, 0);
+            }
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $transactionsDateToInput)) {
+            $parsedDateTo = DateTimeImmutable::createFromFormat('Y-m-d', $transactionsDateToInput);
+            if ($parsedDateTo instanceof DateTimeImmutable) {
+                $transactionsDateTo = $parsedDateTo->setTime(0, 0, 0);
+            }
+        }
+
+        if ($transactionsDateFrom && $transactionsDateTo && $transactionsDateTo < $transactionsDateFrom) {
+            $swapDate = $transactionsDateFrom;
+            $transactionsDateFrom = $transactionsDateTo;
+            $transactionsDateTo = $swapDate;
+            $transactionsDateFromInput = $transactionsDateFrom->format('Y-m-d');
+            $transactionsDateToInput = $transactionsDateTo->format('Y-m-d');
+        }
 
         if ($dblink && $hasWalletsTable) {
             $walletSummaryRes = mysqli_query(
@@ -3998,6 +4579,20 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
                 }
             }
 
+            $journalConditions = [];
+            if ($transactionsCurrencyFilter === 'internal') {
+                $journalConditions[] = "wt.currency = 'INTERNAL'";
+            } elseif ($transactionsCurrencyFilter === 'uah') {
+                $journalConditions[] = "wt.currency = 'UAH'";
+            }
+            if ($transactionsDateFrom instanceof DateTimeImmutable) {
+                $journalConditions[] = "wt.created_at >= '" . mysqli_real_escape_string($dblink, $transactionsDateFrom->format('Y-m-d 00:00:00')) . "'";
+            }
+            if ($transactionsDateTo instanceof DateTimeImmutable) {
+                $journalConditions[] = "wt.created_at < '" . mysqli_real_escape_string($dblink, $transactionsDateTo->modify('+1 day')->format('Y-m-d 00:00:00')) . "'";
+            }
+
+            $journalWhereSql = $journalConditions ? ('WHERE ' . implode(' AND ', $journalConditions)) : '';
             $journalRes = mysqli_query(
                 $dblink,
                 "SELECT
@@ -4014,12 +4609,146 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
                  FROM wallet_transactions wt
                  LEFT JOIN wallets w ON w.id = wt.wallet_id
                  LEFT JOIN users u ON u.idx = w.user_id
+                 " . $journalWhereSql . "
                  ORDER BY wt.created_at DESC
-                 LIMIT 40"
+                 LIMIT 100"
             );
             if ($journalRes) {
                 while ($journalRow = mysqli_fetch_assoc($journalRes)) {
                     $journalRows[] = $journalRow;
+                }
+            }
+
+            if ($hasWalletsTable && $hasUsersTable && $canAccessWalletsAdmin) {
+                $walletSearchConditions = [];
+                $walletSearchConditions[] = "(
+                    COALESCE(w.internal_balance, 0) > 0
+                    OR EXISTS (
+                        SELECT 1
+                        FROM wallet_transactions wt_active
+                        WHERE wt_active.wallet_id = w.id
+                          AND wt_active.currency = 'INTERNAL'
+                        LIMIT 1
+                    )
+                )";
+                if ($walletSearchQuery !== '') {
+                    $walletSearchConditions[] = "(
+                        CAST(w.id AS CHAR) = '" . $walletSearchSql . "'
+                        OR CAST(u.idx AS CHAR) = '" . $walletSearchSql . "'
+                        OR CONCAT_WS(' ', COALESCE(u.lname, ''), COALESCE(u.fname, '')) LIKE '%" . $walletSearchSql . "%'
+                        OR COALESCE(u.email, '') LIKE '%" . $walletSearchSql . "%'
+                    )";
+                }
+
+                $walletWhereSql = 'WHERE ' . implode(' AND ', $walletSearchConditions);
+                $walletsRes = mysqli_query(
+                    $dblink,
+                    "SELECT
+                        w.id AS wallet_id,
+                        w.user_id,
+                        w.internal_balance,
+                        u.idx AS profile_user_id,
+                        u.fname,
+                        u.lname,
+                        u.email,
+                        (
+                            SELECT COUNT(*)
+                            FROM wallet_transactions wt_count
+                            WHERE wt_count.wallet_id = w.id
+                              AND wt_count.currency = 'INTERNAL'
+                        ) AS internal_tx_count,
+                        (
+                            SELECT MAX(wt_last.created_at)
+                            FROM wallet_transactions wt_last
+                            WHERE wt_last.wallet_id = w.id
+                              AND wt_last.currency = 'INTERNAL'
+                        ) AS last_internal_tx_at
+                     FROM wallets w
+                     LEFT JOIN users u ON u.idx = w.user_id
+                     " . $walletWhereSql . "
+                     ORDER BY
+                        CASE WHEN last_internal_tx_at IS NULL THEN 1 ELSE 0 END ASC,
+                        last_internal_tx_at DESC,
+                        w.id DESC
+                     LIMIT 100"
+                );
+
+                if ($walletsRes) {
+                    while ($walletRow = mysqli_fetch_assoc($walletsRes)) {
+                        $walletListRows[] = $walletRow;
+                    }
+                }
+
+                $walletsFoundCount = count($walletListRows);
+
+                if ($selectedWalletId > 0) {
+                    $selectedWalletRes = mysqli_query(
+                        $dblink,
+                        "SELECT
+                            w.id AS wallet_id,
+                            w.user_id,
+                            w.internal_balance,
+                            u.idx AS profile_user_id,
+                            u.fname,
+                            u.lname,
+                            u.email,
+                            (
+                                SELECT COUNT(*)
+                                FROM wallet_transactions wt_count
+                                WHERE wt_count.wallet_id = w.id
+                                  AND wt_count.currency = 'INTERNAL'
+                            ) AS internal_tx_count,
+                            (
+                                SELECT MAX(wt_last.created_at)
+                                FROM wallet_transactions wt_last
+                                WHERE wt_last.wallet_id = w.id
+                                  AND wt_last.currency = 'INTERNAL'
+                            ) AS last_internal_tx_at
+                         FROM wallets w
+                         LEFT JOIN users u ON u.idx = w.user_id
+                         WHERE w.id = " . $selectedWalletId . "
+                           AND (
+                                COALESCE(w.internal_balance, 0) > 0
+                                OR EXISTS (
+                                    SELECT 1
+                                    FROM wallet_transactions wt_active
+                                    WHERE wt_active.wallet_id = w.id
+                                      AND wt_active.currency = 'INTERNAL'
+                                    LIMIT 1
+                                )
+                           )
+                         LIMIT 1"
+                    );
+
+                    if ($selectedWalletRes && ($selectedWalletData = mysqli_fetch_assoc($selectedWalletRes))) {
+                        $selectedWalletRow = $selectedWalletData;
+
+                        $selectedWalletTxRes = mysqli_query(
+                            $dblink,
+                            "SELECT
+                                id,
+                                wallet_id,
+                                direction,
+                                amount,
+                                currency,
+                                title,
+                                meta,
+                                source_type,
+                                source_id,
+                                created_at
+                             FROM wallet_transactions
+                             WHERE wallet_id = " . $selectedWalletId . "
+                               AND currency = 'INTERNAL'
+                             ORDER BY created_at DESC, id DESC
+                             LIMIT 100"
+                        );
+
+                        if ($selectedWalletTxRes) {
+                            while ($selectedWalletTxRow = mysqli_fetch_assoc($selectedWalletTxRes)) {
+                                $selectedWalletTransactions[] = $selectedWalletTxRow;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -4065,13 +4794,62 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
         ];
         $statsChartJson = htmlspecialchars(json_encode($statsChartData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
 
+        $sourceTypeLabels = [
+            'manual' => 'Ручна операція',
+            'manual_reversal' => 'Скасування транзакції',
+            'welcome_bonus' => 'Бонус за реєстрацію',
+            'daily_login_bonus' => 'Щоденний бонус за вхід',
+            'grave_approved_bonus' => 'Бонус за схвалене поховання',
+            'cemetery_approved_bonus' => 'Бонус за схвалене кладовище',
+            'wallet_transaction' => 'Операція гаманця',
+        ];
+        $transactionsCurrencyLabels = [
+            'internal' => 'Внутрішні транзакції',
+            'uah' => 'UAH',
+        ];
+        $transactionsCurrencySummary = $transactionsCurrencyLabels[$transactionsCurrencyFilter] ?? $transactionsCurrencyLabels['internal'];
+        $transactionsRangeSummary = 'За весь час';
+        if ($transactionsDateFrom instanceof DateTimeImmutable && $transactionsDateTo instanceof DateTimeImmutable) {
+            $transactionsRangeSummary = 'Період: ' . $transactionsDateFrom->format('d.m.Y') . ' - ' . $transactionsDateTo->format('d.m.Y');
+        } elseif ($transactionsDateFrom instanceof DateTimeImmutable) {
+            $transactionsRangeSummary = 'Від: ' . $transactionsDateFrom->format('d.m.Y');
+        } elseif ($transactionsDateTo instanceof DateTimeImmutable) {
+            $transactionsRangeSummary = 'До: ' . $transactionsDateTo->format('d.m.Y');
+        }
+
+        $transactionsFilterHtml = '
+            <div class="admin-tools-filter-form">
+                <div class="admin-tools-filter-row">
+                    <div class="admin-tools-filter-group admin-tools-filter-group--tabs" data-transactions-currency-tabs>
+                        <a class="admin-tools-filter-pill admin-tools-filter-pill--tab' . ($transactionsCurrencyFilter === 'internal' ? ' is-active' : '') . '" data-transactions-currency-link="internal" href="' . htmlspecialchars(profileAdminToolsUrl('transactions') . '?currency=internal' . ($transactionsDateFromInput !== '' ? '&date_from=' . rawurlencode($transactionsDateFromInput) : '') . ($transactionsDateToInput !== '' ? '&date_to=' . rawurlencode($transactionsDateToInput) : ''), ENT_QUOTES, 'UTF-8') . '">Внутрішні</a>
+                        <a class="admin-tools-filter-pill admin-tools-filter-pill--tab' . ($transactionsCurrencyFilter === 'uah' ? ' is-active' : '') . '" data-transactions-currency-link="uah" href="' . htmlspecialchars(profileAdminToolsUrl('transactions') . '?currency=uah' . ($transactionsDateFromInput !== '' ? '&date_from=' . rawurlencode($transactionsDateFromInput) : '') . ($transactionsDateToInput !== '' ? '&date_to=' . rawurlencode($transactionsDateToInput) : ''), ENT_QUOTES, 'UTF-8') . '">UAH</a>
+                    </div>
+                    <form class="admin-tools-filter-group admin-tools-filter-group--dates" method="get" action="' . htmlspecialchars(profileAdminToolsUrl('transactions'), ENT_QUOTES, 'UTF-8') . '">
+                        <input type="hidden" name="currency" value="' . htmlspecialchars($transactionsCurrencyFilter, ENT_QUOTES, 'UTF-8') . '">
+                        <label class="admin-tools-filter-field">
+                            <span>Від</span>
+                            <input type="date" name="date_from" value="' . htmlspecialchars($transactionsDateFromInput, ENT_QUOTES, 'UTF-8') . '">
+                        </label>
+                        <label class="admin-tools-filter-field">
+                            <span>До</span>
+                            <input type="date" name="date_to" value="' . htmlspecialchars($transactionsDateToInput, ENT_QUOTES, 'UTF-8') . '">
+                        </label>
+                        <button class="admin-tools-filter-btn" type="submit">Застосувати</button>
+                        ' . (($transactionsDateFromInput !== '' || $transactionsDateToInput !== '')
+                            ? '<a class="admin-tools-filter-reset" data-transactions-date-reset href="' . htmlspecialchars(profileAdminToolsUrl('transactions') . '?currency=' . rawurlencode($transactionsCurrencyFilter), ENT_QUOTES, 'UTF-8') . '">Скинути дати</a>'
+                            : '') . '
+                    </form>
+                </div>
+            </div>
+            <div class="admin-tools-filter-summary">Показано: ' . htmlspecialchars($transactionsCurrencySummary, ENT_QUOTES, 'UTF-8') . '. ' . htmlspecialchars($transactionsRangeSummary, ENT_QUOTES, 'UTF-8') . '.</div>';
+
         $journalHtml = '';
         if (empty($journalRows)) {
-            $journalHtml = '<div class="admin-tools-empty">Журнал переказів поки порожній.</div>';
+            $journalHtml = $transactionsFilterHtml . '<div class="admin-tools-empty">За обраним фільтром транзакцій не знайдено.</div>';
         } else {
-            $journalHtml .= '
-            <div class="admin-tools-table-wrap">
-                <table class="admin-tools-table">
+            $journalHtml .= $transactionsFilterHtml . '
+            <div class="admin-tools-table-wrap admin-tools-table-wrap--journal">
+                <table class="admin-tools-table admin-tools-table--journal">
                     <thead>
                         <tr>
                             <th>Дата</th>
@@ -4089,6 +4867,7 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
                 $direction = (string)($journalRow['direction'] ?? 'in');
                 $currency = strtoupper(trim((string)($journalRow['currency'] ?? 'INTERNAL')));
                 $sourceType = trim((string)($journalRow['source_type'] ?? 'manual'));
+                $sourceTypeLabel = $sourceTypeLabels[$sourceType] ?? ($sourceType !== '' ? $sourceType : 'Операція системи');
                 $title = trim((string)($journalRow['title'] ?? '')) ?: 'Операція';
                 $meta = trim((string)($journalRow['meta'] ?? ''));
                 $amount = (float)($journalRow['amount'] ?? 0);
@@ -4105,8 +4884,11 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
                         <tr>
                             <td>' . htmlspecialchars($createdAtLabel, ENT_QUOTES, 'UTF-8') . '</td>
                             <td>' . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . '</td>
-                            <td><div class="admin-tools-table-title">' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</div></td>
-                            <td><span class="admin-tools-badge admin-tools-badge--' . ($direction === 'out' ? 'out' : 'in') . '">' . htmlspecialchars($sourceType, ENT_QUOTES, 'UTF-8') . '</span></td>
+                            <td>
+                                <div class="admin-tools-table-title">' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</div>
+                                <div class="admin-tools-table-meta">' . htmlspecialchars($sourceTypeLabel, ENT_QUOTES, 'UTF-8') . '</div>
+                            </td>
+                            <td><span class="admin-tools-badge admin-tools-badge--' . ($direction === 'out' ? 'out' : 'in') . '">' . htmlspecialchars($direction === 'out' ? 'Витрата' : 'Надходження', ENT_QUOTES, 'UTF-8') . '</span></td>
                             <td><span class="admin-tools-currency admin-tools-currency--' . strtolower($currency) . '">' . htmlspecialchars($currency, ENT_QUOTES, 'UTF-8') . '</span></td>
                             <td class="admin-tools-table-amount admin-tools-table-amount--' . ($direction === 'out' ? 'out' : 'in') . '">' . htmlspecialchars($amountLabel, ENT_QUOTES, 'UTF-8') . '</td>
                             <td>' . htmlspecialchars($meta !== '' ? $meta : '—', ENT_QUOTES, 'UTF-8') . '</td>
@@ -4119,11 +4901,314 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
             </div>';
         }
 
-        $pageContent = '';
-        if ($tool === 'stats') {
-            $monthInternalNet = $monthInternalIncome - $monthInternalExpense;
-            $monthUahNet = $monthUahIncome - $monthUahExpense;
-            $pageContent = '
+        $monthInternalNet = $monthInternalIncome - $monthInternalExpense;
+        $monthUahNet = $monthUahIncome - $monthUahExpense;
+        $heroConfig = [
+            'accounting' => [
+                'title' => 'Бухгалтерія',
+                'subtitle' => 'Розділ для майбутніх бухгалтерських інструментів, сценаріїв перевірки та фінансового супроводу системи.',
+                'badge_primary' => 'Огляд напряму, призначення розділу та подальше планування',
+                'badge_secondary' => 'Функціональні сценарії для бухгалтерії будуть додані окремими етапами',
+            ],
+            'stats' => [
+                'title' => 'Статистика',
+                'subtitle' => 'Аналітична сторінка для контролю балансів системи, динаміки операцій і фінансових показників.',
+                'badge_primary' => 'Баланс системи, аналітика та контроль фінансового контуру',
+                'badge_secondary' => 'Оновлення побудовані на даних гаманців і транзакцій',
+            ],
+            'wallets' => [
+                'title' => 'Гаманці',
+                'subtitle' => 'Робоча вкладка для пошуку внутрішніх гаманців, перегляду останніх операцій і швидкого скасування помилкових транзакцій.',
+                'badge_primary' => 'Лише внутрішня валюта сайту та контроль балансу по користувачах',
+                'badge_secondary' => 'Скасування виконується компенсуючою транзакцією без втрати історії',
+            ],
+            'transactions' => [
+                'title' => 'Транзакції',
+                'subtitle' => 'Журнал операцій системи з фільтрами за датою та типом валюти.',
+                'badge_primary' => 'Швидкий доступ до журналу переказів і руху валюти',
+                'badge_secondary' => 'Тепер доступні фільтри за датою, внутрішньою та основною валютою',
+            ],
+            'accruals' => [
+                'title' => 'Внутрішні нарахування',
+                'subtitle' => 'Інформаційна вкладка про системні правила нарахування внутрішньої валюти.',
+                'badge_primary' => 'Прозорі правила: за що саме користувачі отримують валюту',
+                'badge_secondary' => 'Додані також бонуси за схвалення поховань і кладовищ',
+            ],
+        ];
+        $heroConfigJson = htmlspecialchars(json_encode($heroConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+        $activeHero = $heroConfig[$tool] ?? $heroConfig['accounting'];
+        $accrualRules = [
+            [
+                'title' => 'Бонус за реєстрацію',
+                'amount' => '+500',
+                'when' => 'Після створення акаунта або першого входу, якщо стартовий бонус ще не було видано.',
+                'limit' => 'Лише один раз на користувача',
+                'source' => 'welcome_bonus',
+            ],
+            [
+                'title' => 'Щоденний бонус за вхід',
+                'amount' => '+10',
+                'when' => 'Після успішної авторизації звичайним входом або через OAuth.',
+                'limit' => 'Один раз на добу, повторне нарахування доступне після 00:00 за київським часом',
+                'source' => 'daily_login_bonus',
+            ],
+            [
+                'title' => 'Схвалене поховання',
+                'amount' => '+10',
+                'when' => 'Після того, як модератор схвалює додане користувачем поховання.',
+                'limit' => 'Один раз за кожне поховання після першого схвалення модерацією',
+                'source' => 'grave_approved_bonus',
+            ],
+            [
+                'title' => 'Схвалене кладовище',
+                'amount' => '+10',
+                'when' => 'Після того, як модератор схвалює додане користувачем кладовище.',
+                'limit' => 'Один раз за кожне кладовище після першого схвалення модерацією',
+                'source' => 'cemetery_approved_bonus',
+            ],
+        ];
+        $accrualRowsHtml = '';
+        foreach ($accrualRules as $accrualRule) {
+            $accrualRowsHtml .= '
+                <tr>
+                    <td><div class="admin-tools-table-title">' . htmlspecialchars((string)$accrualRule['title'], ENT_QUOTES, 'UTF-8') . '</div></td>
+                    <td><span class="admin-tools-table-amount admin-tools-table-amount--in">' . htmlspecialchars((string)$accrualRule['amount'], ENT_QUOTES, 'UTF-8') . '</span></td>
+                    <td>' . htmlspecialchars((string)$accrualRule['when'], ENT_QUOTES, 'UTF-8') . '</td>
+                    <td>' . htmlspecialchars((string)$accrualRule['limit'], ENT_QUOTES, 'UTF-8') . '</td>
+                    <td><span class="admin-tools-source-chip">' . htmlspecialchars((string)$accrualRule['source'], ENT_QUOTES, 'UTF-8') . '</span></td>
+                </tr>';
+        }
+
+        $walletSearchSummary = $walletSearchQuery !== ''
+            ? ('Пошук: ' . htmlspecialchars($walletSearchQuery, ENT_QUOTES, 'UTF-8') . '. Активних гаманців знайдено: ' . htmlspecialchars($formatCount($walletsFoundCount), ENT_QUOTES, 'UTF-8') . '.')
+            : ('Показано активних гаманців: ' . htmlspecialchars($formatCount($walletsFoundCount), ENT_QUOTES, 'UTF-8') . '.');
+
+        $walletListHtml = '';
+        if (!$hasWalletsTable || !$hasWalletTransactionsTable || !$hasUsersTable) {
+            $walletListHtml = '<div class="admin-tools-empty">Для цього інструмента потрібні таблиці `wallets`, `wallet_transactions` і `users`.</div>';
+        } elseif (empty($walletListRows)) {
+            $walletListHtml = '<div class="admin-tools-empty">Активних внутрішніх гаманців за цим фільтром не знайдено.</div>';
+        } else {
+            $walletListHtml .= '
+                <div class="admin-tools-table-wrap admin-tools-table-wrap--journal">
+                    <table class="admin-tools-table admin-tools-table--journal admin-wallet-table">
+                        <thead>
+                            <tr>
+                                <th>Користувач</th>
+                                <th>Гаманець</th>
+                                <th>Баланс</th>
+                                <th>Операцій</th>
+                                <th>Остання активність</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>';
+
+            foreach ($walletListRows as $walletRow) {
+                $walletIdValue = (int)($walletRow['wallet_id'] ?? 0);
+                $userIdValue = (int)($walletRow['profile_user_id'] ?? ($walletRow['user_id'] ?? 0));
+                $walletBalanceValue = (float)($walletRow['internal_balance'] ?? 0);
+                $walletUserName = trim((string)($walletRow['lname'] ?? '') . ' ' . (string)($walletRow['fname'] ?? ''));
+                if ($walletUserName === '') {
+                    $walletUserName = $userIdValue > 0 ? ('Користувач #' . $userIdValue) : ('Гаманець #' . $walletIdValue);
+                }
+                $walletEmail = trim((string)($walletRow['email'] ?? ''));
+                $walletLastTxAt = trim((string)($walletRow['last_internal_tx_at'] ?? ''));
+                $walletLastTxLabel = $walletLastTxAt !== '' ? date('d.m.Y H:i', strtotime($walletLastTxAt)) : 'Без операцій';
+                $walletDetailsUrl = profileAdminToolsUrl('wallets') . '?wallet_id=' . $walletIdValue;
+                if ($walletSearchQuery !== '') {
+                    $walletDetailsUrl .= '&q=' . rawurlencode($walletSearchQuery);
+                }
+
+                $walletListHtml .= '
+                            <tr>
+                                <td>
+                                    <div class="admin-tools-table-title">' . htmlspecialchars($walletUserName, ENT_QUOTES, 'UTF-8') . '</div>
+                                    <div class="admin-tools-table-meta">' . htmlspecialchars($walletEmail !== '' ? $walletEmail : ('ID користувача: ' . $userIdValue), ENT_QUOTES, 'UTF-8') . '</div>
+                                </td>
+                                <td>#' . htmlspecialchars((string)$walletIdValue, ENT_QUOTES, 'UTF-8') . '</td>
+                                <td class="admin-tools-table-amount">' . htmlspecialchars($formatAmount($walletBalanceValue), ENT_QUOTES, 'UTF-8') . '</td>
+                                <td>' . htmlspecialchars($formatCount((int)($walletRow['internal_tx_count'] ?? 0)), ENT_QUOTES, 'UTF-8') . '</td>
+                                <td>' . htmlspecialchars($walletLastTxLabel, ENT_QUOTES, 'UTF-8') . '</td>
+                                <td><a class="admin-tools-panel-link admin-wallet-open-link" href="' . htmlspecialchars($walletDetailsUrl, ENT_QUOTES, 'UTF-8') . '">Відкрити</a></td>
+                            </tr>';
+            }
+
+            $walletListHtml .= '
+                        </tbody>
+                    </table>
+                </div>';
+        }
+
+        $selectedWalletHtml = '';
+        if ($selectedWalletId > 0 && !$selectedWalletRow) {
+            $backToWalletsUrl = profileAdminToolsUrl('wallets');
+            if ($walletSearchQuery !== '') {
+                $backToWalletsUrl .= '?q=' . rawurlencode($walletSearchQuery);
+            }
+
+            $selectedWalletHtml = '
+                <section class="admin-wallet-detail">
+                    <div class="admin-wallet-detail__header">
+                        <div>
+                            <div class="admin-tools-intro-kicker">Гаманці</div>
+                            <h3 class="admin-wallet-detail__title">Гаманець недоступний</h3>
+                            <div class="admin-wallet-detail__meta">Обраний гаманець не знайдено серед активних або він недоступний для перегляду.</div>
+                        </div>
+                        <a class="admin-tools-panel-link admin-wallet-open-link admin-wallet-back-link" href="' . htmlspecialchars($backToWalletsUrl, ENT_QUOTES, 'UTF-8') . '">До списку</a>
+                    </div>
+                </section>';
+        } elseif ($selectedWalletRow) {
+            $selectedWalletUserName = trim((string)($selectedWalletRow['lname'] ?? '') . ' ' . (string)($selectedWalletRow['fname'] ?? ''));
+            $selectedWalletUserId = (int)($selectedWalletRow['profile_user_id'] ?? ($selectedWalletRow['user_id'] ?? 0));
+            if ($selectedWalletUserName === '') {
+                $selectedWalletUserName = $selectedWalletUserId > 0 ? ('Користувач #' . $selectedWalletUserId) : ('Гаманець #' . (int)$selectedWalletRow['wallet_id']);
+            }
+            $selectedWalletEmail = trim((string)($selectedWalletRow['email'] ?? ''));
+            $selectedWalletLastTxAt = trim((string)($selectedWalletRow['last_internal_tx_at'] ?? ''));
+            $selectedWalletLastTxLabel = $selectedWalletLastTxAt !== '' ? date('d.m.Y H:i', strtotime($selectedWalletLastTxAt)) : 'Без операцій';
+            $selectedWalletTxTableHtml = '';
+
+            if (empty($selectedWalletTransactions)) {
+                $selectedWalletTxTableHtml = '<div class="admin-tools-empty">У цьому гаманці ще немає внутрішніх операцій.</div>';
+            } else {
+                $selectedWalletTxTableHtml .= '
+                    <div class="admin-tools-table-wrap admin-tools-table-wrap--journal">
+                        <table class="admin-tools-table admin-tools-table--journal">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Операція</th>
+                                    <th>Тип</th>
+                                    <th>Сума</th>
+                                    <th>Коментар</th>
+                                </tr>
+                            </thead>
+                            <tbody>';
+
+                foreach ($selectedWalletTransactions as $walletTxRow) {
+                    $txDirection = trim((string)($walletTxRow['direction'] ?? 'in'));
+                    $txAmount = (float)($walletTxRow['amount'] ?? 0);
+                    $txAmountLabel = ($txDirection === 'out' ? '-' : '+') . $formatAmount($txAmount);
+                    $txTitle = trim((string)($walletTxRow['title'] ?? ''));
+                    if ($txTitle === '') {
+                        $txTitle = $txDirection === 'out' ? 'Списання' : 'Надходження';
+                    }
+                    $txMeta = trim((string)($walletTxRow['meta'] ?? ''));
+                    $txSourceType = trim((string)($walletTxRow['source_type'] ?? 'manual'));
+                    $txSourceLabel = $sourceTypeLabels[$txSourceType] ?? ($txSourceType !== '' ? $txSourceType : 'Операція системи');
+                    $txCreatedAtRaw = trim((string)($walletTxRow['created_at'] ?? ''));
+                    $txCreatedAtLabel = $txCreatedAtRaw !== '' ? date('d.m.Y H:i', strtotime($txCreatedAtRaw)) : 'Дата невідома';
+
+                    $selectedWalletTxTableHtml .= '
+                                <tr>
+                                    <td>' . htmlspecialchars($txCreatedAtLabel, ENT_QUOTES, 'UTF-8') . '</td>
+                                    <td>
+                                        <div class="admin-tools-table-title">' . htmlspecialchars($txTitle, ENT_QUOTES, 'UTF-8') . '</div>
+                                        <div class="admin-tools-table-meta">ID #' . htmlspecialchars((string)($walletTxRow['id'] ?? 0), ENT_QUOTES, 'UTF-8') . '</div>
+                                    </td>
+                                    <td><span class="admin-tools-badge admin-tools-badge--' . ($txDirection === 'out' ? 'out' : 'in') . '">' . htmlspecialchars($txSourceLabel, ENT_QUOTES, 'UTF-8') . '</span></td>
+                                    <td class="admin-tools-table-amount admin-tools-table-amount--' . ($txDirection === 'out' ? 'out' : 'in') . '">' . htmlspecialchars($txAmountLabel, ENT_QUOTES, 'UTF-8') . '</td>
+                                    <td>' . htmlspecialchars($txMeta !== '' ? $txMeta : '—', ENT_QUOTES, 'UTF-8') . '</td>
+                                </tr>';
+                }
+
+                $selectedWalletTxTableHtml .= '
+                            </tbody>
+                        </table>
+                    </div>';
+            }
+
+            $backToWalletsUrl = profileAdminToolsUrl('wallets');
+            if ($walletSearchQuery !== '') {
+                $backToWalletsUrl .= '?q=' . rawurlencode($walletSearchQuery);
+            }
+
+            $selectedWalletHtml = '
+                <section class="admin-wallet-detail">
+                    <div class="admin-wallet-detail__header">
+                        <div>
+                            <div class="admin-tools-intro-kicker">Гаманець #' . htmlspecialchars((string)($selectedWalletRow['wallet_id'] ?? 0), ENT_QUOTES, 'UTF-8') . '</div>
+                            <h3 class="admin-wallet-detail__title">' . htmlspecialchars($selectedWalletUserName, ENT_QUOTES, 'UTF-8') . '</h3>
+                            <div class="admin-wallet-detail__meta">' . htmlspecialchars($selectedWalletEmail !== '' ? $selectedWalletEmail : ('ID користувача: ' . $selectedWalletUserId), ENT_QUOTES, 'UTF-8') . '</div>
+                        </div>
+                        <a class="admin-tools-panel-link admin-wallet-open-link" href="' . htmlspecialchars($backToWalletsUrl, ENT_QUOTES, 'UTF-8') . '">До списку</a>
+                    </div>
+                    <div class="admin-wallet-detail__stats">
+                        <article class="admin-tools-stat-card admin-tools-stat-card--accent-soft"><div class="admin-tools-stat-label">Поточний баланс</div><div class="admin-tools-stat-value">' . $formatAmount((float)($selectedWalletRow['internal_balance'] ?? 0)) . '</div><div class="admin-tools-stat-foot">Внутрішня валюта користувача</div></article>
+                        <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Операцій</div><div class="admin-tools-stat-value">' . $formatCount((int)($selectedWalletRow['internal_tx_count'] ?? 0)) . '</div><div class="admin-tools-stat-foot">Усі внутрішні записи цього гаманця</div></article>
+                        <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Остання активність</div><div class="admin-tools-stat-value admin-wallet-detail__stat-small">' . htmlspecialchars($selectedWalletLastTxLabel, ENT_QUOTES, 'UTF-8') . '</div><div class="admin-tools-stat-foot">Остання внутрішня транзакція</div></article>
+                    </div>
+                    <section class="admin-tools-panel">
+                        <div class="admin-tools-panel-head">
+                            <div>
+                                <h2 class="admin-tools-panel-title">Операції гаманця</h2>
+                                <p class="admin-tools-panel-subtitle">Журнал внутрішніх транзакцій без можливості скасування або редагування.</p>
+                            </div>
+                        </div>
+                        ' . $selectedWalletTxTableHtml . '
+                    </section>
+                </section>';
+        } else {
+            $selectedWalletHtml = '<div class="admin-tools-empty admin-wallet-empty-state">Оберіть гаманець зі списку, щоб переглянути баланс і журнал операцій.</div>';
+        }
+
+        $walletsOverviewContent = '
+            <section class="admin-tools-panel">
+                <div class="admin-tools-panel-head">
+                    <div>
+                        <h2 class="admin-tools-panel-title">Список активних внутрішніх гаманців</h2>
+                        <p class="admin-tools-panel-subtitle">Список користувачів з активними гаманцями, їх балансами та переходом у детальний перегляд конкретного гаманця.</p>
+                    </div>
+                </div>
+                <form class="admin-tools-filter-form" method="get" action="' . htmlspecialchars(profileAdminToolsUrl('wallets'), ENT_QUOTES, 'UTF-8') . '">
+                    <div class="admin-tools-filter-row">
+                        <div class="admin-tools-filter-group admin-tools-filter-group--search">
+                            <label class="admin-tools-filter-field admin-tools-filter-field--wide">
+                                <span>Пошук по гаманцю або користувачу</span>
+                                <input type="search" name="q" value="' . htmlspecialchars($walletSearchQuery, ENT_QUOTES, 'UTF-8') . '" placeholder="ID гаманця, ID користувача, email або імʼя">
+                            </label>
+                        </div>
+                        <div class="admin-tools-filter-group admin-tools-filter-group--dates">
+                            <button class="admin-tools-filter-btn" type="submit">Знайти</button>
+                            ' . ($walletSearchQuery !== ''
+                                ? '<a class="admin-tools-filter-reset" href="' . htmlspecialchars(profileAdminToolsUrl('wallets'), ENT_QUOTES, 'UTF-8') . '">Скинути</a>'
+                                : '') . '
+                        </div>
+                    </div>
+                </form>
+                <div class="admin-tools-filter-summary">' . $walletSearchSummary . '</div>
+                ' . $walletListHtml . '
+            </section>';
+
+        $walletsContent = '
+            ' . ($selectedWalletId > 0 ? '' : '
+            <div class="admin-tools-summary-grid">
+                <article class="admin-tools-stat-card admin-tools-stat-card--accent-soft"><div class="admin-tools-stat-label">Гаманців у вибірці</div><div class="admin-tools-stat-value">' . $formatCount($walletsFoundCount) . '</div><div class="admin-tools-stat-foot">Поточний результат пошуку по внутрішніх гаманцях</div></article>
+                <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Усього гаманців</div><div class="admin-tools-stat-value">' . $formatCount($walletCount) . '</div><div class="admin-tools-stat-foot">Повний реєстр внутрішньої валюти в системі</div></article>
+                <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Внутрішній баланс системи</div><div class="admin-tools-stat-value">' . $formatAmount($systemInternalBalance) . '</div><div class="admin-tools-stat-foot">Сума всіх internal_balance на гаманцях</div></article>
+                <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Операцій за місяць</div><div class="admin-tools-stat-value">' . $formatCount($transactionsCountMonth) . '</div><div class="admin-tools-stat-foot">Для оперативного контролю навантаження</div></article>
+            </div>
+            ') . '
+            ' . ($selectedWalletId > 0 ? $selectedWalletHtml : ($walletsOverviewContent . $selectedWalletHtml)) . '';
+
+        $accountingContent = '
+            <div class="admin-tools-intro-grid">
+                <section class="admin-tools-intro-card">
+                    <div class="admin-tools-intro-kicker">Що це</div>
+                    <h2 class="admin-tools-intro-title">Бухгалтерія</h2>
+                    <p class="admin-tools-intro-text">Це окремий розділ профілю для бухгалтерських інструментів, перевірок, звітів і фінансового супроводу системи. Тепер навігація працює у вкладках без перезавантаження сторінки.</p>
+                    <a class="admin-tools-panel-link" href="' . htmlspecialchars(profileAdminToolsUrl('stats'), ENT_QUOTES, 'UTF-8') . '" data-admin-tool-tab-link="stats">Перейти до статистики</a>
+                </section>
+                <section class="admin-tools-plan-card">
+                    <div class="admin-tools-plan-badge">Навігація</div>
+                    <h2 class="admin-tools-plan-title">Окремі робочі вкладки</h2>
+                    <p class="admin-tools-plan-text">Статистика винесена в окрему аналітичну вкладку, журнал руху коштів отримав фільтри, а правила нарахувань тепер зібрані в окремому інформаційному розділі.' . ($canAccessWalletsAdmin ? ' Для бухгалтерів і креаторів також доступний окремий список активних внутрішніх гаманців.' : '') . '</p>
+                    <a class="admin-tools-panel-link" href="' . htmlspecialchars($canAccessWalletsAdmin ? profileAdminToolsUrl('wallets') : profileAdminToolsUrl('accruals'), ENT_QUOTES, 'UTF-8') . '" data-admin-tool-tab-link="' . htmlspecialchars($canAccessWalletsAdmin ? 'wallets' : 'accruals', ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($canAccessWalletsAdmin ? 'Відкрити гаманці' : 'Переглянути нарахування', ENT_QUOTES, 'UTF-8') . '</a>
+                </section>
+            </div>';
+
+        $statsContent = '
             <div class="admin-tools-summary-grid">
                 <article class="admin-tools-stat-card admin-tools-stat-card--accent">
                     <div class="admin-tools-stat-label">Основний баланс системи</div>
@@ -4146,12 +5231,11 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
                     <div class="admin-tools-stat-foot">Поточний календарний місяць</div>
                 </article>
             </div>
-
             <section class="admin-tools-banner">
                 <div class="admin-tools-banner-main">
                     <div class="admin-tools-banner-copy">
                         <div class="admin-tools-banner-text">Статистика бухгалтерії</div>
-                        <div class="admin-tools-banner-subtext">Огляд фінансового контуру системи: баланси, рух коштів, робочі ролі та журнал останніх переказів.</div>
+                        <div class="admin-tools-banner-subtext">Огляд фінансового контуру системи: баланси, рух коштів і ключові ролі без перевантаження журналом транзакцій.</div>
                     </div>
                 </div>
                 <div class="admin-tools-summary-row">
@@ -4163,259 +5247,89 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
                     <div class="admin-tools-summary-pill">UAH результат: ' . $formatAmount($monthUahNet) . '</div>
                 </div>
             </section>
-
             <div class="admin-tools-charts-grid">
-                <section class="admin-tools-panel">
-                    <div class="admin-tools-panel-head">
-                        <div>
-                            <h2 class="admin-tools-panel-title">Динаміка операцій</h2>
-                            <p class="admin-tools-panel-subtitle">Останні 14 днів по внутрішній та основній валюті</p>
-                        </div>
-                    </div>
-                    <div id="adminToolsFlowChart" class="admin-tools-chart"></div>
-                </section>
-                <section class="admin-tools-panel">
-                    <div class="admin-tools-panel-head">
-                        <div>
-                            <h2 class="admin-tools-panel-title">Оборот за валютами</h2>
-                            <p class="admin-tools-panel-subtitle">Сумарний оборот усіх транзакцій у системі</p>
-                        </div>
-                    </div>
-                    <div id="adminToolsCurrencyChart" class="admin-tools-chart admin-tools-chart--donut"></div>
-                </section>
-                <section class="admin-tools-panel">
-                    <div class="admin-tools-panel-head">
-                        <div>
-                            <h2 class="admin-tools-panel-title">Робочі ролі</h2>
-                            <p class="admin-tools-panel-subtitle">Розподіл ключових ролей, які впливають на операційні процеси</p>
-                        </div>
-                    </div>
-                    <div id="adminToolsRolesChart" class="admin-tools-chart admin-tools-chart--bars"></div>
-                </section>
-                <section class="admin-tools-panel">
-                    <div class="admin-tools-panel-head">
-                        <div>
-                            <h2 class="admin-tools-panel-title">Ключові акценти</h2>
-                            <p class="admin-tools-panel-subtitle">Поля контролю для щоденного огляду</p>
-                        </div>
-                    </div>
-                    <div class="admin-tools-insights">
-                        <div class="admin-tools-insight-card">
-                            <strong>' . $formatAmount($systemInternalBalance) . '</strong>
-                            <span>Загальний внутрішній залишок на всіх гаманцях</span>
-                        </div>
-                        <div class="admin-tools-insight-card">
-                            <strong>' . $formatAmount($systemMainBalance) . '</strong>
-                            <span>Системний залишок по UAH після входів і виходів</span>
-                        </div>
-                        <div class="admin-tools-insight-card">
-                            <strong>' . $formatCount($transactionsCountMonth) . '</strong>
-                            <span>Операцій цього місяця для оперативного контролю</span>
-                        </div>
-                        <div class="admin-tools-insight-card">
-                            <strong>' . $formatCount($roleBreakdown['Бухгалтери'] + $roleBreakdown['Креатори'] + $roleBreakdown['Вебмайстри']) . '</strong>
-                            <span>Адміністративних ролей зараз працює в системі</span>
-                        </div>
-                    </div>
-                </section>
-            </div>
+                <section class="admin-tools-panel"><div class="admin-tools-panel-head"><div><h2 class="admin-tools-panel-title">Динаміка операцій</h2><p class="admin-tools-panel-subtitle">Останні 14 днів по внутрішній та основній валюті</p></div></div><div id="adminToolsFlowChart" class="admin-tools-chart"></div></section>
+                <section class="admin-tools-panel"><div class="admin-tools-panel-head"><div><h2 class="admin-tools-panel-title">Оборот за валютами</h2><p class="admin-tools-panel-subtitle">Сумарний оборот усіх транзакцій у системі</p></div></div><div id="adminToolsCurrencyChart" class="admin-tools-chart admin-tools-chart--donut"></div></section>
+                <section class="admin-tools-panel"><div class="admin-tools-panel-head"><div><h2 class="admin-tools-panel-title">Робочі ролі</h2><p class="admin-tools-panel-subtitle">Розподіл ключових ролей, які впливають на операційні процеси</p></div></div><div id="adminToolsRolesChart" class="admin-tools-chart admin-tools-chart--bars"></div></section>
+                <section class="admin-tools-panel"><div class="admin-tools-panel-head"><div><h2 class="admin-tools-panel-title">Ключові акценти</h2><p class="admin-tools-panel-subtitle">Поля контролю для щоденного огляду</p></div></div><div class="admin-tools-insights"><div class="admin-tools-insight-card"><strong>' . $formatAmount($systemInternalBalance) . '</strong><span>Загальний внутрішній залишок на всіх гаманцях</span></div><div class="admin-tools-insight-card"><strong>' . $formatAmount($systemMainBalance) . '</strong><span>Системний залишок по UAH після входів і виходів</span></div><div class="admin-tools-insight-card"><strong>' . $formatCount($transactionsCountMonth) . '</strong><span>Операцій цього місяця для оперативного контролю</span></div><div class="admin-tools-insight-card"><strong>' . $formatCount($roleBreakdown['Бухгалтери'] + $roleBreakdown['Креатори'] + $roleBreakdown['Вебмайстри']) . '</strong><span>Адміністративних ролей зараз працює в системі</span></div></div></section>
+            </div>';
 
+        $transactionsContent = '
+            <div class="admin-tools-summary-grid">
+                <article class="admin-tools-stat-card admin-tools-stat-card--accent-soft"><div class="admin-tools-stat-label">Операцій за місяць</div><div class="admin-tools-stat-value">' . $formatCount($transactionsCountMonth) . '</div><div class="admin-tools-stat-foot">Поточний календарний місяць</div></article>
+                <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Оборот внутрішньої</div><div class="admin-tools-stat-value">' . $formatAmount($currencyTurnover['INTERNAL']) . '</div><div class="admin-tools-stat-foot">Сумарно по внутрішній валюті</div></article>
+                <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Оборот основної</div><div class="admin-tools-stat-value">' . $formatAmount($currencyTurnover['UAH']) . '</div><div class="admin-tools-stat-foot">Сумарно по основній валюті</div></article>
+                <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Гаманців у системі</div><div class="admin-tools-stat-value">' . $formatCount($walletCount) . '</div><div class="admin-tools-stat-foot">Поточний реєстр для перевірки операцій</div></article>
+            </div>
             <section class="admin-tools-panel">
                 <div class="admin-tools-panel-head">
                     <div>
-                        <h2 class="admin-tools-panel-title">Журнал переказів</h2>
-                        <p class="admin-tools-panel-subtitle">Останні 40 операцій з користувачем, типом і валютою</p>
+                        <h2 class="admin-tools-panel-title">Журнал транзакцій</h2>
+                        <p class="admin-tools-panel-subtitle">Таблиця підтримує перегляд усіх записів, лише внутрішніх транзакцій або основної валюти, а також фільтр за датами.</p>
                     </div>
                 </div>
                 ' . $journalHtml . '
-            </section>
+            </section>';
 
-            <script>
-                document.addEventListener("DOMContentLoaded", function () {
-                    const root = document.getElementById("admin-tools-stats-root");
-                    if (!root || typeof ApexCharts === "undefined") {
-                        return;
-                    }
-
-                    let chartData = null;
-                    try {
-                        chartData = JSON.parse(root.dataset.chart || "{}");
-                    } catch (e) {
-                        chartData = null;
-                    }
-
-                    if (!chartData) {
-                        return;
-                    }
-
-                    const flowChartEl = document.querySelector("#adminToolsFlowChart");
-                    if (flowChartEl) {
-                        new ApexCharts(flowChartEl, {
-                            chart: {
-                                type: "area",
-                                height: 340,
-                                toolbar: { show: false },
-                                fontFamily: "Manrope, Segoe UI, sans-serif"
-                            },
-                            states: {
-                                hover: { filter: { type: "none" } },
-                                active: {
-                                    allowMultipleDataPointsSelection: false,
-                                    filter: { type: "none" }
-                                }
-                            },
-                            series: [
-                                { name: "Внутрішні надходження", data: chartData.internal_income || [] },
-                                { name: "Внутрішні витрати", data: chartData.internal_expense || [] },
-                                { name: "UAH надходження", data: chartData.uah_income || [] },
-                                { name: "UAH витрати", data: chartData.uah_expense || [] }
-                            ],
-                            colors: ["#177245", "#bf3f4d", "#1e5aa7", "#7c8aa5"],
-                            stroke: { curve: "smooth", width: 3 },
-                            fill: {
-                                type: "gradient",
-                                gradient: {
-                                    shadeIntensity: 1,
-                                    opacityFrom: 0.28,
-                                    opacityTo: 0.05,
-                                    stops: [0, 95, 100]
-                                }
-                            },
-                            dataLabels: { enabled: false },
-                            xaxis: {
-                                categories: chartData.labels || [],
-                                labels: { style: { colors: "#5f7286" } }
-                            },
-                            yaxis: {
-                                labels: { style: { colors: "#5f7286" } }
-                            },
-                            grid: {
-                                borderColor: "#d9e4ee",
-                                strokeDashArray: 4
-                            },
-                            legend: {
-                                position: "top",
-                                horizontalAlign: "left"
-                            },
-                            tooltip: {
-                                shared: true,
-                                intersect: false
-                            }
-                        }).render();
-                    }
-
-                    const currencyChartEl = document.querySelector("#adminToolsCurrencyChart");
-                    if (currencyChartEl) {
-                        new ApexCharts(currencyChartEl, {
-                            chart: {
-                                type: "donut",
-                                height: 320,
-                                toolbar: { show: false },
-                                fontFamily: "Manrope, Segoe UI, sans-serif"
-                            },
-                            states: {
-                                hover: { filter: { type: "none" } },
-                                active: {
-                                    allowMultipleDataPointsSelection: false,
-                                    filter: { type: "none" }
-                                }
-                            },
-                            series: chartData.currency_series || [],
-                            labels: chartData.currency_labels || [],
-                            plotOptions: {
-                                pie: {
-                                    expandOnClick: false
-                                }
-                            },
-                            colors: ["#184879", "#4f7db8"],
-                            legend: { position: "bottom" },
-                            dataLabels: { enabled: true },
-                            stroke: { colors: ["#ffffff"] }
-                        }).render();
-                    }
-
-                    const rolesChartEl = document.querySelector("#adminToolsRolesChart");
-                    if (rolesChartEl) {
-                        new ApexCharts(rolesChartEl, {
-                            chart: {
-                                type: "bar",
-                                height: 320,
-                                toolbar: { show: false },
-                                fontFamily: "Manrope, Segoe UI, sans-serif"
-                            },
-                            states: {
-                                hover: { filter: { type: "none" } },
-                                active: {
-                                    allowMultipleDataPointsSelection: false,
-                                    filter: { type: "none" }
-                                }
-                            },
-                            series: [{
-                                name: "Кількість",
-                                data: chartData.role_series || []
-                            }],
-                            xaxis: {
-                                categories: chartData.role_labels || [],
-                                labels: { style: { colors: "#5f7286" } }
-                            },
-                            yaxis: {
-                                labels: { style: { colors: "#5f7286" } }
-                            },
-                            plotOptions: {
-                                bar: {
-                                    borderRadius: 8,
-                                    columnWidth: "48%"
-                                }
-                            },
-                            colors: ["#173d64"],
-                            dataLabels: { enabled: false },
-                            grid: {
-                                borderColor: "#d9e4ee",
-                                strokeDashArray: 4
-                            }
-                        }).render();
-                    }
-                });
-            </script>';
-        } else {
-            $pageContent = '
-            <div class="admin-tools-intro-grid">
-                <section class="admin-tools-intro-card">
-                    <div class="admin-tools-intro-kicker">Що це</div>
-                    <h2 class="admin-tools-intro-title">Бухгалтерія</h2>
-                    <p class="admin-tools-intro-text">Це окремий розділ профілю для майбутніх бухгалтерських інструментів, звітів, перевірок і керування фінансовими процесами системи.</p>
-                    <a class="admin-tools-panel-link" href="' . htmlspecialchars(profileAdminToolsUrl('stats'), ENT_QUOTES, 'UTF-8') . '">Перейти до статистики</a>
-                </section>
-                <section class="admin-tools-plan-card">
-                    <div class="admin-tools-plan-badge">Планування</div>
-                    <h2 class="admin-tools-plan-title">Сторінка в плануванні</h2>
-                    <p class="admin-tools-plan-text">Основний функціонал для бухгалтерії ще проектується. Зараз активною є сторінка статистики, де вже можна відслідковувати стан системи, баланси та журнал переказів.</p>
-                </section>
-            </div>';
-        }
-
-        $statsAttrs = $tool === 'stats' ? ' id="admin-tools-stats-root" data-chart="' . $statsChartJson . '"' : '';
-
-        View_Add('
-        <section class="admin-tools-page"' . $statsAttrs . '>
-            <div class="admin-tools-shell">
-                <div class="admin-tools-hero">
+        $accrualsContent = '
+            <div class="admin-tools-summary-grid">
+                <article class="admin-tools-stat-card admin-tools-stat-card--accent-soft"><div class="admin-tools-stat-label">Активних правил</div><div class="admin-tools-stat-value">' . $formatCount(count($accrualRules)) . '</div><div class="admin-tools-stat-foot">Системні сценарії нарахування внутрішньої валюти</div></article>
+                <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Тип нарахувань</div><div class="admin-tools-stat-value">Внутрішні</div><div class="admin-tools-stat-foot">Усі системні бонуси в цій вкладці</div></article>
+                <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Щоденний бонус</div><div class="admin-tools-stat-value">+10</div><div class="admin-tools-stat-foot">1 раз на добу після входу</div></article>
+                <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Стартовий бонус</div><div class="admin-tools-stat-value">+500</div><div class="admin-tools-stat-foot">1 раз після реєстрації</div></article>
+            </div>
+            <section class="admin-tools-panel">
+                <div class="admin-tools-panel-head">
                     <div>
-                        <div class="admin-tools-kicker">Фінансовий модуль</div>
-                        <h1 class="admin-tools-title">' . ($tool === 'stats' ? 'Статистика' : 'Бухгалтерія') . '</h1>
-                        <p class="admin-tools-subtitle">' . ($tool === 'stats'
-                            ? 'Аналітична сторінка для контролю балансів системи, динаміки операцій і журналу переказів.'
-                            : 'Розділ для майбутніх бухгалтерських інструментів, сценаріїв перевірки та фінансового супроводу системи.') . '</p>
-                    </div>
-                    <div class="admin-tools-hero-meta">
-                        <div class="admin-tools-hero-badge">' . ($tool === 'stats' ? 'Баланс системи, аналітика та журнал переказів' : 'Огляд напряму, призначення розділу та подальше планування') . '</div>
-                        <div class="admin-tools-hero-badge">' . ($tool === 'stats' ? 'Оновлення побудовані на даних гаманців і транзакцій' : 'Функціональні сценарії для бухгалтерії будуть додані окремими етапами') . '</div>
+                        <h2 class="admin-tools-panel-title">За що система нараховує валюту</h2>
+                        <p class="admin-tools-panel-subtitle">Інформаційна таблиця для бухгалтерії: які внутрішні бонуси існують, коли вони видаються та які мають обмеження.</p>
                     </div>
                 </div>
-                ' . profileRenderAdminToolsNav($tool) . '
+                <div class="admin-tools-table-wrap admin-tools-table-wrap--journal">
+                    <table class="admin-tools-table admin-tools-table--journal">
+                        <thead>
+                            <tr>
+                                <th>Нарахування</th>
+                                <th>Сума</th>
+                                <th>Коли нараховується</th>
+                                <th>Обмеження</th>
+                                <th>Маркер</th>
+                            </tr>
+                        </thead>
+                        <tbody>' . $accrualRowsHtml . '</tbody>
+                    </table>
+                </div>
+            </section>';
+
+        $pageContent = '
+            <div class="admin-tools-tab-panels">
+                <div class="admin-tools-tab-panel' . ($tool === 'accounting' ? ' is-active' : '') . '" data-admin-tool-panel="accounting"' . ($tool === 'accounting' ? '' : ' hidden') . '>' . $accountingContent . '</div>
+                <div class="admin-tools-tab-panel' . ($tool === 'stats' ? ' is-active' : '') . '" data-admin-tool-panel="stats"' . ($tool === 'stats' ? '' : ' hidden') . '>' . $statsContent . '</div>
+                <div class="admin-tools-tab-panel' . ($tool === 'wallets' ? ' is-active' : '') . '" data-admin-tool-panel="wallets"' . ($tool === 'wallets' ? '' : ' hidden') . '>' . $walletsContent . '</div>
+                <div class="admin-tools-tab-panel' . ($tool === 'transactions' ? ' is-active' : '') . '" data-admin-tool-panel="transactions"' . ($tool === 'transactions' ? '' : ' hidden') . '>' . $transactionsContent . '</div>
+                <div class="admin-tools-tab-panel' . ($tool === 'accruals' ? ' is-active' : '') . '" data-admin-tool-panel="accruals"' . ($tool === 'accruals' ? '' : ' hidden') . '>' . $accrualsContent . '</div>
+            </div>';
+
+        View_Add('
+        <section class="admin-tools-page" id="admin-tools-root" data-active-tool="' . htmlspecialchars($tool, ENT_QUOTES, 'UTF-8') . '" data-chart="' . $statsChartJson . '" data-hero="' . $heroConfigJson . '">
+            <div class="admin-tools-shell">
+                <div class="admin-tools-hero wallet-v2-hero">
+                    <div class="admin-tools-hero-text wallet-v2-hero-text">
+                        <div class="admin-tools-kicker wallet-v2-kicker">Фінансовий модуль</div>
+                        <h1 class="admin-tools-title wallet-v2-title" data-admin-tools-hero-title>' . htmlspecialchars($activeHero['title'], ENT_QUOTES, 'UTF-8') . '</h1>
+                        <p class="admin-tools-subtitle wallet-v2-subtitle" data-admin-tools-hero-subtitle>' . htmlspecialchars($activeHero['subtitle'], ENT_QUOTES, 'UTF-8') . '</p>
+                    </div>
+                    <div class="admin-tools-hero-meta">
+                        <div class="admin-tools-hero-badge" data-admin-tools-hero-badge-primary>' . htmlspecialchars($activeHero['badge_primary'], ENT_QUOTES, 'UTF-8') . '</div>
+                        <div class="admin-tools-hero-badge" data-admin-tools-hero-badge-secondary>' . htmlspecialchars($activeHero['badge_secondary'], ENT_QUOTES, 'UTF-8') . '</div>
+                    </div>
+                </div>
+                ' . profileRenderAdminToolsNav($tool, $status) . '
                 ' . $pageContent . '
             </div>
-        </section>');
+        </section>
+        <script src="/assets/js/accounting-tools.js"></script>');
+        }
     }
 }
 

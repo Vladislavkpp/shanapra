@@ -262,6 +262,91 @@ function Menu_Panel(): string
     return $out;
 }
 
+function adminPanelFormatPersonName(?string $fname, ?string $lname, int $userId = 0): string
+{
+    $name = trim((string)$lname . ' ' . (string)$fname);
+    if ($name !== '') {
+        return $name;
+    }
+
+    return $userId > 0 ? 'Користувач #' . $userId : 'Користувач';
+}
+
+function adminPanelInitials(?string $fname, ?string $lname, int $userId = 0): string
+{
+    $parts = [trim((string)$fname), trim((string)$lname)];
+    $initials = '';
+
+    foreach ($parts as $part) {
+        if ($part === '') {
+            continue;
+        }
+
+        if (function_exists('mb_substr')) {
+            $initials .= mb_strtoupper(mb_substr($part, 0, 1, 'UTF-8'), 'UTF-8');
+        } else {
+            $initials .= strtoupper(substr($part, 0, 1));
+        }
+
+        if (strlen($initials) >= 2) {
+            break;
+        }
+    }
+
+    if ($initials !== '') {
+        return $initials;
+    }
+
+    return $userId > 0 ? '#' . $userId : 'U';
+}
+
+function adminPanelRolePills(array $labels): string
+{
+    if (empty($labels)) {
+        return '<span class="admin-role-pill admin-role-pill--guest">Гість</span>';
+    }
+
+    $out = '';
+    foreach ($labels as $label) {
+        $out .= '<span class="admin-role-pill">' . htmlspecialchars((string)$label, ENT_QUOTES, 'UTF-8') . '</span>';
+    }
+
+    return $out;
+}
+
+function adminPanelHero(int $md, array $userData): string
+{
+    $config = [
+        0 => [
+            'title' => 'Центр керування користувачами',
+            'subtitle' => 'Усі основні дії з профілями, ролями та контактними даними зібрані в одному місці.',
+        ],
+        1 => [
+            'title' => 'Адміністративні повідомлення',
+            'subtitle' => 'Персональні повідомлення та розсилки для комунікації з користувачами системи.',
+        ],
+    ];
+
+    $active = $config[$md] ?? $config[0];
+
+    return '
+    <section class="admin-hero-panel">
+        <div class="admin-hero-copy">
+            <h1 class="admin-hero-title">' . htmlspecialchars($active['title'], ENT_QUOTES, 'UTF-8') . '</h1>
+            <p class="admin-hero-subtitle">' . htmlspecialchars($active['subtitle'], ENT_QUOTES, 'UTF-8') . '</p>
+        </div>
+    </section>';
+}
+
+function adminPanelTopBar(): string
+{
+    return '
+    <div class="admin-page-topbar">
+        <div class="admin-page-topbar__title">Адмін-панель</div>
+        <div class="admin-page-topbar__note">Керування користувачами, ролями та комунікаціями системи.</div>
+    </div>';
+}
+
 if (($md == 0) || ($md == '')) {
     $dblink = DbConnect();
 
@@ -275,7 +360,13 @@ if (($md == 0) || ($md == '')) {
     $activeData = mysqli_fetch_assoc($resActive);
     $activeCount = $activeData['total'];
 
-    $resUsers = mysqli_query($dblink, "SELECT idx, fname, lname, tel, email, dttmreg, activ, status, mesto, avatar, rest, rate, cash, token FROM users");
+    $resUsers = mysqli_query($dblink, "SELECT
+            u.idx, u.fname, u.lname, u.tel, u.email, u.dttmreg, u.activ, u.status, u.mesto, u.avatar, u.rest, u.rate, u.cash, u.token,
+            d.title AS district_title,
+            r.title AS region_title
+        FROM users u
+        LEFT JOIN district d ON u.mesto = d.idx
+        LEFT JOIN region r ON d.region = r.idx");
     $users = [];
     while ($row = mysqli_fetch_assoc($resUsers)) {
         $users[] = $row;
@@ -284,37 +375,21 @@ if (($md == 0) || ($md == '')) {
     global $rolesList;
     
     $html = '<div class="dashboard-container">';
+    $html .= adminPanelTopBar();
+    $html .= adminPanelHero(0, is_array($userData) ? $userData : []);
 
     // Статистика
     $html .= '
     <div class="dashboard-top-blocks">
         <div class="dashboard-block dashboard-block-primary">
-            <div class="dashboard-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
             <h3>Всього користувачів</h3>
             <p class="dashboard-number">'.$userCount.'</p>
         </div>
         <div class="dashboard-block dashboard-block-success">
-            <div class="dashboard-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
             <h3>Активних</h3>
             <p class="dashboard-number">'.$activeCount.'</p>
         </div>
         <div class="dashboard-block dashboard-block-info">
-            <div class="dashboard-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 3V21H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M7 16L12 11L16 15L21 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M21 10V3H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
             <h3>Неактивних</h3>
             <p class="dashboard-number">'.($userCount - $activeCount).'</p>
         </div>
@@ -322,9 +397,14 @@ if (($md == 0) || ($md == '')) {
 
     // Таблица
     $html .= '<div class="table-container">
-        <div class="table-header">
-            <h2>Список користувачів</h2>
+        <div class="table-header table-header--users">
+            <div class="table-header-copy">
+                <div class="table-header-kicker">Реєстр користувачів</div>
+                <h2>Користувачі системи</h2>
+                <p class="table-header-note">Швидкий доступ до профілів, ролей і базових контактних даних.</p>
+            </div>
             <div class="table-actions">
+                <div class="users-summary-pill"><span id="usersVisibleCount">' . count($users) . '</span> / ' . count($users) . ' відображено</div>
                 <input type="text" id="searchUsers" class="search-input" placeholder="Пошук користувачів...">
             </div>
         </div>
@@ -332,19 +412,15 @@ if (($md == 0) || ($md == '')) {
         <table class="users-table">
             <thead>
                 <tr>
-                    <th class="actions-col">Дії</th>
-                    <th>ID</th>
-                    <th>Ім\'я</th>
-                    <th>Прізвище</th>
-                    <th>Телефон</th>
-                    <th>Email</th>
-                    <th>Місто</th>
-                    <th>Дата реєстрації</th>
-                    <th>Активовано</th>
+                    <th>Користувач</th>
+                    <th>Контакти</th>
+                    <th>Реєстрація</th>
+                    <th>Статус</th>
                     <th>Ролі</th>
+                    <th class="actions-col">Дії</th>
                 </tr>
             </thead>
-            <tbody>';
+            <tbody id="adminUsersTableBody">';
 
     foreach ($users as $u) {
         $statusLabels = [];
@@ -356,8 +432,56 @@ if (($md == 0) || ($md == '')) {
         $rolesDisplay = !empty($statusLabels) ? implode(', ', $statusLabels) : 'Гість';
         $activeBadge = $u['activ'] == 1 ? '<span class="badge badge-success">Так</span>' : '<span class="badge badge-danger">Ні</span>';
         $regDate = $u['dttmreg'] ? date('d.m.Y', strtotime($u['dttmreg'])) : '-';
+        $regTime = $u['dttmreg'] ? date('H:i', strtotime($u['dttmreg'])) : '';
+        $displayName = adminPanelFormatPersonName((string)($u['fname'] ?? ''), (string)($u['lname'] ?? ''), (int)$u['idx']);
+        $initials = adminPanelInitials((string)($u['fname'] ?? ''), (string)($u['lname'] ?? ''), (int)$u['idx']);
+        $email = trim((string)($u['email'] ?? ''));
+        $tel = trim((string)($u['tel'] ?? ''));
+        $avatar = trim((string)($u['avatar'] ?? ''));
+        $districtTitle = trim((string)($u['district_title'] ?? ''));
+        $regionTitle = trim((string)($u['region_title'] ?? ''));
+        $locationParts = [];
+        if ($regionTitle !== '') {
+            $locationParts[] = $regionTitle . ' область';
+        }
+        if ($districtTitle !== '') {
+            $locationParts[] = $districtTitle . ' район';
+        }
+        $locationLabel = !empty($locationParts) ? implode(', ', $locationParts) : 'Район не вказано';
+        $rolesPills = adminPanelRolePills($statusLabels);
         
         $html .= '<tr data-user-id="'.$u['idx'].'">';
+        $html .= '<td class="admin-user-cell">
+            <div class="admin-user-card">
+                <div class="admin-user-avatar">' . ($avatar !== ''
+                    ? '<img src="' . htmlspecialchars($avatar, ENT_QUOTES, 'UTF-8') . '" alt="Аватар користувача" class="admin-user-avatar-image">'
+                    : htmlspecialchars($initials, ENT_QUOTES, 'UTF-8')) . '</div>
+                <div class="admin-user-main">
+                    <div class="admin-user-name">'.htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8').'</div>
+                    <div class="admin-user-meta">
+                        <span class="admin-user-id">ID #'.(int)$u['idx'].'</span>
+                        <span class="admin-user-email">'.htmlspecialchars($email !== '' ? $email : 'E-mail не вказано', ENT_QUOTES, 'UTF-8').'</span>
+                    </div>
+                </div>
+            </div>
+        </td>';
+        $html .= '<td class="admin-contact-cell">
+            <div class="admin-contact-stack">
+                <span class="admin-contact-line">'.htmlspecialchars($tel !== '' ? $tel : 'Телефон не вказано', ENT_QUOTES, 'UTF-8').'</span>
+                <span class="admin-contact-subline">'.htmlspecialchars($locationLabel, ENT_QUOTES, 'UTF-8').'</span>
+            </div>
+        </td>';
+        $html .= '<td class="admin-registration-cell">
+            <div class="admin-registration-date">'.$regDate.'</div>
+            <div class="admin-registration-time">'.htmlspecialchars($regTime !== '' ? $regTime : '—', ENT_QUOTES, 'UTF-8').'</div>
+        </td>';
+        $html .= '<td class="admin-activation-cell">'.$activeBadge.'</td>';
+        $html .= '<td class="status-cell">
+            <button class="status-btn" onclick="openRoleModal('.$u['idx'].', '.$u['status'].')">
+                <span class="status-btn-label">Керувати</span>
+                <span class="status-btn-tags">'.$rolesPills.'</span>
+            </button>
+        </td>';
         $html .= '<td class="actions-cell">
             <button class="btn btn-edit" onclick="openEditModal('.$u['idx'].')" data-tooltip="Редагувати">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -366,23 +490,10 @@ if (($md == 0) || ($md == '')) {
                 </svg>
             </button>
         </td>';
-        $html .= '<td>'.$u['idx'].'</td>';
-        $html .= '<td class="editable" data-field="fname" data-user-id="'.$u['idx'].'">'.htmlspecialchars($u['fname'] ?? '').'</td>';
-        $html .= '<td class="editable" data-field="lname" data-user-id="'.$u['idx'].'">'.htmlspecialchars($u['lname'] ?? '').'</td>';
-        $html .= '<td class="editable" data-field="tel" data-user-id="'.$u['idx'].'">'.htmlspecialchars($u['tel'] ?? '').'</td>';
-        $html .= '<td class="editable" data-field="email" data-user-id="'.$u['idx'].'">'.htmlspecialchars($u['email'] ?? '').'</td>';
-        $html .= '<td class="editable" data-field="mesto" data-user-id="'.$u['idx'].'">'.htmlspecialchars($u['mesto'] ?? '').'</td>';
-        $html .= '<td>'.$regDate.'</td>';
-        $html .= '<td>'.$activeBadge.'</td>';
-        $html .= '<td class="status-cell">
-            <button class="status-btn" onclick="openRoleModal('.$u['idx'].', '.$u['status'].')">
-                '.htmlspecialchars($rolesDisplay).'
-            </button>
-        </td>';
         $html .= '</tr>';
     }
 
-    $html .= '</tbody></table></div></div>';
+    $html .= '</tbody></table></div><div id="adminUsersEmptyState" class="admin-users-empty" hidden>Нічого не знайдено. Спробуйте інший запит.</div></div>';
     $html .= '</div>';
 
     // Модальное окно редактирования
@@ -525,6 +636,8 @@ if (($md == 0) || ($md == '')) {
     }
 
     $html = '<div class="dashboard-container admin-notify">';
+    $html .= adminPanelTopBar();
+    $html .= adminPanelHero(1, is_array($userData) ? $userData : []);
     $html .= $noticeHtml;
     $html .= '<div class="admin-notify-grid">';
 

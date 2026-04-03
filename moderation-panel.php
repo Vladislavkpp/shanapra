@@ -1267,6 +1267,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         );
                     }
 
+                    if (
+                        $decision === 'approved'
+                        && $authorId > 0
+                        && function_exists('grantModerationApprovalInternalBonus')
+                    ) {
+                        grantModerationApprovalInternalBonus($authorId, $targetType, $targetId, 10.0, $dblink);
+                    }
+
                     $editMessageType = 'success';
                     $editMessageText = $decision === 'approved' ? 'Запис схвалено.' : 'Запис відхилено.';
                 }

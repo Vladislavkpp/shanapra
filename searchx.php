@@ -173,7 +173,7 @@ $searchParamsMobileClass = $search_line === '—' ? ' search-badge--mobile-hidde
 View_Clear();
 View_Add(Page_Up('Результати пошуку'));
 View_Add(Menu_Up());
-View_Add('<style>@import url(\'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap\'); .out-xsearch, .out-xsearch * { font-family: "Manrope", "Segoe UI", Tahoma, sans-serif !important; } .menu-up-new, .menu-up-new * { font-family: "Segoe UI", Tahoma, sans-serif !important; }</style>');
+View_Add('<style>@import url(\'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap\'); .out-xsearch, .out-xsearch * { font-family: "Manrope", "Segoe UI", Tahoma, sans-serif !important; } .menu-up-new, .menu-up-new * { font-family: "Manrope", "Segoe UI", Tahoma, sans-serif !important; }</style>');
 View_Add('<div class="out-xsearch">');
 
 // Контейнер поиска

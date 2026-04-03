@@ -254,20 +254,34 @@
         }
     }
 
+    function isShareUrl(url) {
+        try {
+            var targetUrl = new URL(url, window.location.href);
+            return targetUrl.searchParams.get("shared") === "1";
+        } catch (error) {
+            return false;
+        }
+    }
+
     function resolveBranchTargetSelector(targetUrl) {
         var hash = targetUrl.hash || "";
+        var shared = targetUrl.searchParams.get("shared") === "1";
         var fallbackCommentId = targetUrl.searchParams.get("comment_id") || "";
 
         if (hash && hash !== "#publications") {
             return hash;
         }
 
-        if (fallbackCommentId) {
+        if (shared && fallbackCommentId) {
             return "#ltt-comment-" + String(fallbackCommentId);
         }
 
-        var heroComment = document.querySelector(".ltt-comment--hero[id]");
-        return heroComment ? ("#" + heroComment.id) : "";
+        if (shared) {
+            var heroComment = document.querySelector(".ltt-comment--hero[id]");
+            return heroComment ? ("#" + heroComment.id) : "";
+        }
+
+        return "";
     }
 
     function scrollToPanelTarget(href) {
@@ -293,6 +307,11 @@
     function pulseHashTarget(href) {
         try {
             var targetUrl = new URL(href || window.location.href, window.location.href);
+
+            if (!isShareUrl(href || window.location.href)) {
+                return;
+            }
+
             var targetSelector = resolveBranchTargetSelector(targetUrl);
 
             if (!targetSelector) {

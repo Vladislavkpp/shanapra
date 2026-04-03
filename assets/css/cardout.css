@@ -152,6 +152,12 @@
     background: linear-gradient(180deg, #eff4fa 0%, #dde7f1 100%);
 }
 
+.grvdet-gallery-stage--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .grvdet-gallery-image {
     position: absolute;
     inset: 0;
@@ -237,6 +243,23 @@
     width: 70px;
     margin-left: 8px;
     opacity: 1;
+}
+
+.grvdet-gallery-stage--empty .grvdet-gallery-note {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 8px 10px;
+    background: linear-gradient(180deg, rgba(235, 243, 254, 0.45) 0%, rgba(229, 237, 247, 0.96) 100%);
+    border-top: 1px solid rgba(193, 206, 223, 0.95);
+    color: #56677f;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-align: center;
+    text-transform: uppercase;
+    z-index: 2;
 }
 
 .grvdet-gallery-counter {
