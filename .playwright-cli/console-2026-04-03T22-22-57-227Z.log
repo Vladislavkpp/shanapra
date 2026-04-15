@@ -1,2 +1,0 @@
-[     270ms] [ERROR] Access to script at 'https://shanapra.com/assets/spa/assets/index-DGn1_8AC.js' from origin 'http://127.0.0.1:8080' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://127.0.0.1:8080/app:17
-[     270ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://shanapra.com/assets/spa/assets/index-DGn1_8AC.js:0
