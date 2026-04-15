@@ -1,0 +1,316 @@
+.xdp-popup {
+    position: absolute;
+    z-index: 10050;
+    width: min(308px, calc(100vw - 24px));
+    border: 1px solid #bdd2ec;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 20px 42px rgba(10, 42, 74, 0.22);
+    padding: 9px;
+    display: none;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    user-select: none;
+}
+
+.xdp-popup.is-open {
+    display: block;
+}
+
+.xdp-popup.is-month-mode {
+    width: min(344px, calc(100vw - 24px));
+}
+
+.xdp-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.xdp-pickers {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.xdp-select {
+    position: relative;
+}
+
+.xdp-select-btn {
+    width: 100%;
+    height: 30px;
+    border: 1px solid #bdd2ec;
+    border-radius: 8px;
+    background: #f3f8ff;
+    color: #17416c;
+    font-size: 13px;
+    padding: 0 24px 0 8px;
+    text-align: left;
+    cursor: pointer;
+    position: relative;
+}
+
+.xdp-select-btn::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid #4f6486;
+    border-bottom: 1.5px solid #4f6486;
+    transform: translateY(-60%) rotate(45deg);
+}
+
+.xdp-options {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 100%;
+    max-height: 160px;
+    overflow-y: auto;
+    background: #ffffff;
+    border: 1px solid #bdd2ec;
+    border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(10, 42, 74, 0.16);
+    padding: 4px;
+    display: none;
+    z-index: 25;
+    scrollbar-width: thin;
+    scrollbar-color: #ffffff #ffffff;
+}
+
+.xdp-options.is-open {
+    display: block;
+}
+
+.xdp-options::-webkit-scrollbar {
+    width: 8px;
+}
+
+.xdp-options::-webkit-scrollbar-track {
+    background: #ffffff;
+    border-radius: 10px;
+}
+
+.xdp-options::-webkit-scrollbar-thumb {
+    background: #ffffff;
+    border: 1px solid #c6d9f3;
+    border-radius: 10px;
+}
+
+.xdp-option {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    border-radius: 6px;
+    height: 28px;
+    padding: 0 8px;
+    text-align: left;
+    font-size: 12px;
+    color: #1f3d6b;
+    cursor: pointer;
+}
+
+.xdp-option:hover {
+    background: #e8f1ff;
+}
+
+.xdp-option.is-selected {
+    background: #d8e8ff;
+    color: #11365f;
+    font-weight: 700;
+}
+
+.xdp-option.is-disabled {
+    color: #c1ccde;
+    cursor: not-allowed;
+}
+
+.xdp-option.is-disabled:hover {
+    background: transparent;
+}
+
+.xdp-arrow {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid #bdd2ec;
+    background: #f3f8ff;
+    color: #174d78;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.xdp-arrow:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.xdp-arrow svg {
+    width: 18px;
+    height: 18px;
+}
+
+.xdp-weekdays,
+.xdp-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+}
+
+.xdp-weekdays {
+    margin-bottom: 4px;
+}
+
+.xdp-weekdays span {
+    text-align: center;
+    font-size: 11px;
+    color: #5f7293;
+    font-weight: 600;
+    padding: 2px 0;
+}
+
+.xdp-day {
+    height: 30px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #1d3358;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.xdp-day:hover {
+    background: #e8f1ff;
+    transform: translateY(-1px);
+}
+
+.xdp-day.is-outside {
+    color: #9aabc7;
+}
+
+.xdp-day.is-disabled {
+    color: #c1ccde;
+    background: #f7f9fd;
+    cursor: not-allowed;
+}
+
+.xdp-day.is-disabled:hover {
+    transform: none;
+    background: #f7f9fd;
+}
+
+.xdp-day.is-today {
+    box-shadow: inset 0 0 0 1px #6e93c7;
+}
+
+.xdp-day.is-selected {
+    background: linear-gradient(145deg, #174d78, #0a2a4a);
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.xdp-popup.is-month-mode .xdp-pickers {
+    grid-template-columns: 1fr;
+}
+
+.xdp-popup.is-month-mode .xdp-select[data-kind="month"] {
+    display: none;
+}
+
+.xdp-popup.is-month-mode .xdp-weekdays {
+    display: none;
+}
+
+.xdp-popup.is-month-mode .xdp-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.xdp-month {
+    min-height: 44px;
+    border: 1px solid #d5e2f4;
+    border-radius: 10px;
+    background: #f8fbff;
+    color: #173b62;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.xdp-month:hover {
+    background: #e8f1ff;
+    border-color: #9bbce0;
+    transform: translateY(-1px);
+}
+
+.xdp-month.is-selected {
+    border-color: #0f3250;
+    background: linear-gradient(145deg, #174d78, #0a2a4a);
+    color: #ffffff;
+    box-shadow: 0 12px 24px rgba(15, 50, 80, 0.18);
+}
+
+.xdp-month.is-disabled {
+    color: #c1ccde;
+    background: #f7f9fd;
+    border-color: #e3eaf4;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.xdp-month.is-disabled:hover {
+    transform: none;
+    background: #f7f9fd;
+    border-color: #e3eaf4;
+}
+
+.xdp-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #ebf0fb;
+}
+
+.xdp-actions button {
+    flex: 1;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid #bdd2ec;
+    background: #f3f8ff;
+    color: #17416c;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.xdp-actions button:hover,
+.xdp-arrow:hover,
+.xdp-select-btn:hover {
+    background: #e8f1ff;
+}
+
+/* Legacy calendar markup is no longer used */
+.datepicker .calendar.popup {
+    display: none !important;
+}
+
+@media (max-width: 560px) {
+    .xdp-popup {
+        width: min(290px, calc(100vw - 16px));
+    }
+
+    .xdp-popup.is-month-mode {
+        width: min(320px, calc(100vw - 16px));
+    }
+}
