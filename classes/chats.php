@@ -26,6 +26,9 @@ class Chats
                     'sender_idx' => (int)$r['sender_idx'],
                     'message' => $r['message'],
                     'img' => isset($r['img']) ? $r['img'] : '',
+                    'message_type' => isset($r['message_type']) ? (string)$r['message_type'] : 'user',
+                    'system_code' => isset($r['system_code']) ? (string)$r['system_code'] : '',
+                    'meta_json' => isset($r['meta_json']) ? (string)$r['meta_json'] : '',
                     'idtadd' => $r['idtadd'],
                 ];
             }
@@ -64,6 +67,9 @@ class Chats
                     'sender_idx' => (int)$r['sender_idx'],
                     'message' => $r['message'],
                     'img' => isset($r['img']) ? $r['img'] : '',
+                    'message_type' => isset($r['message_type']) ? (string)$r['message_type'] : 'user',
+                    'system_code' => isset($r['system_code']) ? (string)$r['system_code'] : '',
+                    'meta_json' => isset($r['meta_json']) ? (string)$r['meta_json'] : '',
                     'idtadd' => $r['idtadd'],
                 ];
             }
@@ -265,26 +271,38 @@ class Chats
      * @param string $message
      * @param string|null $email
      * @param string|null $img путь к изображению в сообщении
+     * @param array<string, mixed> $options
      */
-    public function addMessage($chat_idx, $sender_idx, $message, $email = null, $img = null)
+    public function addMessage($chat_idx, $sender_idx, $message, $email = null, $img = null, array $options = [])
     {
         $chat_idx = (int)$chat_idx;
         $sender_idx = (int)$sender_idx;
         $message = mysqli_real_escape_string($this->dblink, $message);
         $email = $email ? mysqli_real_escape_string($this->dblink, $email) : '';
         $img = ($img !== null && $img !== '') ? mysqli_real_escape_string($this->dblink, $img) : '';
+        $messageType = strtolower(trim((string)($options['message_type'] ?? 'user')));
+        $messageType = $messageType === 'system' ? 'system' : 'user';
+        $systemCode = trim((string)($options['system_code'] ?? ''));
+        $systemCode = $systemCode !== '' ? mysqli_real_escape_string($this->dblink, $systemCode) : '';
 
-        if ($img !== '') {
-            return mysqli_query(
-                $this->dblink,
-                "INSERT INTO chatsmsg (chat_idx, sender_idx, message, img, idtadd)
-                 VALUES ($chat_idx, $sender_idx, '$message', '$img', NOW())"
-            );
+        $metaJson = $options['meta_json'] ?? null;
+        if (is_array($metaJson)) {
+            $encodedMeta = json_encode($metaJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $metaJson = $encodedMeta !== false ? $encodedMeta : '';
+        } elseif (!is_string($metaJson)) {
+            $metaJson = '';
         }
+        $metaJson = trim((string)$metaJson);
+        $metaJson = $metaJson !== '' ? mysqli_real_escape_string($this->dblink, $metaJson) : '';
+
+        $imgSql = $img !== '' ? "'$img'" : 'NULL';
+        $systemCodeSql = $systemCode !== '' ? "'$systemCode'" : 'NULL';
+        $metaJsonSql = $metaJson !== '' ? "'$metaJson'" : 'NULL';
+
         return mysqli_query(
             $this->dblink,
-            "INSERT INTO chatsmsg (chat_idx, sender_idx, message, idtadd)
-             VALUES ($chat_idx, $sender_idx, '$message', NOW())"
+            "INSERT INTO chatsmsg (chat_idx, sender_idx, message, img, message_type, system_code, meta_json, idtadd)
+             VALUES ($chat_idx, $sender_idx, '$message', $imgSql, '$messageType', $systemCodeSql, $metaJsonSql, NOW())"
         );
     }
 

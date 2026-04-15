@@ -31,24 +31,73 @@
     color: var(--grvdet-text);
 }
 
+.grvdet-page--empty {
+    min-height: calc(100vh - 144px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .grvdet-empty {
+    position: relative;
+    overflow: hidden;
+    width: min(100%, 720px);
+    margin: 0 auto;
     border: 1px solid var(--grvdet-line);
-    border-radius: 22px;
-    background: var(--grvdet-card);
-    box-shadow: 0 14px 34px rgba(15, 33, 56, 0.08);
-    padding: 32px;
+    border-radius: 28px;
+    background:
+        radial-gradient(140px 140px at 14% 18%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0) 75%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 249, 255, 0.98) 100%);
+    box-shadow: 0 22px 52px rgba(15, 33, 56, 0.10);
+    padding: clamp(28px, 5vw, 48px);
     text-align: center;
+    display: grid;
+    gap: 14px;
+    justify-items: center;
+}
+
+.grvdet-empty::before,
+.grvdet-empty::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+}
+
+.grvdet-empty::before {
+    width: 220px;
+    height: 220px;
+    top: -120px;
+    right: -80px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.14) 0%, rgba(37, 99, 235, 0) 72%);
+}
+
+.grvdet-empty::after {
+    width: 180px;
+    height: 180px;
+    bottom: -90px;
+    left: -50px;
+    background: radial-gradient(circle, rgba(15, 33, 56, 0.10) 0%, rgba(15, 33, 56, 0) 74%);
+}
+
+.grvdet-empty > * {
+    position: relative;
+    z-index: 1;
 }
 
 .grvdet-empty h1 {
-    margin: 0 0 10px;
-    font-size: 30px;
+    margin: 0;
+    font-size: clamp(28px, 4vw, 36px);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
 }
 
 .grvdet-empty p {
     margin: 0;
+    max-width: 560px;
     color: var(--grvdet-muted);
-    font-size: 15px;
+    font-size: 16px;
+    line-height: 1.65;
 }
 
 .grvdet-sticky {
@@ -345,6 +394,15 @@
 html.grvdet-modal-open,
 body.grvdet-modal-open {
     overflow: hidden;
+}
+
+html.agf-body-locked,
+body.agf-body-locked {
+    overflow: hidden;
+}
+
+.acm-modal-hint.is-hidden {
+    display: none !important;
 }
 
 .grvdet-photo-modal {
@@ -952,6 +1010,12 @@ body.grvdet-modal-open {
     gap: 10px;
 }
 
+.grvdet-empty-actions {
+    width: 100%;
+    justify-content: center;
+    margin-top: 4px;
+}
+
 .grvdet-btn {
     display: inline-flex;
     box-sizing: border-box;
@@ -1542,6 +1606,10 @@ body.grvdet-modal-open {
         padding: 10px;
     }
 
+    .grvdet-page--empty {
+        min-height: calc(100vh - 120px);
+    }
+
     .grvdet-hero,
     .grvdet-panel,
     .grvdet-empty {
@@ -1595,6 +1663,10 @@ body.grvdet-modal-open {
 
     .grvdet-panel-head {
         flex-direction: column;
+    }
+
+    .grvdet-empty {
+        gap: 12px;
     }
 
     .grvdet-related-link-head {

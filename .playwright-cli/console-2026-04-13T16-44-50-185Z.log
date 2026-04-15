@@ -1,0 +1,5 @@
+[    2407ms] [ERROR] Access to fetch at 'https://shanapra.com/cemetery/map?action=map_data&cemetery_id=50' from origin 'http://127.0.0.1:8099' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://127.0.0.1:8099/cemetery-map.php:0
+[    2408ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://shanapra.com/cemetery/map?action=map_data&cemetery_id=50:0
+[    2416ms] SecurityError: Failed to execute 'replaceState' on 'History': A history state object with URL 'https://shanapra.com/cemetery-map.php?cemetery_id=50' cannot be created in a document with origin 'http://127.0.0.1:8099' and URL 'http://127.0.0.1:8099/cemetery-map.php'.
+    at syncUrlState (http://127.0.0.1:8099/cemetery-map.php:486:20)
+    at loadCemeteryMap (http://127.0.0.1:8099/cemetery-map.php:995:9)

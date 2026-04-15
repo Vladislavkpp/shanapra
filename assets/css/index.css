@@ -339,6 +339,7 @@
 .itp-panel input,
 .itp-panel select {
     width: 100%;
+    box-sizing: border-box;
     min-height: 40px;
     border-radius: 10px;
     border: 1px solid #c8d9eb;

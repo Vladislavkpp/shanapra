@@ -12,6 +12,65 @@ require_once "validator.php";
 require_once "classes/chats.php";
 showMessage();
 
+if (!function_exists('graveDateFormatRangeFromRow')) {
+    function graveDateFormatRangeFromRow(array $row): string
+    {
+        $formatPartialDate = static function ($fullDate, $year, $month, $day): string {
+            $fullDate = trim((string)$fullDate);
+            if ($fullDate !== '' && $fullDate !== '0000-00-00') {
+                $timestamp = strtotime($fullDate);
+                if ($timestamp !== false) {
+                    return date('d.m.Y', $timestamp);
+                }
+            }
+
+            $year = trim((string)$year);
+            $month = trim((string)$month);
+            $day = trim((string)$day);
+
+            if ($year === '' || $year === '0' || $year === '0000') {
+                return '';
+            }
+
+            $parts = [];
+            if ($day !== '' && $day !== '0' && $day !== '00') {
+                $parts[] = str_pad($day, 2, '0', STR_PAD_LEFT);
+            }
+            if ($month !== '' && $month !== '0' && $month !== '00') {
+                $parts[] = str_pad($month, 2, '0', STR_PAD_LEFT);
+            }
+            $parts[] = $year;
+
+            return implode('.', $parts);
+        };
+
+        $birth = $formatPartialDate(
+            $row['dt1'] ?? '',
+            $row['dt1_year'] ?? '',
+            $row['dt1_month'] ?? '',
+            $row['dt1_day'] ?? ''
+        );
+        $death = $formatPartialDate(
+            $row['dt2'] ?? '',
+            $row['dt2_year'] ?? '',
+            $row['dt2_month'] ?? '',
+            $row['dt2_day'] ?? ''
+        );
+
+        if ($birth !== '' && $death !== '') {
+            return $birth . ' - ' . $death;
+        }
+        if ($birth !== '') {
+            return $birth . ' - Дата не вказана';
+        }
+        if ($death !== '') {
+            return 'Дата не вказана - ' . $death;
+        }
+
+        return 'Дати не вказані';
+    }
+}
+
 function profileResolvePageTitle(string $mdParam, string $toolParam = 'accounting'): string
 {
     switch ($mdParam) {
@@ -24,7 +83,7 @@ function profileResolvePageTitle(string $mdParam, string $toolParam = 'accountin
             return 'Налаштування';
         case '4':
         case '010':
-            return 'Фінансова інформація';
+            return 'Гаманець';
         case '5':
             return 'Бухгалтерія';
         case '6':
@@ -75,7 +134,12 @@ if ($pageMdParam === '010') {
     $pageMdParam = '4';
 }
 $pageToolParam = strtolower(trim((string)($_GET['tool'] ?? 'accounting')));
+$currentRequestPath = CurrentPublicRequestPath();
+$isWalletTransactionsPage = function_exists('isWalletTransactionsRequestPath') && isWalletTransactionsRequestPath($currentRequestPath);
 $pageTitle = profileResolvePageTitle($pageMdParam, $pageToolParam);
+if ($pageMdParam === '4' && $isWalletTransactionsPage) {
+    $pageTitle = 'Журнал операцій';
+}
 
 View_Clear();
 View_Add(Page_Up($pageTitle));
@@ -654,7 +718,13 @@ if (($md == 0) || ($md == '')) {
                     g.lname,
                     g.mname,
                     g.dt1,
+                    g.dt1_year,
+                    g.dt1_month,
+                    g.dt1_day,
                     g.dt2,
+                    g.dt2_year,
+                    g.dt2_month,
+                    g.dt2_day,
                     g.photo1,
                     g.moderation_status,
                     d.title AS district_title,
@@ -678,17 +748,6 @@ if (($md == 0) || ($md == '')) {
             View_Add('<a class="profile-pubs-add-btn" href="/graveaddform.php"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-add-icon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>Додати поховання</a>');
             View_Add('<div class="profile-pubs-search"><input type="text" class="profile-pubs-search-input" placeholder="Пошук за прізвищем / ім`ям / по батькові" aria-label="Пошук публікацій"></div>');
             View_Add('</div>');
-            $formatPubDate = static function (?string $date): string {
-                if (empty($date) || $date === '0000-00-00') {
-                    return 'Дата не вказана';
-                }
-                $timestamp = strtotime($date);
-                if ($timestamp === false) {
-                    return 'Дата не вказана';
-                }
-                return date('d.m.Y', $timestamp);
-            };
-
             if ($publicationsCount === 0) {
                 View_Add('<div class="profile-pubs-empty">Немає публікацій</div>');
             } else {
@@ -708,8 +767,7 @@ if (($md == 0) || ($md == '')) {
                         ? mb_strtolower($fio, 'UTF-8')
                         : strtolower($fio);
 
-                    $birthDate = $formatPubDate($publication['dt1'] ?? null);
-                    $deathDate = $formatPubDate($publication['dt2'] ?? null);
+                    $dateRange = graveDateFormatRangeFromRow($publication);
                     $moderationMeta = profilePublicationModerationMeta((string)($publication['moderation_status'] ?? 'pending'));
 
                     $locationParts = [];
@@ -729,7 +787,7 @@ if (($md == 0) || ($md == '')) {
                                 <div class="profile-pub-card-name">' . htmlspecialchars($fio, ENT_QUOTES, 'UTF-8') . '</div>
                                 <span class="profile-pub-card-status profile-pub-card-status--' . htmlspecialchars($moderationMeta['key'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($moderationMeta['label'], ENT_QUOTES, 'UTF-8') . '</span>
                             </div>
-                            <div class="profile-pub-card-meta">' . htmlspecialchars($birthDate . ' - ' . $deathDate, ENT_QUOTES, 'UTF-8') . '</div>
+                            <div class="profile-pub-card-meta">' . htmlspecialchars($dateRange, ENT_QUOTES, 'UTF-8') . '</div>
                             <div class="profile-pub-card-meta">' . htmlspecialchars($locationLabel, ENT_QUOTES, 'UTF-8') . '</div>
                         </div>
                         <div class="profile-pub-card-actions">
@@ -751,7 +809,13 @@ if (($md == 0) || ($md == '')) {
                     g.lname,
                     g.mname,
                     g.dt1,
+                    g.dt1_year,
+                    g.dt1_month,
+                    g.dt1_day,
                     g.dt2,
+                    g.dt2_year,
+                    g.dt2_month,
+                    g.dt2_day,
                     g.photo1,
                     d.title AS district_title,
                     r.title AS region_title
@@ -794,8 +858,7 @@ if (($md == 0) || ($md == '')) {
                         ? mb_strtolower($fio, 'UTF-8')
                         : strtolower($fio);
 
-                    $birthDate = $formatPubDate($savedItem['dt1'] ?? null);
-                    $deathDate = $formatPubDate($savedItem['dt2'] ?? null);
+                    $dateRange = graveDateFormatRangeFromRow($savedItem);
 
                     $locationParts = [];
                     if (!empty($savedItem['region_title'])) {
@@ -811,7 +874,7 @@ if (($md == 0) || ($md == '')) {
                         <img class="profile-pub-card-photo profile-saved-content" src="' . htmlspecialchars($photoPath, ENT_QUOTES, 'UTF-8') . '" alt="' . htmlspecialchars($fio, ENT_QUOTES, 'UTF-8') . '">
                         <div class="profile-pub-card-body profile-saved-content">
                             <div class="profile-pub-card-name">' . htmlspecialchars($fio, ENT_QUOTES, 'UTF-8') . '</div>
-                            <div class="profile-pub-card-meta">' . htmlspecialchars($birthDate . ' - ' . $deathDate, ENT_QUOTES, 'UTF-8') . '</div>
+                            <div class="profile-pub-card-meta">' . htmlspecialchars($dateRange, ENT_QUOTES, 'UTF-8') . '</div>
                             <div class="profile-pub-card-meta">' . htmlspecialchars($locationLabel, ENT_QUOTES, 'UTF-8') . '</div>
                         </div>
                         <div class="profile-pub-card-actions profile-saved-content">
@@ -1226,7 +1289,16 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
             $reportText .= "\nКоментар прибиральника: " . $completionComment;
         }
 
-        if (!$chatService->addMessage((int)$dbChatIdx, $userId, $reportText)) {
+        if (!$chatService->addMessage((int)$dbChatIdx, $userId, $reportText, null, null, [
+            'message_type' => 'system',
+            'system_code' => 'cleaner_completion_report',
+            'meta_json' => [
+                'order_id' => $orderId,
+                'cleaner_id' => $userId,
+                'comment' => $completionComment,
+                'photos' => $uploadedWebPaths,
+            ],
+        ])) {
             $sendOrderActionError('Не вдалося надіслати текст звіту у чат');
         }
 
@@ -1429,7 +1501,7 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
     // Получение заказов
     $orders = [];
     $ordersRes = mysqli_query($dblink, "
-        SELECT co.*, u.fname, u.lname, u.tel, u.email
+        SELECT co.*, u.fname, u.lname, u.tel, u.email, u.avatar
         FROM cleaner_orders co
         LEFT JOIN users u ON co.client_id = u.idx
         WHERE co.cleaner_id = $userId
@@ -1437,6 +1509,38 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
     ");
     while ($o = mysqli_fetch_assoc($ordersRes)) {
         $orders[] = $o;
+    }
+    $orderServicesMap = [];
+    if (!empty($orders) && function_exists('dbTableExists') && dbTableExists($dblink, 'cleaner_services')) {
+        $orderIds = [];
+        foreach ($orders as $orderRow) {
+            $orderId = (int)($orderRow['idx'] ?? 0);
+            if ($orderId > 0) {
+                $orderIds[$orderId] = $orderId;
+            }
+        }
+        if (!empty($orderIds) && dbTableExists($dblink, 'cleaner_order_services')) {
+            $orderIdsSql = implode(',', $orderIds);
+            $servicesMapRes = mysqli_query($dblink, "
+                SELECT cos.order_id, cs.service_name
+                FROM cleaner_order_services cos
+                INNER JOIN cleaner_services cs ON cs.id = cos.service_id
+                WHERE cos.order_id IN ($orderIdsSql)
+                ORDER BY cs.sort_order ASC, cs.id ASC
+            ");
+            if ($servicesMapRes) {
+                while ($serviceRow = mysqli_fetch_assoc($servicesMapRes)) {
+                    $orderId = (int)($serviceRow['order_id'] ?? 0);
+                    $serviceName = trim((string)($serviceRow['service_name'] ?? ''));
+                    if ($orderId > 0 && $serviceName !== '') {
+                        if (!isset($orderServicesMap[$orderId])) {
+                            $orderServicesMap[$orderId] = [];
+                        }
+                        $orderServicesMap[$orderId][] = $serviceName;
+                    }
+                }
+            }
+        }
     }
     
     View_Add('<link rel="stylesheet" href="/assets/css/profile.css">');
@@ -1725,6 +1829,7 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
     } else {
         View_Add('<div class="cleaner-orders-no-results" id="orders-no-results" style="display:none;">Немає замовлень за обраним фільтром</div><div class="orders-list" id="orders-list">');
         foreach ($orders as $order) {
+            $orderId = (int)($order['idx'] ?? 0);
             $orderStatus = (string)($order['status'] ?? '');
             $hasCompletionReport = !empty($order['completed_at']) && $order['completed_at'] !== '0000-00-00 00:00:00';
             if ($orderStatus === 'accepted' && $hasCompletionReport) {
@@ -1741,12 +1846,18 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
             $statusLabel = $statusLabels[$orderStatus] ?? $orderStatus;
             $chatLink = $order['chat_idx'] 
                 ? '<a href="/messenger.php?type=2&chat='.$order['chat_idx'].'" class="btn-chat-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-action-icon icon icon-tabler icons-tabler-outline icon-tabler-message-user"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 18l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v4.5" /><path d="M17 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M22 22a2 2 0 0 0 -2 -2h-2a2 2 0 0 0 -2 2" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-action-icon icon icon-tabler icons-tabler-outline icon-tabler-message"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 9h8" /><path d="M8 13h6" /><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12" /></svg>
                     <span class="btn-action-label">Написати в робочий чат</span>
+                </a>'
+                : '';
+            $chatIconAction = $order['chat_idx']
+                ? '<a href="/messenger.php?type=2&chat='.$order['chat_idx'].'" class="btn-order-chat-icon" aria-label="Написати в робочий чат" data-tooltip="Написати в робочий чат">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-action-icon icon icon-tabler icons-tabler-outline icon-tabler-message"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 9h8" /><path d="M8 13h6" /><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12" /></svg>
                 </a>'
                 : '';
 
             $orderActionsHtml = '';
+            $showStandaloneChatLink = $chatLink !== '';
             if ($orderStatus === 'pending') {
                 $orderActionsHtml = '
                 <div class="order-actions">
@@ -1758,7 +1869,9 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-action-icon icon icon-tabler icons-tabler-outline icon-tabler-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
                         <span class="btn-action-label">Відмовитись</span>
                     </button>
+                    '.$chatIconAction.'
                 </div>';
+                $showStandaloneChatLink = false;
             } elseif ($orderStatus === 'accepted') {
                 $orderActionsHtml = '
                 <div class="order-actions">
@@ -1766,7 +1879,9 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-action-icon icon icon-tabler icons-tabler-outline icon-tabler-circle-check"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
                         <span class="btn-action-label">Завершити роботу</span>
                     </button>
+                    '.$chatIconAction.'
                 </div>';
+                $showStandaloneChatLink = false;
             }
 
             $statusDetails = '';
@@ -1800,25 +1915,231 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
                 }
             }
 
-            $statusDetailsBlock = $statusDetails !== '' ? '<div class="order-status-details">' . $statusDetails . '</div>' : '';
             $createdAtTs = strtotime($order['created_at']);
+            $createdAtText = $createdAtTs ? date('d.m.Y H:i', $createdAtTs) : 'Не вказано';
+            $clientProfileUrl = !empty($order['client_id'])
+                ? '/public-profile.php?idx=' . (int)$order['client_id']
+                : '';
+            $preferredDateRaw = trim((string)($order['preferred_date'] ?? ''));
+            $preferredDateText = $preferredDateRaw !== '' ? $preferredDateRaw : 'Не вказано';
+            $preferredDateTs = $preferredDateRaw !== '' ? strtotime($preferredDateRaw) : false;
+            if ($preferredDateTs !== false) {
+                $preferredDateText = date('d.m.Y', $preferredDateTs);
+            }
+            $clientAvatar = trim((string)($order['avatar'] ?? ''));
+            if ($clientAvatar !== '') {
+                $clientAvatar = strpos($clientAvatar, '/') === 0 ? $clientAvatar : '/' . ltrim($clientAvatar, '/');
+            } else {
+                $clientAvatar = '/avatars/ava.png';
+            }
+            $clientInitialSource = trim((string)($order['client_name'] ?? ''));
+            if ($clientInitialSource === '') {
+                $clientInitialSource = trim((string)($order['lname'] ?? ''));
+            }
+            if ($clientInitialSource === '') {
+                $clientInitialSource = trim((string)($order['fname'] ?? ''));
+            }
+            $clientInitial = function_exists('mb_substr')
+                ? mb_substr($clientInitialSource, 0, 1, 'UTF-8')
+                : substr($clientInitialSource, 0, 1);
+            if (function_exists('mb_strtoupper')) {
+                $clientInitial = mb_strtoupper($clientInitial, 'UTF-8');
+            } else {
+                $clientInitial = strtoupper($clientInitial);
+            }
+            if ($clientInitial === '') {
+                $clientInitial = 'U';
+            }
+            $orderServices = $orderServicesMap[$orderId] ?? [];
+            if (empty($orderServices)) {
+                $decodedServiceIds = json_decode((string)($order['selected_services_json'] ?? ''), true);
+                $serviceIds = [];
+                if (is_array($decodedServiceIds)) {
+                    foreach ($decodedServiceIds as $serviceId) {
+                        $serviceId = (int)$serviceId;
+                        if ($serviceId > 0) {
+                            $serviceIds[$serviceId] = $serviceId;
+                        }
+                    }
+                }
+                if (!empty($serviceIds)) {
+                    $serviceIdsSql = implode(',', $serviceIds);
+                    $cleanerFilterSql = !empty($order['cleaner_id']) ? ' AND user_id = ' . (int)$order['cleaner_id'] : '';
+                    $serviceNamesRes = mysqli_query($dblink, "
+                        SELECT service_name
+                        FROM cleaner_services
+                        WHERE id IN ($serviceIdsSql)$cleanerFilterSql
+                        ORDER BY sort_order ASC, id ASC
+                    ");
+                    if ($serviceNamesRes) {
+                        while ($serviceNameRow = mysqli_fetch_assoc($serviceNamesRes)) {
+                            $serviceName = trim((string)($serviceNameRow['service_name'] ?? ''));
+                            if ($serviceName !== '') {
+                                $orderServices[] = $serviceName;
+                            }
+                        }
+                    }
+                }
+            }
+            $orderInfoItems = [
+                [
+                    'label' => 'Телефон',
+                    'value' => trim((string)($order['client_phone'] ?? '')) ?: 'Не вказано',
+                    'class' => 'order-info-tile order-info-tile--wide'
+                ],
+                [
+                    'label' => 'Кладовище',
+                    'value' => trim((string)($order['cemetery_place'] ?? '')) ?: 'Не вказано',
+                    'class' => 'order-info-tile order-info-tile--wide'
+                ],
+                [
+                    'label' => 'Дата',
+                    'value' => $preferredDateText,
+                    'class' => 'order-info-tile'
+                ],
+                [
+                    'label' => 'Вартість',
+                    'value' => trim((string)($order['approximate_price'] ?? '')) ?: 'Не вказано',
+                    'class' => 'order-info-tile'
+                ]
+            ];
+            $orderInfoCards = '';
+            foreach ($orderInfoItems as $infoItem) {
+                $orderInfoCards .= '
+                    <div class="' . htmlspecialchars($infoItem['class']) . '">
+                        <span class="order-info-label">' . htmlspecialchars($infoItem['label']) . '</span>
+                        <strong class="order-info-value">' . htmlspecialchars($infoItem['value']) . '</strong>
+                    </div>';
+            }
+            $orderComment = trim((string)($order['comment'] ?? ''));
+            $orderCommentBlock = $orderComment !== ''
+                ? '<section class="order-details-modal__section order-details-modal__section--accent"><span class="order-details-modal__section-label">Коментар клієнта</span><p>' . htmlspecialchars($orderComment) . '</p></section>'
+                : '';
+            $statusDetailsBlock = $statusDetails !== ''
+                ? '<section class="order-details-modal__section"><span class="order-details-modal__section-label">Деталі статусу</span><div class="order-details-modal__status-copy">' . $statusDetails . '</div></section>'
+                : '';
+            $orderDetailsCards = [
+                [
+                    'label' => 'Телефон',
+                    'value' => trim((string)($order['client_phone'] ?? '')) ?: 'Не вказано',
+                    'hint' => 'Контактний номер клієнта',
+                    'class' => 'order-details-modal__detail-card'
+                ],
+                [
+                    'label' => 'Створено',
+                    'value' => $createdAtText,
+                    'hint' => 'Дата створення замовлення',
+                    'class' => 'order-details-modal__detail-card'
+                ],
+                [
+                    'label' => 'Кладовище',
+                    'value' => trim((string)($order['cemetery_place'] ?? '')) ?: 'Не вказано',
+                    'hint' => 'Локація виконання замовлення',
+                    'class' => 'order-details-modal__detail-card order-details-modal__detail-card--wide'
+                ],
+                [
+                    'label' => 'Встановлений строк',
+                    'value' => $preferredDateText,
+                    'hint' => 'Дата, до якої очікується виконання',
+                    'class' => 'order-details-modal__detail-card'
+                ],
+                [
+                    'label' => 'Орієнтовна вартість',
+                    'value' => trim((string)($order['approximate_price'] ?? '')) ?: 'Не вказано',
+                    'hint' => 'Попередня сума замовлення',
+                    'class' => 'order-details-modal__detail-card'
+                ]
+            ];
+            $completedAtTextForModal = isset($completedAtText) && $completedAtText !== '' ? $completedAtText : '';
+            if ($completedAtTextForModal !== '') {
+                $orderDetailsCards[] = [
+                    'label' => 'Дата звіту',
+                    'value' => $completedAtTextForModal,
+                    'hint' => 'Коли було надіслано фото-звіт',
+                    'class' => 'order-details-modal__detail-card'
+                ];
+            }
+            $orderDetailsCardsHtml = '';
+            foreach ($orderDetailsCards as $detailsCard) {
+                $orderDetailsCardsHtml .= '
+                    <article class="' . htmlspecialchars($detailsCard['class']) . '">
+                        <span>' . htmlspecialchars($detailsCard['label']) . '</span>
+                        <strong>' . htmlspecialchars($detailsCard['value']) . '</strong>
+                        <small>' . htmlspecialchars($detailsCard['hint']) . '</small>
+                    </article>';
+            }
+            $orderDetailsActions = [];
+            if ($clientProfileUrl !== '') {
+                $orderDetailsActions[] = '<a href="' . htmlspecialchars($clientProfileUrl) . '" class="order-details-modal__action order-details-modal__action--ghost">Профіль клієнта</a>';
+            }
+            if (!empty($order['chat_idx'])) {
+                $orderDetailsActions[] = '<a href="/messenger.php?type=2&chat=' . (int)$order['chat_idx'] . '" class="order-details-modal__action order-details-modal__action--primary">Відкрити робочий чат</a>';
+            }
+            $orderDetailsActionsHtml = !empty($orderDetailsActions)
+                ? '<div class="order-details-modal__footer">' . implode('', $orderDetailsActions) . '</div>'
+                : '';
+            $orderServicesHtml = '';
+            if (!empty($orderServices)) {
+                $serviceBadges = '';
+                foreach ($orderServices as $serviceName) {
+                    $serviceBadges .= '<span class="order-details-modal__service-chip">' . htmlspecialchars($serviceName) . '</span>';
+                }
+                $orderServicesHtml = '
+                    <section class="order-details-modal__section">
+                        <span class="order-details-modal__section-label">Обрані послуги</span>
+                        <div class="order-details-modal__services">' . $serviceBadges . '</div>
+                    </section>';
+            }
+            $orderDetailsPayload = '
+                <div class="order-details-modal__hero">
+                    <div class="order-details-modal__avatar-wrap">
+                        ' . ($clientAvatar !== '/avatars/ava.png'
+                            ? '<img src="' . htmlspecialchars($clientAvatar) . '" alt="' . htmlspecialchars($order['client_name']) . '" class="order-details-modal__avatar">'
+                            : '<div class="order-details-modal__avatar-fallback" aria-hidden="true">' . htmlspecialchars($clientInitial) . '</div>'
+                        ) . '
+                    </div>
+                    <div class="order-details-modal__hero-copy">
+                        <span class="order-details-modal__eyebrow">Замовлення #' . (int)$order['idx'] . '</span>
+                        <h4>' . htmlspecialchars($order['client_name']) . '</h4>
+                    </div>
+                    <div class="order-details-modal__hero-side">
+                        <span class="order-status order-status-' . htmlspecialchars($orderStatus) . '">' . htmlspecialchars($statusLabel) . '</span>
+                    </div>
+                </div>
+                <div class="order-details-modal__grid">' . $orderDetailsCardsHtml . '</div>
+                ' . $orderServicesHtml . '
+                ' . $orderCommentBlock . '
+                ' . $statusDetailsBlock . '
+                ' . $orderDetailsActionsHtml . '
+            ';
+            $orderDetailsButton = '
+                <button type="button" class="btn-order-details">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-action-icon icon icon-tabler icons-tabler-outline icon-tabler-layout-list"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 6l16 0" /><path d="M4 12l16 0" /><path d="M4 18l16 0" /></svg>
+                    <span class="btn-action-label">Детальна інформація</span>
+                </button>';
+            $orderFooter = '<div class="order-footer">' . $orderDetailsButton . $orderActionsHtml . ($showStandaloneChatLink ? $chatLink : '') . '</div>';
             View_Add('
             <div class="order-item" data-order-id="'.(int)$order['idx'].'" data-status="'.htmlspecialchars($orderStatus).'" data-created-at="'.$createdAtTs.'">
                 <div class="order-header">
-                    <strong>'.htmlspecialchars($order['client_name']).'</strong>
+                    <div class="order-header-main">
+                        <div class="order-header-copy">
+                            <div class="order-client-row">
+                                <strong class="order-client-name">#'.(int)$order['idx'].' '.htmlspecialchars($order['client_name']).'</strong>
+                                '.($clientProfileUrl !== ''
+                                    ? '<a href="'.$clientProfileUrl.'" class="order-client-profile-link" aria-label="Перейти у профіль клієнта" data-tooltip="Перейти у профіль клієнта">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-circle"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" /></svg>
+                                    </a>'
+                                    : ''
+                                ).'
+                            </div>
+                        </div>
+                        <span class="order-created-at">Створено '.$createdAtText.'</span>
+                    </div>
                     <span class="order-status order-status-'.$orderStatus.'">'.$statusLabel.'</span>
                 </div>
-                <div class="order-info">
-                    <p><strong>Телефон:</strong> '.htmlspecialchars($order['client_phone']).'</p>
-                    <p><strong>Кладовище:</strong> '.htmlspecialchars($order['cemetery_place'] ?? 'Не вказано').'</p>
-                    <p><strong>Дата:</strong> '.htmlspecialchars($order['preferred_date'] ?? 'Не вказано').'</p>
-                    <p><strong>Орієнтовна вартість:</strong> '.htmlspecialchars($order['approximate_price'] ?? 'Не вказано').'</p>
-                    '.($order['comment'] ? '<p><strong>Коментар:</strong> '.htmlspecialchars($order['comment']).'</p>' : '').'
-                    <p><strong>Дата створення:</strong> '.date('d.m.Y H:i', $createdAtTs).'</p>
-                    '.$statusDetailsBlock.'
-                </div>
-                '.$orderActionsHtml.'
-                '.$chatLink.'
+                <div class="order-info-grid">'.$orderInfoCards.'</div>
+                '.$orderFooter.'
+                <div class="order-details-payload" hidden style="display:none;">'.$orderDetailsPayload.'</div>
             </div>');
         }
         View_Add('</div>');
@@ -1830,16 +2151,24 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
 </div>
 
 <div class="order-action-modal-overlay" id="order-action-modal" style="display:none;">
-    <div class="order-action-modal">
+    <div class="order-action-modal" data-action="default">
         <div class="order-action-modal-header">
-            <h3 id="order-action-modal-title">Дія із замовленням</h3>
+            <div class="order-action-modal-titlebox">
+                <span class="order-action-modal-icon" id="order-action-modal-icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 12h10" /><path d="M12 7v10" /><path d="M4 12a8 8 0 1 0 16 0a8 8 0 0 0 -16 0" /></svg>
+                </span>
+                <div class="order-action-modal-heading">
+                    <h3 id="order-action-modal-title">Дія із замовленням</h3>
+                    <p id="order-action-modal-subtitle">Підтвердьте потрібну дію по замовленню.</p>
+                </div>
+            </div>
             <button type="button" class="order-action-modal-close" id="order-action-modal-close" aria-label="Закрити">&times;</button>
         </div>
         <form id="order-action-form" class="order-action-modal-body" enctype="multipart/form-data">
             <input type="hidden" id="order-action-order-id" value="">
             <input type="hidden" id="order-action-type" value="">
 
-            <div class="order-action-field" id="order-accept-field" style="display:none;">
+            <div class="order-action-field order-action-field--notice" id="order-accept-field" style="display:none;">
                 <p class="order-action-hint" style="margin:0;">
                     Після підтвердження замовлення перейде у статус "Прийнято".
                 </p>
@@ -1888,6 +2217,26 @@ if ($md === '10' && $_SESSION['logged'] == 1) {
                 <button type="submit" class="btn-order-modal-confirm" id="order-action-confirm">Підтвердити</button>
             </div>
         </form>
+    </div>
+</div>
+
+<div class="order-details-modal-overlay" id="order-details-modal" style="display:none;" aria-hidden="true">
+    <div class="order-details-modal__content" role="dialog" aria-modal="true" aria-labelledby="order-details-modal-title">
+        <div class="order-details-modal__header">
+            <div class="order-details-modal__title">
+                <span class="order-details-modal__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-description"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /><path d="M9 17h6" /><path d="M9 13h6" /></svg>
+                </span>
+                <div>
+                    <h3 id="order-details-modal-title">Інформація про замовлення</h3>
+                    <p>Повний склад замовлення та дії по ньому.</p>
+                </div>
+            </div>
+            <button type="button" class="order-details-modal__close" id="order-details-modal-close" aria-label="Закрити">
+                &times;
+            </button>
+        </div>
+        <div class="order-details-modal__body" id="order-details-modal-body"></div>
     </div>
 </div>
 
@@ -1992,6 +2341,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const orderActionModalCard = orderActionModal ? orderActionModal.querySelector(".order-action-modal") : null;
     const orderActionForm = document.getElementById("order-action-form");
     const orderActionTitle = document.getElementById("order-action-modal-title");
+    const orderActionSubtitle = document.getElementById("order-action-modal-subtitle");
+    const orderActionIcon = document.getElementById("order-action-modal-icon");
     const orderActionOrderId = document.getElementById("order-action-order-id");
     const orderActionType = document.getElementById("order-action-type");
     const orderAcceptField = document.getElementById("order-accept-field");
@@ -2005,6 +2356,32 @@ document.addEventListener("DOMContentLoaded", function() {
     const orderActionConfirm = document.getElementById("order-action-confirm");
     const orderActionCancel = document.getElementById("order-action-cancel");
     const orderActionClose = document.getElementById("order-action-modal-close");
+    const orderDetailsModal = document.getElementById("order-details-modal");
+    const orderDetailsModalBody = document.getElementById("order-details-modal-body");
+    const orderDetailsModalClose = document.getElementById("order-details-modal-close");
+    const orderActionModalMeta = {
+        accept: {
+            title: "Підтвердження прийняття",
+            subtitle: "Після підтвердження замовлення одразу перейде у роботу.",
+            confirm: "Підтвердити прийняття",
+            icon:
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /><path d=\"M9 12l2 2l4 -4\" /></svg>"
+        },
+        reject: {
+            title: "Відмова від замовлення",
+            subtitle: "Оберіть зрозумілу причину, щоб клієнт побачив коректне пояснення.",
+            confirm: "Підтвердити відмову",
+            icon:
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /><path d=\"M10 10l4 4m0 -4l-4 4\" /></svg>"
+        },
+        complete: {
+            title: "Фото-звіт про виконання",
+            subtitle: "Додайте фото та короткий коментар, щоб відправити звіт у робочий чат.",
+            confirm: "Надіслати звіт",
+            icon:
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M15 8h.01\" /><path d=\"M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z\" /><path d=\"M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5\" /><path d=\"M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3\" /></svg>"
+        }
+    };
 
     function showOrderActionError(msg) {
         alert(msg || "Не вдалося виконати дію");
@@ -2037,9 +2414,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function closeOrderActionModal() {
         if (!orderActionModal || !orderActionForm) return;
+        unlockOrderDetailsPageScroll();
         orderActionModal.style.display = "none";
         if (orderActionModalCard) {
             orderActionModalCard.classList.remove("order-action-modal-compact");
+            orderActionModalCard.setAttribute("data-action", "default");
         }
         orderActionForm.reset();
         toggleOrderRejectOtherField();
@@ -2047,6 +2426,48 @@ document.addEventListener("DOMContentLoaded", function() {
             orderActionConfirm.disabled = false;
             orderActionConfirm.textContent = "Підтвердити";
         }
+        if (orderActionTitle) {
+            orderActionTitle.textContent = "Дія із замовленням";
+        }
+        if (orderActionSubtitle) {
+            orderActionSubtitle.textContent = "Підтвердьте потрібну дію по замовленню.";
+        }
+        if (orderActionIcon) {
+            orderActionIcon.innerHTML = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M7 12h10\" /><path d=\"M12 7v10\" /><path d=\"M4 12a8 8 0 1 0 16 0a8 8 0 0 0 -16 0\" /></svg>";
+        }
+    }
+
+    function lockOrderDetailsPageScroll() {
+        const scrollY = window.scrollY || window.pageYOffset || 0;
+        document.body.dataset.orderDetailsScrollY = String(scrollY);
+        document.body.style.top = "-" + scrollY + "px";
+        document.body.classList.add("order-details-modal-open");
+    }
+
+    function unlockOrderDetailsPageScroll() {
+        const savedScrollY = parseInt(document.body.dataset.orderDetailsScrollY || "0", 10) || 0;
+        document.body.classList.remove("order-details-modal-open");
+        document.body.style.top = "";
+        delete document.body.dataset.orderDetailsScrollY;
+        window.scrollTo(0, savedScrollY);
+    }
+
+    function openOrderDetailsModal(orderItem) {
+        if (!orderDetailsModal || !orderDetailsModalBody || !orderItem) return;
+        const payload = orderItem.querySelector(".order-details-payload");
+        if (!payload) return;
+        orderDetailsModalBody.innerHTML = payload.innerHTML;
+        lockOrderDetailsPageScroll();
+        orderDetailsModal.style.display = "flex";
+        orderDetailsModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeOrderDetailsModal() {
+        if (!orderDetailsModal || !orderDetailsModalBody) return;
+        unlockOrderDetailsPageScroll();
+        orderDetailsModal.style.display = "none";
+        orderDetailsModal.setAttribute("aria-hidden", "true");
+        orderDetailsModalBody.innerHTML = "";
     }
 
     function openOrderActionModal(action, orderId) {
@@ -2064,27 +2485,31 @@ document.addEventListener("DOMContentLoaded", function() {
         if (orderCompletionImages) orderCompletionImages.required = false;
         if (orderActionModalCard) {
             orderActionModalCard.classList.remove("order-action-modal-compact");
+            orderActionModalCard.setAttribute("data-action", action || "default");
+        }
+
+        const modalMeta = orderActionModalMeta[action] || null;
+        if (modalMeta) {
+            if (orderActionTitle) orderActionTitle.textContent = modalMeta.title;
+            if (orderActionSubtitle) orderActionSubtitle.textContent = modalMeta.subtitle;
+            if (orderActionConfirm) orderActionConfirm.textContent = modalMeta.confirm;
+            if (orderActionIcon) orderActionIcon.innerHTML = modalMeta.icon;
         }
 
         if (action === "accept") {
-            if (orderActionTitle) orderActionTitle.textContent = "Підтвердження прийняття";
             if (orderAcceptField) orderAcceptField.style.display = "block";
-            if (orderActionConfirm) orderActionConfirm.textContent = "Підтвердити прийняття";
         } else if (action === "reject") {
-            if (orderActionTitle) orderActionTitle.textContent = "Відмова від замовлення";
             if (orderRejectField) orderRejectField.style.display = "block";
             toggleOrderRejectOtherField();
             if (orderActionModalCard) {
                 orderActionModalCard.classList.add("order-action-modal-compact");
             }
-            if (orderActionConfirm) orderActionConfirm.textContent = "Підтвердити відмову";
         } else if (action === "complete") {
-            if (orderActionTitle) orderActionTitle.textContent = "Фото-звіт про виконання";
             if (orderCompleteField) orderCompleteField.style.display = "block";
             if (orderCompletionImages) orderCompletionImages.required = true;
-            if (orderActionConfirm) orderActionConfirm.textContent = "Надіслати звіт";
         }
 
+        lockOrderDetailsPageScroll();
         orderActionModal.style.display = "flex";
     }
 
@@ -2105,6 +2530,14 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     document.addEventListener("click", function(e) {
+        const detailsBtn = e.target.closest(".btn-order-details");
+        if (detailsBtn) {
+            const orderItem = detailsBtn.closest(".order-item");
+            if (!orderItem) return;
+            openOrderDetailsModal(orderItem);
+            return;
+        }
+
         const acceptBtn = e.target.closest(".btn-order-accept");
         if (acceptBtn) {
             const orderItem = acceptBtn.closest(".order-item");
@@ -2224,9 +2657,22 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }
+    if (orderDetailsModalClose) {
+        orderDetailsModalClose.addEventListener("click", closeOrderDetailsModal);
+    }
+    if (orderDetailsModal) {
+        orderDetailsModal.addEventListener("click", function(e) {
+            if (e.target === orderDetailsModal) {
+                closeOrderDetailsModal();
+            }
+        });
+    }
     document.addEventListener("keydown", function(e) {
         if (e.key === "Escape" && orderActionModal && orderActionModal.style.display === "flex") {
             closeOrderActionModal();
+        }
+        if (e.key === "Escape" && orderDetailsModal && orderDetailsModal.style.display === "flex") {
+            closeOrderDetailsModal();
         }
     });
     
@@ -3864,6 +4310,16 @@ if ($md == 4 && $_SESSION['logged'] == 1) {
         }
     }
 
+    $walletSourceTypeLabels = [
+        'manual' => 'Ручна операція',
+        'manual_reversal' => 'Скасування',
+        'welcome_bonus' => 'Стартовий бонус',
+        'daily_login_bonus' => 'Щоденний бонус',
+        'grave_approved_bonus' => 'Бонус за схвалення',
+        'cemetery_approved_bonus' => 'Бонус за кладовище',
+        'wallet_transaction' => 'Операція гаманця',
+    ];
+
     if ($walletId && $walletTxTableExists) {
         $monthStart = date('Y-m-01 00:00:00');
         $sumRes = mysqli_query(
@@ -3881,11 +4337,10 @@ if ($md == 4 && $_SESSION['logged'] == 1) {
 
         $txRes = mysqli_query(
             $dblink,
-            "SELECT direction, amount, currency, title, meta, created_at
+            "SELECT id, direction, amount, currency, title, meta, created_at, source_type
             FROM wallet_transactions
             WHERE wallet_id = " . $walletId . " AND currency = 'INTERNAL'
-            ORDER BY created_at DESC
-            LIMIT 5"
+            ORDER BY created_at DESC"
         );
         if ($txRes) {
             while ($txRow = mysqli_fetch_assoc($txRes)) {
@@ -3894,20 +4349,62 @@ if ($md == 4 && $_SESSION['logged'] == 1) {
                 if ($title === '') {
                     $title = $direction === 'expense' ? 'Списання' : 'Надходження';
                 }
-                $meta = trim((string)($txRow['meta'] ?? ''));
-                if ($meta === '' && !empty($txRow['created_at'])) {
-                    $timestamp = strtotime($txRow['created_at']);
-                    $meta = $timestamp ? date('d.m.Y H:i', $timestamp) : '';
+                $metaRaw = trim((string)($txRow['meta'] ?? ''));
+                $meta = $metaRaw;
+                $createdAtRaw = trim((string)($txRow['created_at'] ?? ''));
+                $timestamp = $createdAtRaw !== '' ? strtotime($createdAtRaw) : false;
+                if ($meta === '' && $timestamp) {
+                    $meta = date('d.m.Y H:i', $timestamp);
                 }
+
+                $monthKey = $timestamp ? date('Y-m', $timestamp) : '';
+                $dayKey = $timestamp ? date('Y-m-d', $timestamp) : '';
+                $dayLabel = 'Без дати';
+                if ($timestamp) {
+                    $dayLabel = date('Y', $timestamp) === date('Y')
+                        ? date('d.m', $timestamp)
+                        : date('d.m.Y', $timestamp);
+                }
+                $timeLabel = $timestamp ? date('H:i', $timestamp) : '';
+
+                $sourceType = trim((string)($txRow['source_type'] ?? 'manual'));
+                if ($sourceType === '') {
+                    $sourceType = 'manual';
+                }
+                $sourceTypeLabel = $walletSourceTypeLabels[$sourceType] ?? 'Інша операція';
+
+                $createdAtLabel = '-';
+                if ($timestamp) {
+                    $createdAtLabel = date('d.m.Y H:i', $timestamp);
+                } elseif ($createdAtRaw !== '') {
+                    $createdAtLabel = $createdAtRaw;
+                }
+
+                $searchIndex = implode(' ', [
+                    $title,
+                    $meta,
+                    $sourceTypeLabel,
+                    $createdAtLabel,
+                ]);
 
                 $currencyLabel = '';
 
                 $walletTransactions[] = [
+                    'id' => (int)($txRow['id'] ?? 0),
                     'direction' => $direction,
                     'title' => $title,
                     'meta' => $meta,
+                    'history_meta' => $metaRaw,
                     'amount' => (float)($txRow['amount'] ?? 0),
                     'currency' => $currencyLabel,
+                    'source_type' => $sourceType,
+                    'source_type_label' => $sourceTypeLabel,
+                    'created_at_label' => $createdAtLabel,
+                    'month_key' => $monthKey,
+                    'day_key' => $dayKey,
+                    'day_label' => $dayLabel,
+                    'time_label' => $timeLabel,
+                    'search_index' => $searchIndex,
                 ];
             }
         }
@@ -3915,6 +4412,52 @@ if ($md == 4 && $_SESSION['logged'] == 1) {
 
     $formatAmount = static function (float $amount): string {
         return number_format($amount, 0, '.', ' ');
+    };
+
+    $renderWalletPreviewItem = static function (array $tx) use ($formatAmount): string {
+        $sign = $tx['direction'] === 'expense' ? '-' : '+';
+
+        return '
+            <div class="wallet-v2-transaction wallet-v2-transaction-' . $tx['direction'] . '">
+                <div class="wallet-v2-transaction-icon">' . ($tx['direction'] === 'expense' ? '-' : '+') . '</div>
+                <div class="wallet-v2-transaction-info">
+                    <div class="wallet-v2-transaction-title">' . htmlspecialchars($tx['title'], ENT_QUOTES, 'UTF-8') . '</div>
+                    <div class="wallet-v2-transaction-meta">' . htmlspecialchars($tx['meta'], ENT_QUOTES, 'UTF-8') . '</div>
+                </div>
+                <div class="wallet-v2-transaction-amount">' . $sign . $formatAmount((float)$tx['amount']) . htmlspecialchars((string)$tx['currency'], ENT_QUOTES, 'UTF-8') . '</div>
+            </div>';
+    };
+
+    $renderWalletHistoryItem = static function (array $tx) use ($formatAmount): string {
+        $sign = $tx['direction'] === 'expense' ? '-' : '+';
+        $badgesHtml = '';
+        if (($tx['time_label'] ?? '') !== '') {
+            $badgesHtml .= '<span class="wallet-v2-journal-badge wallet-v2-journal-badge-muted">' . htmlspecialchars((string)$tx['time_label'], ENT_QUOTES, 'UTF-8') . '</span>';
+        }
+        if (($tx['source_type_label'] ?? '') !== '') {
+            $badgesHtml .= '<span class="wallet-v2-journal-badge">' . htmlspecialchars((string)$tx['source_type_label'], ENT_QUOTES, 'UTF-8') . '</span>';
+        }
+        $metaHtml = '';
+        if (($tx['history_meta'] ?? '') !== '') {
+            $metaHtml = '<div class="wallet-v2-transaction-meta">' . htmlspecialchars((string)$tx['history_meta'], ENT_QUOTES, 'UTF-8') . '</div>';
+        }
+
+        return '
+            <article class="wallet-v2-journal-item wallet-v2-transaction wallet-v2-transaction-' . $tx['direction'] . '"
+                     data-wallet-history-item
+                     data-direction="' . htmlspecialchars((string)$tx['direction'], ENT_QUOTES, 'UTF-8') . '"
+                     data-month="' . htmlspecialchars((string)$tx['month_key'], ENT_QUOTES, 'UTF-8') . '"
+                     data-search="' . htmlspecialchars((string)$tx['search_index'], ENT_QUOTES, 'UTF-8') . '">
+                <div class="wallet-v2-transaction-icon">' . ($tx['direction'] === 'expense' ? '-' : '+') . '</div>
+                <div class="wallet-v2-journal-copy">
+                    <div class="wallet-v2-journal-topline">
+                        <div class="wallet-v2-transaction-title">' . htmlspecialchars($tx['title'], ENT_QUOTES, 'UTF-8') . '</div>
+                        ' . ($badgesHtml !== '' ? '<div class="wallet-v2-journal-badges">' . $badgesHtml . '</div>' : '') . '
+                    </div>
+                    ' . $metaHtml . '
+                </div>
+                <div class="wallet-v2-journal-amount">' . $sign . $formatAmount((float)$tx['amount']) . htmlspecialchars((string)$tx['currency'], ENT_QUOTES, 'UTF-8') . '</div>
+            </article>';
     };
 
     $internalBalanceLabel = $formatAmount($walletInternalBalance);
@@ -3927,111 +4470,476 @@ if ($md == 4 && $_SESSION['logged'] == 1) {
     $balanceStateClass = $paymentsAvailable ? '' : ' is-unavailable';
     $balanceDisabledClass = $paymentsAvailable ? '' : ' wallet-v2-disabled';
     $cardsDisabledClass = $paymentsAvailable ? '' : ' wallet-v2-disabled';
+    $walletTransactionsPreview = array_slice($walletTransactions, 0, 5);
+    $walletTransactionsTotal = count($walletTransactions);
+    $walletIncomeCount = 0;
+    $walletExpenseCount = 0;
+    foreach ($walletTransactions as $transaction) {
+        if (($transaction['direction'] ?? 'income') === 'expense') {
+            $walletExpenseCount++;
+        } else {
+            $walletIncomeCount++;
+        }
+    }
+    $walletMonthMax = date('Y-m');
+    $walletOverviewUrl = function_exists('profileWalletUrl') ? profileWalletUrl() : '/wallet';
+    $walletTransactionsUrl = function_exists('profileWalletUrl') ? profileWalletUrl('transactions') : '/wallet/transactions';
+    $walletJournalMode = function_exists('isWalletTransactionsRequestPath') ? isWalletTransactionsRequestPath() : false;
+    $walletRootClass = 'wallet-v2' . ($walletJournalMode ? ' is-journal-mode' : '');
+    $walletHistorySummaryHidden = $walletJournalMode ? '' : ' hidden';
+    $walletPreviewHidden = $walletJournalMode ? ' hidden' : '';
+    $walletHistoryHidden = $walletJournalMode ? '' : ' hidden';
+    $walletTransactionsTitle = $walletJournalMode ? 'Журнал операцій' : 'Останні операції';
+    $walletTransactionsSubtitle = $walletJournalMode
+        ? 'Повний список транзакцій з фільтрами за місяцем та пошуком'
+        : 'Актуальний стан';
+    $walletToggleLabel = $walletJournalMode ? 'Повернутись до гаманця' : 'Всі операції';
+    $walletToggleUrl = $walletJournalMode ? $walletOverviewUrl : $walletTransactionsUrl;
 
     $transactionsHtml = '';
-    if (empty($walletTransactions)) {
+    if (empty($walletTransactionsPreview)) {
         $transactionsHtml = '<div class="wallet-v2-empty">Операцій поки немає</div>';
     } else {
+        foreach ($walletTransactionsPreview as $tx) {
+            $transactionsHtml .= $renderWalletPreviewItem($tx);
+        }
+    }
+
+    $walletJournalStatsHtml = '
+        <article class="wallet-v2-journal-stat-card wallet-v2-journal-stat-card-total">
+            <div class="wallet-v2-journal-stat-head">
+                <div class="wallet-v2-journal-stat-kicker">Журнал</div>
+                <div class="wallet-v2-journal-stat-chip">Усі</div>
+            </div>
+            <div class="wallet-v2-journal-stat-value">' . $walletTransactionsTotal . '</div>
+            <div class="wallet-v2-journal-stat-label">Всього операцій</div>
+            <div class="wallet-v2-journal-stat-foot">Повна кількість транзакцій у журналі користувача.</div>
+        </article>
+        <article class="wallet-v2-journal-stat-card wallet-v2-journal-stat-card-income">
+            <div class="wallet-v2-journal-stat-head">
+                <div class="wallet-v2-journal-stat-kicker">Баланс</div>
+                <div class="wallet-v2-journal-stat-chip">+</div>
+            </div>
+            <div class="wallet-v2-journal-stat-value wallet-v2-positive">' . $walletIncomeCount . '</div>
+            <div class="wallet-v2-journal-stat-label">Надходження</div>
+            <div class="wallet-v2-journal-stat-foot">Усі поповнення, бонуси та внутрішні нарахування.</div>
+        </article>
+        <article class="wallet-v2-journal-stat-card wallet-v2-journal-stat-card-expense">
+            <div class="wallet-v2-journal-stat-head">
+                <div class="wallet-v2-journal-stat-kicker">Списання</div>
+                <div class="wallet-v2-journal-stat-chip">-</div>
+            </div>
+            <div class="wallet-v2-journal-stat-value wallet-v2-negative">' . $walletExpenseCount . '</div>
+            <div class="wallet-v2-journal-stat-label">Витрати</div>
+            <div class="wallet-v2-journal-stat-foot">Усі витратні операції та списання з рахунку.</div>
+        </article>';
+
+    $walletHistoryHtml = '';
+    if (empty($walletTransactions)) {
+        $walletHistoryHtml = '<div class="wallet-v2-empty wallet-v2-history-empty">Повний журнал поки що порожній.</div>';
+    } else {
+        $walletHistoryGroups = [];
         foreach ($walletTransactions as $tx) {
-            $sign = $tx['direction'] === 'expense' ? '-' : '+';
-            $transactionsHtml .= '
-            <div class="wallet-v2-transaction wallet-v2-transaction-' . $tx['direction'] . '">
-                <div class="wallet-v2-transaction-icon">' . ($tx['direction'] === 'expense' ? '-' : '+') . '</div>
-                <div class="wallet-v2-transaction-info">
-                    <div class="wallet-v2-transaction-title">' . htmlspecialchars($tx['title']) . '</div>
-                    <div class="wallet-v2-transaction-meta">' . htmlspecialchars($tx['meta']) . '</div>
-                </div>
-                <div class="wallet-v2-transaction-amount">' . $sign . $formatAmount($tx['amount']) . $tx['currency'] . '</div>
-            </div>';
+            $groupKey = (string)($tx['day_key'] ?? '');
+            if ($groupKey === '') {
+                $groupKey = '__without_date__';
+            }
+            if (!isset($walletHistoryGroups[$groupKey])) {
+                $walletHistoryGroups[$groupKey] = [
+                    'label' => (string)($tx['day_label'] ?? 'Без дати'),
+                    'items' => [],
+                ];
+            }
+            $walletHistoryGroups[$groupKey]['items'][] = $tx;
+        }
+
+        foreach ($walletHistoryGroups as $group) {
+            $groupItemsHtml = '';
+            foreach ($group['items'] as $tx) {
+                $groupItemsHtml .= $renderWalletHistoryItem($tx);
+            }
+
+            $walletHistoryHtml .= '
+                <section class="wallet-v2-journal-group" data-wallet-history-group>
+                    <div class="wallet-v2-journal-date">' . htmlspecialchars((string)$group['label'], ENT_QUOTES, 'UTF-8') . '</div>
+                    <div class="wallet-v2-journal-group-list">
+                        ' . $groupItemsHtml . '
+                    </div>
+                </section>';
         }
     }
 
     View_Add('
-<div class="wallet-v2">
-    <div class="wallet-v2-hero">
-        <div class="wallet-v2-hero-text">
-            <div class="wallet-v2-kicker">Гаманець</div>
-            <div class="wallet-v2-title">Фінансовий центр</div>
-            <div class="wallet-v2-subtitle">Керуйте внутрішньою валютою та історією операцій</div>
+<div class="' . htmlspecialchars($walletRootClass, ENT_QUOTES, 'UTF-8') . '" data-wallet-v2 data-wallet-view-mode="' . ($walletJournalMode ? 'journal' : 'overview') . '" data-wallet-overview-url="' . htmlspecialchars($walletOverviewUrl, ENT_QUOTES, 'UTF-8') . '" data-wallet-transactions-url="' . htmlspecialchars($walletTransactionsUrl, ENT_QUOTES, 'UTF-8') . '">
+    <div class="wallet-v2-overview" data-wallet-overview>
+        <div class="wallet-v2-hero">
+            <div class="wallet-v2-hero-text">
+                <div class="wallet-v2-kicker">Гаманець</div>
+                <div class="wallet-v2-title">Фінансовий центр</div>
+                <div class="wallet-v2-subtitle">Керуйте внутрішньою валютою та історією операцій</div>
+            </div>
+            <button class="wallet-v2-cta" type="button"' . $ctaDisabled . '>Поповнити баланс</button>
         </div>
-        <button class="wallet-v2-cta" type="button"' . $ctaDisabled . '>Поповнити баланс</button>
+
+        <div class="wallet-v2-balance">
+            <div class="wallet-v2-balance-main' . $balanceDisabledClass . '">
+                <div class="wallet-v2-balance-label">Поточний баланс</div>
+                <div class="wallet-v2-balance-amount' . $balanceStateClass . '">' . $balanceLabel . '</div>
+                <div class="wallet-v2-balance-meta">' . $balanceNote . '</div>
+                <div class="wallet-v2-balance-actions">
+                    <button class="wallet-v2-btn wallet-v2-btn-primary" type="button"' . $balanceActionsDisabled . '>Поповнити</button>
+                    <button class="wallet-v2-btn wallet-v2-btn-ghost" type="button"' . $balanceActionsDisabled . '>Вивести</button>
+                </div>
+            </div>
+            <div class="wallet-v2-balance-side">
+                <div class="wallet-v2-token">
+                    <div class="wallet-v2-token-title">Внутрішня валюта</div>
+                    <div class="wallet-v2-token-value">
+                        <img src="/assets/images/finance/internal-anim.gif" alt="Внутрішня валюта" class="wallet-v2-token-icon">
+                        <span class="wallet-v2-token-amount">' . $internalBalanceLabel . '</span>
+                    </div>
+                </div>
+                <div class="wallet-v2-insight">
+                    <div class="wallet-v2-insight-title">Надходження за місяць</div>
+                    <div class="wallet-v2-insight-value">' . $formatAmount($walletMonthIncome) . '</div>
+                    <div class="wallet-v2-insight-meta">Витрати: ' . $formatAmount($walletMonthExpense) . '</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wallet-v2-grid">
+            <section class="wallet-v2-panel' . $cardsDisabledClass . '">
+                <div class="wallet-v2-panel-header">
+                    <div>
+                        <div class="wallet-v2-panel-title">Платіжні картки</div>
+                        <div class="wallet-v2-panel-subtitle">Підключені способи оплати</div>
+                    </div>
+                    <button class="wallet-v2-link-btn" type="button"' . $ctaDisabled . '>Додати картку</button>
+                </div>
+                <div class="wallet-v2-empty">' . $cardsNote . '</div>
+            </section>
+            <section class="wallet-v2-panel">
+                <div class="wallet-v2-panel-header">
+                    <div>
+                        <div class="wallet-v2-panel-title">Статистика місяця</div>
+                        <div class="wallet-v2-panel-subtitle">' . $monthLabel . '</div>
+                    </div>
+                </div>
+                <div class="wallet-v2-stats">
+                    <div class="wallet-v2-stat">
+                        <div class="wallet-v2-stat-label">Надходження</div>
+                        <div class="wallet-v2-stat-value wallet-v2-positive">+' . $formatAmount($walletMonthIncome) . '</div>
+                    </div>
+                    <div class="wallet-v2-stat">
+                        <div class="wallet-v2-stat-label">Витрати</div>
+                        <div class="wallet-v2-stat-value wallet-v2-negative">-' . $formatAmount($walletMonthExpense) . '</div>
+                    </div>
+                    <div class="wallet-v2-stat">
+                        <div class="wallet-v2-stat-label">Резерв</div>
+                        <div class="wallet-v2-stat-value">' . $formatAmount(max(0, $walletMonthIncome - $walletMonthExpense)) . '</div>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 
-    <div class="wallet-v2-balance">
-        <div class="wallet-v2-balance-main' . $balanceDisabledClass . '">
-            <div class="wallet-v2-balance-label">Поточний баланс</div>
-            <div class="wallet-v2-balance-amount' . $balanceStateClass . '">' . $balanceLabel . '</div>
-            <div class="wallet-v2-balance-meta">' . $balanceNote . '</div>
-            <div class="wallet-v2-balance-actions">
-                <button class="wallet-v2-btn wallet-v2-btn-primary" type="button"' . $balanceActionsDisabled . '>Поповнити</button>
-                <button class="wallet-v2-btn wallet-v2-btn-ghost" type="button"' . $balanceActionsDisabled . '>Вивести</button>
-            </div>
-        </div>
-        <div class="wallet-v2-balance-side">
-            <div class="wallet-v2-token">
-                <div class="wallet-v2-token-title">Внутрішня валюта</div>
-                <div class="wallet-v2-token-value">
-                    <img src="/assets/images/finance/internal-anim.gif" alt="Внутрішня валюта" class="wallet-v2-token-icon">
-                    <span class="wallet-v2-token-amount">' . $internalBalanceLabel . '</span>
-                </div>
-            </div>
-            <div class="wallet-v2-insight">
-                <div class="wallet-v2-insight-title">Надходження за місяць</div>
-                <div class="wallet-v2-insight-value">' . $formatAmount($walletMonthIncome) . '</div>
-                <div class="wallet-v2-insight-meta">Витрати: ' . $formatAmount($walletMonthExpense) . '</div>
-            </div>
-        </div>
+    <div class="wallet-v2-journal-summary" data-wallet-history-summary' . $walletHistorySummaryHidden . '>
+        ' . $walletJournalStatsHtml . '
     </div>
 
-    <div class="wallet-v2-grid">
-        <section class="wallet-v2-panel' . $cardsDisabledClass . '">
-            <div class="wallet-v2-panel-header">
-                <div>
-                    <div class="wallet-v2-panel-title">Платіжні картки</div>
-                    <div class="wallet-v2-panel-subtitle">Підключені способи оплати</div>
-                </div>
-                <button class="wallet-v2-link-btn" type="button"' . $ctaDisabled . '>Додати картку</button>
-            </div>
-            <div class="wallet-v2-empty">' . $cardsNote . '</div>
-        </section>
-        <section class="wallet-v2-panel">
-            <div class="wallet-v2-panel-header">
-                <div>
-                    <div class="wallet-v2-panel-title">Статистика місяця</div>
-                    <div class="wallet-v2-panel-subtitle">' . $monthLabel . '</div>
-                </div>
-            </div>
-            <div class="wallet-v2-stats">
-                <div class="wallet-v2-stat">
-                    <div class="wallet-v2-stat-label">Надходження</div>
-                    <div class="wallet-v2-stat-value wallet-v2-positive">+' . $formatAmount($walletMonthIncome) . '</div>
-                </div>
-                <div class="wallet-v2-stat">
-                    <div class="wallet-v2-stat-label">Витрати</div>
-                    <div class="wallet-v2-stat-value wallet-v2-negative">-' . $formatAmount($walletMonthExpense) . '</div>
-                </div>
-                <div class="wallet-v2-stat">
-                    <div class="wallet-v2-stat-label">Резерв</div>
-                    <div class="wallet-v2-stat-value">' . $formatAmount(max(0, $walletMonthIncome - $walletMonthExpense)) . '</div>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <section class="wallet-v2-panel wallet-v2-transactions">
+    <section class="wallet-v2-panel wallet-v2-transactions" data-wallet-transactions>
         <div class="wallet-v2-panel-header">
             <div>
-                <div class="wallet-v2-panel-title">Останні операції</div>
-                <div class="wallet-v2-panel-subtitle">Актуальний стан</div>
+                <div class="wallet-v2-panel-title" data-wallet-transactions-title data-compact-title="Останні операції" data-expanded-title="Журнал операцій">' . htmlspecialchars($walletTransactionsTitle, ENT_QUOTES, 'UTF-8') . '</div>
+                <div class="wallet-v2-panel-subtitle" data-wallet-transactions-subtitle data-compact-subtitle="Актуальний стан" data-expanded-subtitle="Повний список транзакцій з фільтрами за місяцем та пошуком">' . htmlspecialchars($walletTransactionsSubtitle, ENT_QUOTES, 'UTF-8') . '</div>
             </div>
-            <button class="wallet-v2-link-btn wallet-v2-link-btn-secondary" type="button">Всі операції</button>
+            <a class="wallet-v2-link-btn wallet-v2-link-btn-secondary" href="' . htmlspecialchars($walletToggleUrl, ENT_QUOTES, 'UTF-8') . '" data-wallet-open-history data-compact-label="Всі операції" data-expanded-label="Повернутись до гаманця">' . htmlspecialchars($walletToggleLabel, ENT_QUOTES, 'UTF-8') . '</a>
         </div>
-        <div class="wallet-v2-transactions-list">
+        <div class="wallet-v2-transactions-list" data-wallet-preview' . $walletPreviewHidden . '>
             ' . $transactionsHtml . '
+        </div>
+        <div class="wallet-v2-journal" data-wallet-history' . $walletHistoryHidden . '>
+            <div class="wallet-v2-filter-shell">
+                <div class="wallet-v2-filter-pills" role="tablist" aria-label="Фільтр за напрямком">
+                    <button class="wallet-v2-filter-pill is-active" type="button" data-wallet-direction-filter="all">Усі</button>
+                    <button class="wallet-v2-filter-pill" type="button" data-wallet-direction-filter="income">Надходження</button>
+                    <button class="wallet-v2-filter-pill" type="button" data-wallet-direction-filter="expense">Витрати</button>
+                </div>
+                <div class="wallet-v2-filter-grid">
+                    <label class="wallet-v2-filter-field wallet-v2-filter-field-search">
+                        <span>Пошук</span>
+                        <input type="search" placeholder="Назва, коментар або дата" data-wallet-history-search>
+                    </label>
+                    <label class="wallet-v2-filter-field" data-wallet-history-month-field>
+                        <span>Місяць</span>
+                        <input type="month" name="wallet_history_month" value="" max="' . htmlspecialchars($walletMonthMax, ENT_QUOTES, 'UTF-8') . '" data-wallet-history-month-display>
+                    </label>
+                </div>
+            </div>
+            <div class="wallet-v2-journal-result" data-wallet-history-result>Показано ' . $walletTransactionsTotal . ' з ' . $walletTransactionsTotal . ' операцій</div>
+            <div class="wallet-v2-journal-list" data-wallet-history-list>
+                ' . $walletHistoryHtml . '
+            </div>
+            <div class="wallet-v2-empty wallet-v2-history-empty" data-wallet-history-empty hidden>За цими фільтрами нічого не знайдено. Спробуйте змінити місяць або пошуковий запит.</div>
         </div>
     </section>
 </div>
 ');
+
+    View_Add(<<<'HTML'
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const wallet = document.querySelector("[data-wallet-v2]");
+    if (!wallet) {
+        return;
+    }
+
+    if (typeof window.initDatepicker === "function") {
+        window.initDatepicker(wallet);
+    }
+
+    const journalSection = wallet.querySelector("[data-wallet-transactions]");
+    const historyToggle = wallet.querySelector("[data-wallet-open-history]");
+    const historyPanel = wallet.querySelector("[data-wallet-history]");
+    const historySummary = wallet.querySelector("[data-wallet-history-summary]");
+    const previewPanel = wallet.querySelector("[data-wallet-preview]");
+    const titleEl = wallet.querySelector("[data-wallet-transactions-title]");
+    const subtitleEl = wallet.querySelector("[data-wallet-transactions-subtitle]");
+    const overviewUrl = wallet.dataset.walletOverviewUrl || "/wallet";
+    const journalUrl = wallet.dataset.walletTransactionsUrl || "/wallet/transactions";
+    const searchInput = wallet.querySelector("[data-wallet-history-search]");
+    const monthField = wallet.querySelector("[data-wallet-history-month-field]");
+    const monthInput = wallet.querySelector("[data-wallet-history-month-display]");
+    const monthHiddenInput = monthField ? monthField.querySelector('input[name="wallet_history_month"]') : null;
+    const resultEl = wallet.querySelector("[data-wallet-history-result]");
+    const emptyEl = wallet.querySelector("[data-wallet-history-empty]");
+    const items = Array.from(wallet.querySelectorAll("[data-wallet-history-item]"));
+    const groups = Array.from(wallet.querySelectorAll("[data-wallet-history-group]"));
+    const directionButtons = Array.from(wallet.querySelectorAll("[data-wallet-direction-filter]"));
+    const initialJournalMode = wallet.dataset.walletViewMode === "journal";
+    let activeDirection = "all";
+
+    if (historyPanel) {
+        historyPanel.hidden = false;
+    }
+    if (historySummary) {
+        historySummary.hidden = false;
+    }
+    if (previewPanel) {
+        previewPanel.hidden = false;
+        previewPanel.style.display = "";
+    }
+
+    function getMonthValue() {
+        if (monthHiddenInput) {
+            return String(monthHiddenInput.value || "").trim();
+        }
+        return monthInput ? String(monthInput.value || "").trim() : "";
+    }
+
+    function normalizePath(path) {
+        const normalized = String(path || "/").replace(/\/+$/, "");
+        return normalized === "" ? "/" : normalized;
+    }
+
+    function resolveUrl(url) {
+        try {
+            return new URL(url, window.location.origin);
+        } catch (error) {
+            return new URL("/", window.location.origin);
+        }
+    }
+
+    function currentPathIsJournal() {
+        return normalizePath(window.location.pathname) === normalizePath(resolveUrl(journalUrl).pathname);
+    }
+
+    function syncHistoryState(isExpanded, replace) {
+        const targetUrl = isExpanded ? journalUrl : overviewUrl;
+        const target = resolveUrl(targetUrl);
+        const targetPath = normalizePath(target.pathname);
+        const currentPath = normalizePath(window.location.pathname);
+        const currentSearch = String(window.location.search || "");
+        const targetSearch = String(target.search || "");
+
+        if (currentPath === targetPath && currentSearch === targetSearch && !replace) {
+            return;
+        }
+
+        const state = {
+            walletViewMode: isExpanded ? "journal" : "overview",
+            walletUrl: target.pathname + target.search + target.hash
+        };
+
+        if (replace) {
+            window.history.replaceState(state, "", target.pathname + target.search + target.hash);
+            return;
+        }
+
+        window.history.pushState(state, "", target.pathname + target.search + target.hash);
+    }
+
+    function updateHeading(isExpanded) {
+        if (titleEl) {
+            titleEl.textContent = isExpanded ? (titleEl.dataset.expandedTitle || titleEl.textContent) : (titleEl.dataset.compactTitle || titleEl.textContent);
+        }
+        if (subtitleEl) {
+            subtitleEl.textContent = isExpanded ? (subtitleEl.dataset.expandedSubtitle || subtitleEl.textContent) : (subtitleEl.dataset.compactSubtitle || subtitleEl.textContent);
+        }
+        if (historyToggle) {
+            historyToggle.textContent = isExpanded ? (historyToggle.dataset.expandedLabel || historyToggle.textContent) : (historyToggle.dataset.compactLabel || historyToggle.textContent);
+            historyToggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+        }
+    }
+
+    function filterHistory() {
+        if (!historyPanel || !items.length) {
+            return;
+        }
+
+        const searchValue = (searchInput ? searchInput.value : "").trim().toLowerCase();
+        const monthValue = getMonthValue();
+        const hasActiveFilters = searchValue !== "" || monthValue !== "" || activeDirection !== "all";
+        let visibleCount = 0;
+
+        items.forEach(function (item) {
+            const itemDirection = item.dataset.direction || "";
+            const itemMonth = item.dataset.month || "";
+            const itemSearch = (item.dataset.search || "").toLowerCase();
+
+            const matchesDirection = activeDirection === "all" || itemDirection === activeDirection;
+            const matchesMonth = monthValue === "" || itemMonth === monthValue;
+            const matchesSearch = searchValue === "" || itemSearch.indexOf(searchValue) !== -1;
+            const isVisible = matchesDirection && matchesMonth && matchesSearch;
+
+            item.hidden = !isVisible;
+            if (isVisible) {
+                visibleCount += 1;
+            }
+        });
+
+        groups.forEach(function (group) {
+            const hasVisibleItems = Array.from(group.querySelectorAll("[data-wallet-history-item]")).some(function (item) {
+                return !item.hidden;
+            });
+            group.hidden = !hasVisibleItems;
+        });
+
+        if (resultEl) {
+            resultEl.textContent = "Показано " + visibleCount + " з " + items.length + " операцій";
+        }
+        if (emptyEl) {
+            emptyEl.hidden = visibleCount > 0 || !hasActiveFilters;
+        }
+    }
+
+    function setDirection(direction) {
+        activeDirection = direction || "all";
+        directionButtons.forEach(function (button) {
+            const isActive = button.dataset.walletDirectionFilter === activeDirection;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+        filterHistory();
+    }
+
+    function setJournalMode(isExpanded, shouldScroll) {
+        if (!historyPanel || !historyToggle) {
+            return;
+        }
+
+        wallet.classList.toggle("is-journal-mode", isExpanded);
+        historyPanel.hidden = !isExpanded;
+        historyPanel.setAttribute("aria-hidden", isExpanded ? "false" : "true");
+        if (historySummary) {
+            historySummary.hidden = !isExpanded;
+            historySummary.setAttribute("aria-hidden", isExpanded ? "false" : "true");
+        }
+        if (previewPanel) {
+            previewPanel.hidden = isExpanded;
+            previewPanel.setAttribute("aria-hidden", isExpanded ? "true" : "false");
+        }
+        updateHeading(isExpanded);
+
+        if (isExpanded) {
+            filterHistory();
+        }
+
+        if (shouldScroll && isExpanded) {
+            window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(function () {
+                    window.scrollTo({
+                        top: 0,
+                        behavior: "smooth"
+                    });
+                });
+            });
+        }
+    }
+
+    if (historyToggle && historyPanel) {
+        historyToggle.addEventListener("click", function (event) {
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
+
+            event.preventDefault();
+            const nextState = !wallet.classList.contains("is-journal-mode");
+            setJournalMode(nextState, true);
+            syncHistoryState(nextState, false);
+        });
+    }
+
+    directionButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            setDirection(button.dataset.walletDirectionFilter || "all");
+        });
+    });
+
+    if (searchInput) {
+        searchInput.addEventListener("input", filterHistory);
+    }
+    if (monthHiddenInput) {
+        monthHiddenInput.addEventListener("input", filterHistory);
+        monthHiddenInput.addEventListener("change", filterHistory);
+    }
+    if (monthInput) {
+        monthInput.addEventListener("input", filterHistory);
+        monthInput.addEventListener("change", filterHistory);
+        monthInput.addEventListener("blur", filterHistory);
+        monthInput.addEventListener("keydown", function (event) {
+            if (event.key === "Backspace" || event.key === "Delete") {
+                window.setTimeout(filterHistory, 0);
+            }
+        });
+    }
+    document.addEventListener("click", function (event) {
+        if (!event.target.closest(".xdp-popup")) {
+            return;
+        }
+        if (event.target.closest(".xdp-month, .xdp-clear, .xdp-today")) {
+            window.setTimeout(filterHistory, 0);
+        }
+    });
+
+    setDirection(activeDirection);
+    setJournalMode(initialJournalMode, false);
+    syncHistoryState(initialJournalMode, true);
+
+    window.addEventListener("popstate", function () {
+        setJournalMode(currentPathIsJournal(), false);
+    });
+
+    window.addEventListener("pageshow", function () {
+        setJournalMode(currentPathIsJournal(), false);
+    });
+
+    window.requestAnimationFrame(function () {
+        wallet.classList.add("is-ready");
+    });
+});
+</script>
+HTML);
 }
 
 // Повідомлення (md=11)
@@ -4304,7 +5212,7 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
                     <form method="post" class="notify-action-form">
                         <input type="hidden" name="notify_action" value="' . ($status === 'unread' ? 'mark_read' : 'mark_unread') . '">
                         <input type="hidden" name="notification_id" value="' . $noteId . '">
-                        <button type="submit" class="notify-mark-btn">' . ($status === 'unread' ? 'Позначити прочитаним' : 'Позначити непрочитаним') . '</button>
+                        <button type="submit" class="notify-mark-btn' . ($status === 'unread' ? '' : ' notify-mark-btn--mark-unread') . '">' . ($status === 'unread' ? 'Позначити прочитаним' : 'Позначити непрочитаним') . '</button>
                     </form>
                         </div>
                     </div>
@@ -4349,7 +5257,7 @@ if ($md == 11 && $_SESSION['logged'] == 1) {
         ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6l6 6"></path></svg>'
         : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 6a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2" /><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" /><path d="M10 12l4 0" /></svg>';
     $archiveToggleHtml = '
-        <a class="notify-archive-btn' . ($notifyView === 'archive' ? ' is-active' : '') . '" href="' . htmlspecialchars($toggleUrl, ENT_QUOTES, 'UTF-8') . '">
+        <a class="notify-archive-btn' . ($notifyView === 'archive' ? ' is-active' : '') . '" href="' . htmlspecialchars($toggleUrl, ENT_QUOTES, 'UTF-8') . '" aria-label="' . htmlspecialchars($toggleLabel, ENT_QUOTES, 'UTF-8') . '" title="' . htmlspecialchars($toggleLabel, ENT_QUOTES, 'UTF-8') . '">
             ' . $toggleIcon . '
             ' . htmlspecialchars($toggleLabel, ENT_QUOTES, 'UTF-8') . '
         </a>';
@@ -4468,10 +5376,16 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
         if (!in_array($transactionsCurrencyFilter, ['internal', 'uah'], true)) {
             $transactionsCurrencyFilter = 'internal';
         }
+        $transactionsFilterMode = strtolower(trim((string)($_GET['filter_mode'] ?? '')));
         $transactionsDateFromInput = trim((string)($_GET['date_from'] ?? ''));
         $transactionsDateToInput = trim((string)($_GET['date_to'] ?? ''));
+        $transactionsMonthInput = trim((string)($_GET['month'] ?? ''));
+        if (!in_array($transactionsFilterMode, ['range', 'month'], true)) {
+            $transactionsFilterMode = $transactionsMonthInput !== '' ? 'month' : 'range';
+        }
         $transactionsDateFrom = null;
         $transactionsDateTo = null;
+        $transactionsMonthLabel = '';
         $roleBreakdown = [
             'Бухгалтери' => 0,
             'Креатори' => 0,
@@ -4485,26 +5399,54 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
         $chartUahIncome = [];
         $chartUahExpense = [];
 
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $transactionsDateFromInput)) {
-            $parsedDateFrom = DateTimeImmutable::createFromFormat('Y-m-d', $transactionsDateFromInput);
-            if ($parsedDateFrom instanceof DateTimeImmutable) {
-                $transactionsDateFrom = $parsedDateFrom->setTime(0, 0, 0);
-            }
-        }
+        if ($transactionsFilterMode === 'month') {
+            if (preg_match('/^\d{4}-\d{2}$/', $transactionsMonthInput)) {
+                $parsedMonth = DateTimeImmutable::createFromFormat('!Y-m', $transactionsMonthInput);
+                if ($parsedMonth instanceof DateTimeImmutable) {
+                    $transactionsDateFrom = $parsedMonth->setTime(0, 0, 0);
+                    $transactionsDateTo = $parsedMonth->modify('last day of this month')->setTime(0, 0, 0);
+                    $transactionsMonthInput = $parsedMonth->format('Y-m');
 
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $transactionsDateToInput)) {
-            $parsedDateTo = DateTimeImmutable::createFromFormat('Y-m-d', $transactionsDateToInput);
-            if ($parsedDateTo instanceof DateTimeImmutable) {
-                $transactionsDateTo = $parsedDateTo->setTime(0, 0, 0);
+                    $transactionsMonthNames = [
+                        1 => 'Січень',
+                        2 => 'Лютий',
+                        3 => 'Березень',
+                        4 => 'Квітень',
+                        5 => 'Травень',
+                        6 => 'Червень',
+                        7 => 'Липень',
+                        8 => 'Серпень',
+                        9 => 'Вересень',
+                        10 => 'Жовтень',
+                        11 => 'Листопад',
+                        12 => 'Грудень',
+                    ];
+                    $transactionsMonthNumber = (int)$parsedMonth->format('n');
+                    $transactionsMonthLabel = ($transactionsMonthNames[$transactionsMonthNumber] ?? $parsedMonth->format('m')) . ' ' . $parsedMonth->format('Y');
+                }
             }
-        }
+        } else {
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $transactionsDateFromInput)) {
+                $parsedDateFrom = DateTimeImmutable::createFromFormat('Y-m-d', $transactionsDateFromInput);
+                if ($parsedDateFrom instanceof DateTimeImmutable) {
+                    $transactionsDateFrom = $parsedDateFrom->setTime(0, 0, 0);
+                }
+            }
 
-        if ($transactionsDateFrom && $transactionsDateTo && $transactionsDateTo < $transactionsDateFrom) {
-            $swapDate = $transactionsDateFrom;
-            $transactionsDateFrom = $transactionsDateTo;
-            $transactionsDateTo = $swapDate;
-            $transactionsDateFromInput = $transactionsDateFrom->format('Y-m-d');
-            $transactionsDateToInput = $transactionsDateTo->format('Y-m-d');
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $transactionsDateToInput)) {
+                $parsedDateTo = DateTimeImmutable::createFromFormat('Y-m-d', $transactionsDateToInput);
+                if ($parsedDateTo instanceof DateTimeImmutable) {
+                    $transactionsDateTo = $parsedDateTo->setTime(0, 0, 0);
+                }
+            }
+
+            if ($transactionsDateFrom && $transactionsDateTo && $transactionsDateTo < $transactionsDateFrom) {
+                $swapDate = $transactionsDateFrom;
+                $transactionsDateFrom = $transactionsDateTo;
+                $transactionsDateTo = $swapDate;
+                $transactionsDateFromInput = $transactionsDateFrom->format('Y-m-d');
+                $transactionsDateToInput = $transactionsDateTo->format('Y-m-d');
+            }
         }
 
         if ($dblink && $hasWalletsTable) {
@@ -4650,6 +5592,7 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
                         u.idx AS profile_user_id,
                         u.fname,
                         u.lname,
+                        u.avatar,
                         u.email,
                         (
                             SELECT COUNT(*)
@@ -4691,6 +5634,7 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
                             u.idx AS profile_user_id,
                             u.fname,
                             u.lname,
+                            u.avatar,
                             u.email,
                             (
                                 SELECT COUNT(*)
@@ -4809,36 +5753,105 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
         ];
         $transactionsCurrencySummary = $transactionsCurrencyLabels[$transactionsCurrencyFilter] ?? $transactionsCurrencyLabels['internal'];
         $transactionsRangeSummary = 'За весь час';
-        if ($transactionsDateFrom instanceof DateTimeImmutable && $transactionsDateTo instanceof DateTimeImmutable) {
+        if ($transactionsFilterMode === 'month' && $transactionsMonthLabel !== '') {
+            $transactionsRangeSummary = 'Місяць: ' . $transactionsMonthLabel;
+        } elseif ($transactionsDateFrom instanceof DateTimeImmutable && $transactionsDateTo instanceof DateTimeImmutable) {
             $transactionsRangeSummary = 'Період: ' . $transactionsDateFrom->format('d.m.Y') . ' - ' . $transactionsDateTo->format('d.m.Y');
         } elseif ($transactionsDateFrom instanceof DateTimeImmutable) {
             $transactionsRangeSummary = 'Від: ' . $transactionsDateFrom->format('d.m.Y');
         } elseif ($transactionsDateTo instanceof DateTimeImmutable) {
             $transactionsRangeSummary = 'До: ' . $transactionsDateTo->format('d.m.Y');
         }
+        $transactionsFilterQuery = [
+            'currency' => $transactionsCurrencyFilter,
+            'filter_mode' => $transactionsFilterMode,
+        ];
+        if ($transactionsFilterMode === 'month') {
+            if ($transactionsMonthInput !== '') {
+                $transactionsFilterQuery['month'] = $transactionsMonthInput;
+            }
+        } else {
+            if ($transactionsDateFromInput !== '') {
+                $transactionsFilterQuery['date_from'] = $transactionsDateFromInput;
+            }
+            if ($transactionsDateToInput !== '') {
+                $transactionsFilterQuery['date_to'] = $transactionsDateToInput;
+            }
+        }
+        $transactionsInternalQuery = $transactionsFilterQuery;
+        $transactionsInternalQuery['currency'] = 'internal';
+        $transactionsUahQuery = $transactionsFilterQuery;
+        $transactionsUahQuery['currency'] = 'uah';
+        $transactionsResetQuery = [
+            'currency' => $transactionsCurrencyFilter,
+            'filter_mode' => $transactionsFilterMode,
+        ];
+        $transactionsHasActiveDateFilter = ($transactionsFilterMode === 'month')
+            ? ($transactionsMonthInput !== '')
+            : ($transactionsDateFromInput !== '' || $transactionsDateToInput !== '');
+        $transactionsMonthMax = $today instanceof DateTimeImmutable ? $today->format('Y-m') : date('Y-m');
 
         $transactionsFilterHtml = '
-            <div class="admin-tools-filter-form">
-                <div class="admin-tools-filter-row">
+            <div class="admin-tools-filter-form admin-tools-filter-form--transactions">
+                <div class="admin-tools-filter-stack">
+                    <div class="admin-tools-filter-row admin-tools-filter-row--tabs">
                     <div class="admin-tools-filter-group admin-tools-filter-group--tabs" data-transactions-currency-tabs>
-                        <a class="admin-tools-filter-pill admin-tools-filter-pill--tab' . ($transactionsCurrencyFilter === 'internal' ? ' is-active' : '') . '" data-transactions-currency-link="internal" href="' . htmlspecialchars(profileAdminToolsUrl('transactions') . '?currency=internal' . ($transactionsDateFromInput !== '' ? '&date_from=' . rawurlencode($transactionsDateFromInput) : '') . ($transactionsDateToInput !== '' ? '&date_to=' . rawurlencode($transactionsDateToInput) : ''), ENT_QUOTES, 'UTF-8') . '">Внутрішні</a>
-                        <a class="admin-tools-filter-pill admin-tools-filter-pill--tab' . ($transactionsCurrencyFilter === 'uah' ? ' is-active' : '') . '" data-transactions-currency-link="uah" href="' . htmlspecialchars(profileAdminToolsUrl('transactions') . '?currency=uah' . ($transactionsDateFromInput !== '' ? '&date_from=' . rawurlencode($transactionsDateFromInput) : '') . ($transactionsDateToInput !== '' ? '&date_to=' . rawurlencode($transactionsDateToInput) : ''), ENT_QUOTES, 'UTF-8') . '">UAH</a>
+                        <a class="admin-tools-filter-pill admin-tools-filter-pill--tab' . ($transactionsCurrencyFilter === 'internal' ? ' is-active' : '') . '" data-transactions-currency-link="internal" href="' . htmlspecialchars(profileAdminToolsUrl('transactions') . '?' . http_build_query($transactionsInternalQuery, '', '&', PHP_QUERY_RFC3986), ENT_QUOTES, 'UTF-8') . '">Внутрішні</a>
+                        <a class="admin-tools-filter-pill admin-tools-filter-pill--tab' . ($transactionsCurrencyFilter === 'uah' ? ' is-active' : '') . '" data-transactions-currency-link="uah" href="' . htmlspecialchars(profileAdminToolsUrl('transactions') . '?' . http_build_query($transactionsUahQuery, '', '&', PHP_QUERY_RFC3986), ENT_QUOTES, 'UTF-8') . '">UAH</a>
                     </div>
-                    <form class="admin-tools-filter-group admin-tools-filter-group--dates" method="get" action="' . htmlspecialchars(profileAdminToolsUrl('transactions'), ENT_QUOTES, 'UTF-8') . '">
+                    </div>
+                    <div class="admin-tools-filter-row admin-tools-filter-row--controls">
+                    <form class="admin-tools-filter-group admin-tools-filter-group--dates" method="get" action="' . htmlspecialchars(profileAdminToolsUrl('transactions'), ENT_QUOTES, 'UTF-8') . '" data-filter-mode="' . htmlspecialchars($transactionsFilterMode, ENT_QUOTES, 'UTF-8') . '">
                         <input type="hidden" name="currency" value="' . htmlspecialchars($transactionsCurrencyFilter, ENT_QUOTES, 'UTF-8') . '">
-                        <label class="admin-tools-filter-field">
-                            <span>Від</span>
-                            <input type="date" name="date_from" value="' . htmlspecialchars($transactionsDateFromInput, ENT_QUOTES, 'UTF-8') . '">
-                        </label>
-                        <label class="admin-tools-filter-field">
-                            <span>До</span>
-                            <input type="date" name="date_to" value="' . htmlspecialchars($transactionsDateToInput, ENT_QUOTES, 'UTF-8') . '">
-                        </label>
-                        <button class="admin-tools-filter-btn" type="submit">Застосувати</button>
-                        ' . (($transactionsDateFromInput !== '' || $transactionsDateToInput !== '')
-                            ? '<a class="admin-tools-filter-reset" data-transactions-date-reset href="' . htmlspecialchars(profileAdminToolsUrl('transactions') . '?currency=' . rawurlencode($transactionsCurrencyFilter), ENT_QUOTES, 'UTF-8') . '">Скинути дати</a>'
-                            : '') . '
+                        <div class="admin-tools-filter-layout">
+                            <div class="admin-tools-filter-mode-shell">
+                                <span class="admin-tools-filter-mode-label">Фільтрувати за</span>
+                                <ul class="admin-tools-filter-mode-list" aria-label="Режим фільтра журналу">
+                                    <li class="admin-tools-filter-mode-item">
+                                        <label class="admin-tools-filter-pill admin-tools-filter-mode-pill' . ($transactionsFilterMode === 'range' ? ' is-active' : '') . '" data-transactions-filter-mode-option="range">
+                                            <input type="radio" name="filter_mode" value="range"' . ($transactionsFilterMode === 'range' ? ' checked' : '') . '>
+                                            Період
+                                        </label>
+                                    </li>
+                                    <li class="admin-tools-filter-mode-item">
+                                        <label class="admin-tools-filter-pill admin-tools-filter-mode-pill' . ($transactionsFilterMode === 'month' ? ' is-active' : '') . '" data-transactions-filter-mode-option="month">
+                                            <input type="radio" name="filter_mode" value="month"' . ($transactionsFilterMode === 'month' ? ' checked' : '') . '>
+                                            Місяць
+                                        </label>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="admin-tools-filter-primary">
+                                <div class="admin-tools-filter-values">
+                                    <div class="admin-tools-filter-panels">
+                                        <div class="admin-tools-filter-panel admin-tools-filter-panel--range" data-transactions-filter-panel="range"' . ($transactionsFilterMode === 'range' ? '' : ' hidden') . '>
+                                            <label class="admin-tools-filter-field">
+                                                <span>Від</span>
+                                                <input type="date" name="date_from" value="' . htmlspecialchars($transactionsDateFromInput, ENT_QUOTES, 'UTF-8') . '">
+                                            </label>
+                                            <label class="admin-tools-filter-field">
+                                                <span>До</span>
+                                                <input type="date" name="date_to" value="' . htmlspecialchars($transactionsDateToInput, ENT_QUOTES, 'UTF-8') . '">
+                                            </label>
+                                        </div>
+                                        <div class="admin-tools-filter-panel admin-tools-filter-panel--month" data-transactions-filter-panel="month"' . ($transactionsFilterMode === 'month' ? '' : ' hidden') . '>
+                                            <label class="admin-tools-filter-field admin-tools-filter-field--month">
+                                                <span>Місяць</span>
+                                                <input type="month" name="month" value="' . htmlspecialchars($transactionsMonthInput, ENT_QUOTES, 'UTF-8') . '" max="' . htmlspecialchars($transactionsMonthMax, ENT_QUOTES, 'UTF-8') . '">
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="admin-tools-filter-actions">
+                                        <button class="admin-tools-filter-btn" type="submit">Застосувати</button>
+                                    ' . ($transactionsHasActiveDateFilter
+                                        ? '<a class="admin-tools-filter-reset" data-transactions-date-reset href="' . htmlspecialchars(profileAdminToolsUrl('transactions') . '?' . http_build_query($transactionsResetQuery, '', '&', PHP_QUERY_RFC3986), ENT_QUOTES, 'UTF-8') . '">Скинути фільтр</a>'
+                                        : '') . '
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </form>
+                    </div>
                 </div>
             </div>
             <div class="admin-tools-filter-summary">Показано: ' . htmlspecialchars($transactionsCurrencySummary, ENT_QUOTES, 'UTF-8') . '. ' . htmlspecialchars($transactionsRangeSummary, ENT_QUOTES, 'UTF-8') . '.</div>';
@@ -5064,9 +6077,34 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
             if ($selectedWalletUserName === '') {
                 $selectedWalletUserName = $selectedWalletUserId > 0 ? ('Користувач #' . $selectedWalletUserId) : ('Гаманець #' . (int)$selectedWalletRow['wallet_id']);
             }
+            $selectedWalletAvatar = trim((string)($selectedWalletRow['avatar'] ?? ''));
+            if ($selectedWalletAvatar !== '' && $selectedWalletAvatar[0] !== '/') {
+                $selectedWalletAvatar = '/' . ltrim($selectedWalletAvatar, '/');
+            }
+            $selectedWalletAvatarInitialSource = trim((string)($selectedWalletRow['lname'] ?? ''));
+            if ($selectedWalletAvatarInitialSource === '') {
+                $selectedWalletAvatarInitialSource = trim((string)($selectedWalletRow['fname'] ?? ''));
+            }
+            if ($selectedWalletAvatarInitialSource === '') {
+                $selectedWalletAvatarInitialSource = $selectedWalletUserName;
+            }
+            $selectedWalletAvatarInitial = function_exists('mb_substr')
+                ? mb_substr($selectedWalletAvatarInitialSource, 0, 1, 'UTF-8')
+                : substr($selectedWalletAvatarInitialSource, 0, 1);
+            if (function_exists('mb_strtoupper')) {
+                $selectedWalletAvatarInitial = mb_strtoupper($selectedWalletAvatarInitial, 'UTF-8');
+            } else {
+                $selectedWalletAvatarInitial = strtoupper($selectedWalletAvatarInitial);
+            }
+            if ($selectedWalletAvatarInitial === '') {
+                $selectedWalletAvatarInitial = 'U';
+            }
             $selectedWalletEmail = trim((string)($selectedWalletRow['email'] ?? ''));
             $selectedWalletLastTxAt = trim((string)($selectedWalletRow['last_internal_tx_at'] ?? ''));
             $selectedWalletLastTxLabel = $selectedWalletLastTxAt !== '' ? date('d.m.Y H:i', strtotime($selectedWalletLastTxAt)) : 'Без операцій';
+            $selectedWalletPublicProfileUrl = $selectedWalletUserId > 0
+                ? '/public-profile.php?idx=' . $selectedWalletUserId
+                : '';
             $selectedWalletTxTableHtml = '';
 
             if (empty($selectedWalletTransactions)) {
@@ -5127,15 +6165,38 @@ if ($md == 12 && $_SESSION['logged'] == 1) {
             $selectedWalletHtml = '
                 <section class="admin-wallet-detail">
                     <div class="admin-wallet-detail__header">
-                        <div>
+                        <div class="admin-wallet-detail__summary">
                             <div class="admin-tools-intro-kicker">Гаманець #' . htmlspecialchars((string)($selectedWalletRow['wallet_id'] ?? 0), ENT_QUOTES, 'UTF-8') . '</div>
-                            <h3 class="admin-wallet-detail__title">' . htmlspecialchars($selectedWalletUserName, ENT_QUOTES, 'UTF-8') . '</h3>
-                            <div class="admin-wallet-detail__meta">' . htmlspecialchars($selectedWalletEmail !== '' ? $selectedWalletEmail : ('ID користувача: ' . $selectedWalletUserId), ENT_QUOTES, 'UTF-8') . '</div>
+                            <div class="admin-wallet-detail__identity">
+                                <div class="admin-wallet-detail__avatar">
+                                    ' . ($selectedWalletAvatar !== ''
+                                        ? '<img src="' . htmlspecialchars($selectedWalletAvatar, ENT_QUOTES, 'UTF-8') . '" alt="Аватар користувача" class="admin-wallet-detail__avatar-image">'
+                                        : '<div class="admin-wallet-detail__avatar-fallback" aria-hidden="true">' . htmlspecialchars($selectedWalletAvatarInitial, ENT_QUOTES, 'UTF-8') . '</div>'
+                                    ) . '
+                                </div>
+                                <div class="admin-wallet-detail__identity-copy">
+                                <div class="admin-wallet-detail__title-row">
+                                    <h3 class="admin-wallet-detail__title">' . htmlspecialchars($selectedWalletUserName, ENT_QUOTES, 'UTF-8') . '</h3>
+                                    ' . ($selectedWalletPublicProfileUrl !== ''
+                                        ? '<a class="admin-wallet-detail__profile-link" href="' . htmlspecialchars($selectedWalletPublicProfileUrl, ENT_QUOTES, 'UTF-8') . '" title="Відкрити публічний профіль" aria-label="Відкрити публічний профіль">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                                                <path d="M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                                                <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+                                            </svg>
+                                        </a>'
+                                        : ''
+                                    ) . '
+                                </div>
+                                <div class="admin-wallet-detail__meta">' . htmlspecialchars($selectedWalletEmail !== '' ? $selectedWalletEmail : ('ID користувача: ' . $selectedWalletUserId), ENT_QUOTES, 'UTF-8') . '</div>
+                            </div>
+                            </div>
                         </div>
                         <a class="admin-tools-panel-link admin-wallet-open-link" href="' . htmlspecialchars($backToWalletsUrl, ENT_QUOTES, 'UTF-8') . '">До списку</a>
                     </div>
                     <div class="admin-wallet-detail__stats">
-                        <article class="admin-tools-stat-card admin-tools-stat-card--accent-soft"><div class="admin-tools-stat-label">Поточний баланс</div><div class="admin-tools-stat-value">' . $formatAmount((float)($selectedWalletRow['internal_balance'] ?? 0)) . '</div><div class="admin-tools-stat-foot">Внутрішня валюта користувача</div></article>
+                        <article class="admin-tools-stat-card admin-tools-stat-card--accent-soft"><div class="admin-tools-stat-label">Поточний баланс</div><div class="admin-tools-stat-value admin-tools-stat-value--with-icon"><img src="/assets/images/finance/internal-anim.gif" alt="Внутрішня валюта" class="admin-tools-stat-value-icon"><span>' . $formatAmount((float)($selectedWalletRow['internal_balance'] ?? 0)) . '</span></div><div class="admin-tools-stat-foot">Внутрішня валюта користувача</div></article>
                         <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Операцій</div><div class="admin-tools-stat-value">' . $formatCount((int)($selectedWalletRow['internal_tx_count'] ?? 0)) . '</div><div class="admin-tools-stat-foot">Усі внутрішні записи цього гаманця</div></article>
                         <article class="admin-tools-stat-card"><div class="admin-tools-stat-label">Остання активність</div><div class="admin-tools-stat-value admin-wallet-detail__stat-small">' . htmlspecialchars($selectedWalletLastTxLabel, ENT_QUOTES, 'UTF-8') . '</div><div class="admin-tools-stat-foot">Остання внутрішня транзакція</div></article>
                     </div>
@@ -5470,7 +6531,7 @@ function Menu_Profile(): string
         0 => 'Загальна інформація',
         11 => 'Повідомлення',
         2 => 'Налаштування профілю',
-        4 => 'Фінансова інформація',
+        4 => 'Гаманець',
         5 => 'Бухгалтерія',
         10 => 'Кабінет прибиральника',
         12 => 'Бухгалтерія',
@@ -5508,7 +6569,9 @@ function Menu_Profile(): string
         $badge = ($md === 11 && $unreadCount > 0)
             ? '<span class="profile-menu-badge">' . (int)$unreadCount . '</span>'
             : '';
-        $href = $md === 12 ? profileAdminToolsUrl('accounting') : 'profile.php?md=' . $md;
+        $href = $md === 12
+            ? profileAdminToolsUrl('accounting')
+            : ($md === 4 ? profileWalletUrl() : 'profile.php?md=' . $md);
         $out .= '<a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '" class="menu-link '.$activeClass.'">'
             . $icon . htmlspecialchars($title) . $badge
             . '</a>';
@@ -5548,7 +6611,7 @@ function Menu_Profile_Mobile(): void
             <a class="profile-menu-item" href="profile.php?md=0">Загальна інформація</a>
             <a class="profile-menu-item" href="profile.php?md=11">Повідомлення' . $unreadBadge . '</a>
             <a class="profile-menu-item" href="profile.php?md=2">Налаштування профілю</a>
-            <a class="profile-menu-item" href="profile.php?md=4">Фінансова інформація</a>
+            <a class="profile-menu-item" href="' . htmlspecialchars(profileWalletUrl(), ENT_QUOTES, 'UTF-8') . '">Гаманець</a>
     ');
 
     $status = $_SESSION['status'] ?? 0;

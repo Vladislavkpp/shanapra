@@ -2,8 +2,9 @@
 require_once "function.php";
 require_once "function_vra.php";
 
-$cp = $_GET['page'] ?? 1;
-$perpage = 5;
+$cp = max(1, (int)($_GET['page'] ?? 1));
+$perpageParam = (int)($_GET['pp'] ?? 0);
+$perpage = $perpageParam > 0 ? min($perpageParam, 24) : 5;
 
 $q           = trim($_GET['q'] ?? '');
 $surname     = $_GET['surname'] ?? '';
@@ -75,6 +76,10 @@ while ($row = mysqli_fetch_assoc($res)) {
 
 // Количество результатов
 $cout = count($rows);
+$countPages = max(1, (int)ceil($cout / $perpage));
+if ($cp > $countPages) {
+    $cp = $countPages;
+}
 
 $search_line = "";
 
@@ -199,6 +204,7 @@ if ($idxkladb !== '') {
     View_Add('<input type="hidden" name="idxkladb" value="' . (int)$idxkladb . '">');
 }
 View_Add('<input type="hidden" name="page" value="1">');
+View_Add('<input type="hidden" name="pp" value="' . $perpage . '">');
 View_Add('<div class="search-input-wrap">');
 View_Add('<input type="text" name="q" value="' . htmlspecialchars($q, ENT_QUOTES, 'UTF-8') . '" placeholder="Пошук за прізвищем / ім`ям / по батькові" class="search-inputx" autocomplete="off">');
 View_Add('<button type="submit" class="search-submit-btn" aria-label="Пошук"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>');
@@ -212,6 +218,7 @@ View_Add('
     <div class="filter-panel" id="filterPanel" aria-hidden="true">
         <form class="filter-form" action="/searchx.php" method="get">
             <input type="hidden" name="page" value="1">
+            <input type="hidden" name="pp" value="' . $perpage . '">
             ' . ($q !== '' ? '<input type="hidden" name="q" value="' . htmlspecialchars($q, ENT_QUOTES, 'UTF-8') . '">' : '') . '
             <div class="filter-header">
                 <div class="filter-title">Розширений фільтр</div>
@@ -270,7 +277,7 @@ View_Add('</div>');
 View_Add('</div>');
 
 // Карточки с пагинацией
-View_Add('<div class="cards-out">');
+View_Add('<div class="cards-out" data-searchx-grid data-card-min-width="284" data-card-gap="16" data-current-perpage="' . $perpage . '">');
 
 if ($cout === 0) {
     View_Add('<div class="no-results-wrap"><div class="no-results">Немає публікацій за вашим запитом</div></div>');
@@ -289,7 +296,13 @@ if ($cout === 0) {
             $c['photo1'],
             $c['district_name'],
             $c['region_name'],
-            $c['moderation_status'] ?? ''
+            $c['moderation_status'] ?? '',
+            $c['dt1_year'] ?? '',
+            $c['dt1_month'] ?? '',
+            $c['dt1_day'] ?? '',
+            $c['dt2_year'] ?? '',
+            $c['dt2_month'] ?? '',
+            $c['dt2_day'] ?? ''
         ));
 
     }
@@ -329,6 +342,68 @@ document.addEventListener("DOMContentLoaded", function () {
     var districtWrapper = document.getElementById("district-wrapper");
     var cemeteryWrapper = document.getElementById("cemetery-wrapper");
     var mobileFilterMedia = window.matchMedia("(max-width: 768px)");
+    var cardsOut = document.querySelector("[data-searchx-grid]");
+    var perPageInputs = document.querySelectorAll("input[name=\"pp\"]");
+    var perPageResizeTimer = null;
+    var mobileCardsPerPage = 8;
+
+    function syncPerPageInputs(value) {
+        perPageInputs.forEach(function (input) {
+            input.value = String(value);
+        });
+    }
+
+    function getCardsPerRow() {
+        if (!cardsOut) return null;
+
+        var minWidth = parseFloat(cardsOut.getAttribute("data-card-min-width") || "284");
+        var gap = parseFloat(cardsOut.getAttribute("data-card-gap") || "16");
+        var styles = window.getComputedStyle(cardsOut);
+        var paddingLeft = parseFloat(styles.paddingLeft || "0");
+        var paddingRight = parseFloat(styles.paddingRight || "0");
+        var contentWidth = cardsOut.clientWidth - paddingLeft - paddingRight;
+
+        if (contentWidth <= 0 || minWidth <= 0) {
+            return null;
+        }
+
+        return Math.max(1, Math.floor((contentWidth + gap) / (minWidth + gap)));
+    }
+
+    function getAdaptivePerPage() {
+        if (mobileFilterMedia.matches) {
+            return mobileCardsPerPage;
+        }
+
+        return getCardsPerRow();
+    }
+
+    function syncAdaptivePerPage() {
+        var cardsPerPage = getAdaptivePerPage();
+        if (!cardsPerPage) {
+            return;
+        }
+
+        syncPerPageInputs(cardsPerPage);
+
+        var url = new URL(window.location.href);
+        var currentPerPage = parseInt(url.searchParams.get("pp") || "", 10);
+
+        if (currentPerPage === cardsPerPage) {
+            return;
+        }
+
+        url.searchParams.set("pp", String(cardsPerPage));
+        window.location.replace(url.toString());
+    }
+
+    if (cardsOut) {
+        window.requestAnimationFrame(syncAdaptivePerPage);
+        window.addEventListener("resize", function () {
+            clearTimeout(perPageResizeTimer);
+            perPageResizeTimer = window.setTimeout(syncAdaptivePerPage, 180);
+        });
+    }
 
     function getCustomOptions(wrapper) {
         if (!wrapper) return null;

@@ -720,7 +720,7 @@ function addWalletTransaction(
                 $notificationBody,
                 'wallet',
                 'normal',
-                '/profile.php?md=4',
+                profileWalletUrl(),
                 'Перейти до гаманця',
                 $notificationSourceType,
                 $txId,
@@ -839,7 +839,7 @@ function ensureUserWalletWithWelcomeBonus(int $userId, float $amount = 500.0, $d
                 'На ваш рахунок зараховано ' . $amountLabel . ' внутрішньої валюти.',
                 'wallet',
                 'normal',
-                '/profile.php?md=4',
+                profileWalletUrl(),
                 'Перейти до гаманця',
                 'welcome_bonus',
                 null,
@@ -895,7 +895,7 @@ function ensureUserWalletWithWelcomeBonus(int $userId, float $amount = 500.0, $d
             'На ваш рахунок зараховано ' . $amountLabel . ' внутрішньої валюти.',
             'wallet',
             'normal',
-            '/profile.php?md=4',
+            profileWalletUrl(),
             'Перейти до гаманця',
             'welcome_bonus',
             null,
@@ -1363,10 +1363,60 @@ function getLocationFromIP($ip): string
     return 'Україна';
 }
 
+function appDateTimeZone(): DateTimeZone
+{
+    static $timezone = null;
+
+    if ($timezone instanceof DateTimeZone) {
+        return $timezone;
+    }
+
+    foreach (['Europe/Kyiv', 'Europe/Kiev', date_default_timezone_get(), 'UTC'] as $timezoneId) {
+        if (!is_string($timezoneId) || trim($timezoneId) === '') {
+            continue;
+        }
+
+        try {
+            $timezone = new DateTimeZone($timezoneId);
+            return $timezone;
+        } catch (Throwable $e) {
+            continue;
+        }
+    }
+
+    return new DateTimeZone('UTC');
+}
+
 function formatTimeAgo($timestamp): string
 {
-    $now = time();
-    $diff = $now - strtotime($timestamp);
+    $rawTimestamp = trim((string)$timestamp);
+    if ($rawTimestamp === '') {
+        return '';
+    }
+
+    $timezone = appDateTimeZone();
+
+    try {
+        $date = preg_match('/(?:Z|[+\-]\d{2}:\d{2})$/', $rawTimestamp)
+            ? new DateTimeImmutable($rawTimestamp)
+            : new DateTimeImmutable($rawTimestamp, $timezone);
+        $date = $date->setTimezone($timezone);
+        $now = new DateTimeImmutable('now', $timezone);
+        $diff = $now->getTimestamp() - $date->getTimestamp();
+    } catch (Throwable $e) {
+        $parsedTimestamp = strtotime($rawTimestamp);
+        if ($parsedTimestamp === false) {
+            return $rawTimestamp;
+        }
+
+        $date = (new DateTimeImmutable('@' . $parsedTimestamp))->setTimezone($timezone);
+        $now = new DateTimeImmutable('now', $timezone);
+        $diff = $now->getTimestamp() - $date->getTimestamp();
+    }
+
+    if ($diff < 0) {
+        $diff = 0;
+    }
     
     if ($diff < 60) {
         return 'Зараз';
@@ -1381,10 +1431,10 @@ function formatTimeAgo($timestamp): string
         return $days . ' ' . ($days == 1 ? 'день' : ($days < 5 ? 'дні' : 'днів')) . ' тому';
     } else {
         $months = ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв', 'лип', 'серп', 'вер', 'жовт', 'лист', 'груд'];
-        $date = date('j', strtotime($timestamp));
-        $month = $months[date('n', strtotime($timestamp)) - 1];
-        $year = date('Y', strtotime($timestamp));
-        return $date . ' ' . $month . ' ' . $year;
+        $day = $date->format('j');
+        $month = $months[(int)$date->format('n') - 1];
+        $year = $date->format('Y');
+        return $day . ' ' . $month . ' ' . $year;
     }
 }
 
@@ -1473,6 +1523,31 @@ function CurrentPublicRequestPath(): string
     $requestPath = (string)(parse_url($requestUri, PHP_URL_PATH) ?? '/');
 
     return NormalizePublicPath($requestPath);
+}
+
+function profileWalletUrl(string $section = 'overview'): string
+{
+    $normalizedSection = strtolower(trim($section));
+    if (in_array($normalizedSection, ['transactions', 'transaction', 'journal', 'history'], true)) {
+        return '/wallet/transactions';
+    }
+
+    return '/wallet';
+}
+
+function isWalletTransactionsRequestPath(?string $path = null): bool
+{
+    $normalizedPath = NormalizePublicPath($path === null ? CurrentPublicRequestPath() : $path);
+
+    return $normalizedPath === NormalizePublicPath('/wallet/transactions');
+}
+
+function isWalletRequestPath(?string $path = null): bool
+{
+    $normalizedPath = NormalizePublicPath($path === null ? CurrentPublicRequestPath() : $path);
+
+    return $normalizedPath === NormalizePublicPath('/wallet')
+        || isWalletTransactionsRequestPath($normalizedPath);
 }
 
 function NormalizePublicMarkup(string $markup): string
@@ -1819,7 +1894,7 @@ function Menu_Up_Old(): string {
     Повідомлення
 </a>
 
-<a href="/profile.php?md=4">
+<a href="' . profileWalletUrl() . '">
     <span class="icon-wrapper">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="dpm-icon bi bi-credit-card-2-back-fill" viewBox="0 0 16 16">
           <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5H0zm11.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM0 11v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1z"/>
@@ -3135,7 +3210,13 @@ function Cardsx(
     string $img = '',
     ?string $district = '',
     ?string $region = '',
-    ?string $moderationStatus = ''
+    ?string $moderationStatus = '',
+    ?string $d1Year = '',
+    ?string $d1Month = '',
+    ?string $d1Day = '',
+    ?string $d2Year = '',
+    ?string $d2Month = '',
+    ?string $d2Day = ''
 
 ): string {
 
@@ -3147,18 +3228,16 @@ function Cardsx(
         $img = '/graves/noimage.jpg';
     }
 
-    $d1Unknown = empty($d1) || $d1 === '0000-00-00' || $d1 === '0000-00-00';
-    $d2Unknown = empty($d2) || $d2 === '0000-00-00' || $d2 === '0000-00-00';
-
-    if ($d1Unknown && $d2Unknown) {
-        $dates = 'Дати не вказані';
-    } elseif ($d1Unknown) {
-        $dates = 'Дата не вказана - '.DateFormat($d2);
-    } elseif ($d2Unknown) {
-        $dates = DateFormat($d1).' - Дата не вказана';
-    } else {
-        $dates = DateFormat($d1).' - '.DateFormat($d2);
-    }
+    $dates = graveDateFormatRangeFromRow([
+        'dt1' => $d1,
+        'dt1_year' => $d1Year,
+        'dt1_month' => $d1Month,
+        'dt1_day' => $d1Day,
+        'dt2' => $d2,
+        'dt2_year' => $d2Year,
+        'dt2_month' => $d2Month,
+        'dt2_day' => $d2Day,
+    ]);
 
     $moderationBadgeHtml = '';
     if ($moderationStatus === 'pending') {
@@ -3213,6 +3292,105 @@ function Cardsx(
     $out .= '</div>';
 
     return $out;
+}
+
+function graveDateNormalizePartValue(mixed $value, int $padLength = 0): string
+{
+    $value = trim((string)$value);
+    if ($value === '') {
+        return '';
+    }
+
+    $digits = preg_replace('/\D+/u', '', $value);
+    if ($digits === null || $digits === '') {
+        return '';
+    }
+
+    $number = (int)$digits;
+    if ($number <= 0) {
+        return '';
+    }
+
+    $normalized = (string)$number;
+    if ($padLength > 0) {
+        $normalized = str_pad($normalized, $padLength, '0', STR_PAD_LEFT);
+    }
+
+    return $normalized;
+}
+
+function graveDateFormatPartial(
+    mixed $fullDate,
+    mixed $year = '',
+    mixed $month = '',
+    mixed $day = '',
+    string $fallback = 'Не вказано',
+    string $unknownToken = '??'
+): string {
+    $fullDate = trim((string)$fullDate);
+    if ($fullDate !== '' && $fullDate !== '0000-00-00') {
+        $timestamp = strtotime($fullDate);
+        if ($timestamp !== false) {
+            return date('d.m.Y', $timestamp);
+        }
+    }
+
+    $yearValue = graveDateNormalizePartValue($year, 4);
+    $monthValue = graveDateNormalizePartValue($month, 2);
+    $dayValue = graveDateNormalizePartValue($day, 2);
+
+    if ($yearValue === '' && $monthValue === '' && $dayValue === '') {
+        return $fallback;
+    }
+
+    return implode('.', [
+        $dayValue !== '' ? $dayValue : $unknownToken,
+        $monthValue !== '' ? $monthValue : $unknownToken,
+        $yearValue !== '' ? $yearValue : $unknownToken,
+    ]);
+}
+
+function graveDateFormatFromRow(array $row, string $prefix, string $fallback = 'Не вказано', string $unknownToken = '??'): string
+{
+    return graveDateFormatPartial(
+        $row[$prefix] ?? '',
+        $row[$prefix . '_year'] ?? '',
+        $row[$prefix . '_month'] ?? '',
+        $row[$prefix . '_day'] ?? '',
+        $fallback,
+        $unknownToken
+    );
+}
+
+function graveDateFormatRangeFromRow(array $row): string
+{
+    $birth = graveDateFormatFromRow($row, 'dt1', '');
+    $death = graveDateFormatFromRow($row, 'dt2', '');
+
+    if ($birth !== '' && $death !== '') {
+        return $birth . ' - ' . $death;
+    }
+    if ($birth !== '') {
+        return $birth . ' - Дата не вказана';
+    }
+    if ($death !== '') {
+        return 'Дата не вказана - ' . $death;
+    }
+
+    return 'Дати не вказані';
+}
+
+function graveDateYearFromRow(array $row, string $prefix): string
+{
+    $fullDate = trim((string)($row[$prefix] ?? ''));
+    if ($fullDate !== '' && $fullDate !== '0000-00-00') {
+        $timestamp = strtotime($fullDate);
+        if ($timestamp !== false) {
+            return date('Y', $timestamp);
+        }
+    }
+
+    return graveDateNormalizePartValue($row[$prefix . '_year'] ?? '', 4);
 }
 
 function DateFormatUnknown(string $date): string {
@@ -3731,10 +3909,13 @@ function Menu_Mobile_Bottom(
     bool $isSectionsActive,
     bool $isOnProfilePage
 ): string {
+    $currentRequestPath = CurrentPublicRequestPath();
+    $isWalletPage = isWalletRequestPath($currentRequestPath);
+    $isOnProfilePage = ($isOnProfilePage || $isWalletPage);
     $currentProfileMd = isset($_GET['md']) ? trim((string)$_GET['md']) : '';
     $isProfileOverviewActive = $isOnProfilePage && ($currentProfileMd === '' || $currentProfileMd === '0');
     $isProfileSettingsActive = $isOnProfilePage && $currentProfileMd === '2';
-    $isProfileFinanceActive = $isOnProfilePage && $currentProfileMd === '4';
+    $isProfileFinanceActive = $isWalletPage || ($isOnProfilePage && $currentProfileMd === '4');
     $isProfileNotificationsActive = $isOnProfilePage && $currentProfileMd === '11';
     $isProfileMode = $isLogged && $isOnProfilePage;
 
@@ -3817,7 +3998,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('settings', $isProfileSettingsActive) . '</span>
                 <span class="menu-mobile-bottom__label">Налаштування</span>
             </a>
-            <a href="/profile.php?md=4" class="menu-mobile-bottom__item' . ($isProfileFinanceActive ? ' is-active' : '') . '">
+            <a href="' . profileWalletUrl() . '" class="menu-mobile-bottom__item' . ($isProfileFinanceActive ? ' is-active' : '') . '">
                 <span class="menu-mobile-bottom__icon">' . Menu_Mobile_Bottom_Icon('finance', $isProfileFinanceActive) . '</span>
                 <span class="menu-mobile-bottom__label">Фінанси</span>
             </a>
@@ -3883,7 +4064,7 @@ function Menu_Up(): string
     $profileToggleId = 'menu-up-new-profile-' . $uid;
 
     $currentRequestPath = CurrentPublicRequestPath();
-    $isOnProfilePage = ($currentRequestPath === NormalizePublicPath('/profile.php'));
+    $isOnProfilePage = ($currentRequestPath === NormalizePublicPath('/profile.php') || isWalletRequestPath($currentRequestPath));
     $requestPath = $currentRequestPath;
 
     $fromPath = '';
@@ -3908,6 +4089,8 @@ function Menu_Up(): string
     $isChurchActive = ($resolvedPath === NormalizePublicPath('/church.php'));
     $isClientsActive = ($resolvedPath === NormalizePublicPath('/clients.php'));
     $isAddGraveActive = ($resolvedPath === NormalizePublicPath('/graveaddform.php'));
+    $isAddCemeteryActive = ($resolvedPath === NormalizePublicPath('/searchcem/addcemetery'));
+    $isAddMenuActive = ($isAddGraveActive || $isAddCemeteryActive);
     $isModerationPanelActive = ($resolvedPath === NormalizePublicPath('/moderation-panel.php'));
     $isSectionsActive = ($resolvedPath === NormalizePublicPath('/mobile-nav.php'));
 
@@ -4055,7 +4238,7 @@ function Menu_Up(): string
                         Повідомлення
                     </a>
 
-                    <a href="/profile.php?md=4">
+                    <a href="' . profileWalletUrl() . '">
                         <span class="icon-wrapper">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dpm-icon icon icon-tabler icons-tabler-outline icon-tabler-wallet">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -4268,7 +4451,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 <a' . ($isChurchActive ? ' class="is-active"' : '') . ' href="/in-dev.php?from=/church.php">Церкви</a>
                 <a' . ($isClientsActive ? ' class="is-active"' : '') . ' href="/in-dev.php?from=/clients.php">Наші клієнти</a>
-                <a' . ($isAddGraveActive ? ' class="is-active"' : '') . ' href="/graveaddform.php">Додати поховання</a>
+
+                <div class="menu-up-new-nav-group">
+                    <span class="menu-up-new-nav-trigger' . ($isAddMenuActive ? ' is-active' : '') . '">Додати публікацію</span>
+                    <div class="menu-up-new-submenu" role="menu">
+                        <a' . ($isAddGraveActive ? ' class="is-active menu-up-new-submenu-link--icon"' : ' class="menu-up-new-submenu-link--icon"') . ' href="/graveaddform.php"><span class="menu-up-new-submenu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg></span><span class="menu-up-new-submenu-label">Додати поховання</span></a>
+                        <a' . ($isAddCemeteryActive ? ' class="is-active menu-up-new-submenu-link--icon"' : ' class="menu-up-new-submenu-link--icon"') . ' href="/searchcem/addcemetery"><span class="menu-up-new-submenu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-map-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3l6 -3v8.5" /><path d="M9 4v13" /><path d="M15 7v8" /><path d="M16 19h6" /><path d="M19 16v6" /></svg></span><span class="menu-up-new-submenu-label">Додати кладовище</span></a>
+                    </div>
+                </div>
             </nav>
 
             ' . $desktopActions . '

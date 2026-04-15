@@ -1,9 +1,40 @@
 <?php
+if (!defined('CEMETERY_MAP_ROUTE')) {
+    define('CEMETERY_MAP_ROUTE', '/test.php');
+}
+if (!defined('CEMETERY_MAP_CSS')) {
+    define('CEMETERY_MAP_CSS', '/test.css');
+}
+if (!defined('CEMETERY_MAP_DATA_ROUTE')) {
+    define('CEMETERY_MAP_DATA_ROUTE', CEMETERY_MAP_ROUTE);
+}
+if (!defined('CEMETERY_MAP_SELECTED_ID')) {
+    define('CEMETERY_MAP_SELECTED_ID', (int)($_GET['idx'] ?? ($_GET['cemetery_id'] ?? 0)));
+}
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/function.php';
 
 function testMapEsc(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function testMapRegionOptions(): string
+{
+    $dblink = DbConnect();
+    if (!dbTableExists($dblink, 'region')) {
+        mysqli_close($dblink);
+        return '<option value="">Немає даних областей</option>';
+    }
+    $res = mysqli_query($dblink, 'SELECT idx, title FROM region ORDER BY title');
+    $out = '<option value="">Оберіть область</option>';
+
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $out .= '<option value="' . (int)($row['idx'] ?? 0) . '">' . testMapEsc((string)($row['title'] ?? '')) . '</option>';
+    }
+
+    mysqli_close($dblink);
+    return $out;
 }
 
 function testMapNormalizePosition(?string $value): int
@@ -46,11 +77,8 @@ function testMapBuildBurialShortName(array $grave): string
 
 function testMapBuildBurialYears(array $grave): string
 {
-    $birth = trim((string)($grave['dt1'] ?? ''));
-    $death = trim((string)($grave['dt2'] ?? ''));
-
-    $birthYear = ($birth !== '' && $birth !== '0000-00-00') ? substr($birth, 0, 4) : '';
-    $deathYear = ($death !== '' && $death !== '0000-00-00') ? substr($death, 0, 4) : '';
+    $birthYear = graveDateYearFromRow($grave, 'dt1');
+    $deathYear = graveDateYearFromRow($grave, 'dt2');
 
     if ($birthYear !== '' && $deathYear !== '') {
         return $birthYear . '-' . $deathYear;
@@ -112,12 +140,44 @@ function testMapBuildQuarterPayload(mysqli $dblink, int $cemeteryId): array
         return $payload;
     }
 
+    $cemeterySelect = [
+        'c.idx',
+        'c.title',
+        'c.adress',
+        'c.town',
+        'c.district',
+    ];
+    $cemeteryJoin = [];
+
+    if (dbTableExists($dblink, 'misto')) {
+        $cemeterySelect[] = 'm.title AS town_name';
+        $cemeteryJoin[] = 'LEFT JOIN misto m ON c.town = m.idx';
+    } else {
+        $cemeterySelect[] = "'' AS town_name";
+    }
+
+    if (dbTableExists($dblink, 'district')) {
+        $cemeterySelect[] = 'd.title AS district_name';
+        $cemeteryJoin[] = 'LEFT JOIN district d ON c.district = d.idx';
+
+        if (dbTableExists($dblink, 'region')) {
+            $cemeterySelect[] = 'r.title AS region_name';
+            $cemeteryJoin[] = 'LEFT JOIN region r ON d.region = r.idx';
+        } else {
+            $cemeterySelect[] = "'' AS region_name";
+        }
+    } else {
+        $cemeterySelect[] = "'' AS district_name";
+        $cemeterySelect[] = "'' AS region_name";
+    }
+
     $cemeteryRes = mysqli_query(
         $dblink,
-        "SELECT idx, title, adress
-         FROM cemetery
-         WHERE idx = {$cemeteryId}
-           AND LOWER(COALESCE(moderation_status, 'pending')) <> 'rejected'
+        'SELECT ' . implode(', ', $cemeterySelect) . '
+         FROM cemetery c
+         ' . implode("\n", $cemeteryJoin) . '
+         WHERE c.idx = ' . $cemeteryId . "
+           AND LOWER(COALESCE(c.moderation_status, 'pending')) <> 'rejected'
          LIMIT 1"
     );
 
@@ -132,6 +192,9 @@ function testMapBuildQuarterPayload(mysqli $dblink, int $cemeteryId): array
         'id' => (int)($cemetery['idx'] ?? 0),
         'title' => trim((string)($cemetery['title'] ?? '')),
         'address' => trim((string)($cemetery['adress'] ?? '')),
+        'town' => trim((string)($cemetery['town_name'] ?? '')),
+        'district' => trim((string)($cemetery['district_name'] ?? '')),
+        'region' => trim((string)($cemetery['region_name'] ?? '')),
     ];
 
     if (!dbTableExists($dblink, 'grave')) {
@@ -143,7 +206,7 @@ function testMapBuildQuarterPayload(mysqli $dblink, int $cemeteryId): array
 
     $graveRes = mysqli_query(
         $dblink,
-        "SELECT idx, lname, fname, mname, dt1, dt2, pos1, pos2, pos3, photo1
+        "SELECT idx, lname, fname, mname, dt1, dt1_year, dt1_month, dt1_day, dt2, dt2_year, dt2_month, dt2_day, pos1, pos2, pos3, photo1
          FROM grave
          WHERE idxkladb = {$cemeteryId}
            AND LOWER(COALESCE(moderation_status, 'pending')) <> 'rejected'
@@ -234,45 +297,112 @@ if (($_GET['action'] ?? '') === 'map_data') {
 }
 
 $cemeteries = testMapLoadCemeteries($dblink);
-$initialCemeteryId = $cemeteries[0]['id'] ?? 0;
+$requestedInitialCemeteryId = (int)CEMETERY_MAP_SELECTED_ID;
+$requestedInitialQuarterKey = (string)testMapNormalizePosition((string)($_GET['quarter'] ?? ''));
+$initialCemeteryId = 0;
+if ($requestedInitialCemeteryId > 0) {
+    foreach ($cemeteries as $cemetery) {
+        if ((int)($cemetery['id'] ?? 0) === $requestedInitialCemeteryId) {
+            $initialCemeteryId = $requestedInitialCemeteryId;
+            break;
+        }
+    }
+}
 mysqli_close($dblink);
 
 $pageUp = Page_Up('Карта кладовища');
-$pageUp = str_replace('</head>', '    <link rel="stylesheet" href="/test.css">' . xbr . '</head>', $pageUp);
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+$host = $_SERVER['HTTP_HOST'] ?? 'shanapra.com';
+$cssUrl = $protocol . "://" . $host . testMapEsc((string)CEMETERY_MAP_CSS);
+$pageUp = str_replace('</head>', '    <link rel="stylesheet" href="' . $cssUrl . '?v=' . filemtime($_SERVER['DOCUMENT_ROOT'] . CEMETERY_MAP_CSS) . '">' . xbr . '</head>', $pageUp);
 echo $pageUp;
 echo Menu_Up();
 ?>
 <main class="test-map-page">
     <div class="test-map-shell">
-        <section class="test-map-controls">
-            <label class="test-map-field">
-                <span>Кладовище</span>
-                <select id="cemetery-select" class="test-map-select"<?= $initialCemeteryId <= 0 ? ' disabled' : '' ?>>
-                    <?php if ($cemeteries): ?>
-                        <?php foreach ($cemeteries as $cemetery): ?>
-                            <option value="<?= (int)$cemetery['id'] ?>">
-                                <?= testMapEsc($cemetery['title']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <option value="">Немає доступних кладовищ</option>
-                    <?php endif; ?>
-                </select>
-            </label>
-
-            <label class="test-map-field">
-                <span>Квартал</span>
-                <select id="quarter-select" class="test-map-select" disabled>
-                    <option value="">Спочатку оберіть кладовище</option>
-                </select>
-            </label>
+        <section class="test-map-hero">
+            <div class="test-map-hero__content">
+                <span class="test-map-hero__eyebrow">Інтерактивна мапа</span>
+                <h1>Карта кладовища</h1>
+                <p>Оберіть кладовище та квартал, щоб переглянути розміщення місць, перейти до наявних поховань або швидко додати новий запис у вільну позицію.</p>
+                <div class="test-map-hero__meta">
+                    <span class="test-map-hero__pill">Пошук кварталів і місць</span>
+                    <span class="test-map-hero__pill">Навігація по схемі</span>
+                </div>
+            </div>
         </section>
 
-        <div id="map-status" class="test-map-status" aria-live="polite">
-            Завантаження даних карти...
-        </div>
+        <section id="cemetery-picker-section" class="test-map-picker"<?= $initialCemeteryId > 0 ? ' hidden' : '' ?>>
+            <form id="cemetery-picker-form" class="test-map-picker__card">
+                <div class="test-map-picker__head">
+                    <div class="test-map-picker__icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"/></svg>
+                    </div>
+                    <div class="test-map-picker__head-content">
+                        <h2>Оберіть кладовище</h2>
+                        <p>Оберіть область, потім район та кладовище. Карта відкриється автоматично після вибору.</p>
+                    </div>
+                </div>
 
-        <section class="test-map-summary">
+                <div class="test-map-picker__steps">
+                    <div class="test-map-picker__step" data-step="1" data-state="active">
+                        <div class="test-map-picker__step-header">
+                            <span class="test-map-picker__step-num">1</span>
+                            <span class="test-map-picker__step-title">Область</span>
+                        </div>
+                        <div class="test-map-picker__step-body">
+                            <div class="test-select-host">
+                                <select id="region-select" class="test-map-select"<?= !$cemeteries ? ' disabled' : '' ?>>
+                                    <?= testMapRegionOptions() ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="test-map-picker__step" data-step="2" data-state="waiting">
+                        <div class="test-map-picker__step-header">
+                            <span class="test-map-picker__step-num">2</span>
+                            <span class="test-map-picker__step-title">Район</span>
+                        </div>
+                        <div class="test-map-picker__step-body">
+                            <div class="test-select-host">
+                                <select id="district-select" class="test-map-select"<?= !$cemeteries ? ' disabled' : '' ?> disabled>
+                                    <option value="">Спочатку оберіть область</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="test-map-picker__step" data-step="3" data-state="waiting">
+                        <div class="test-map-picker__step-header">
+                            <span class="test-map-picker__step-num">3</span>
+                            <span class="test-map-picker__step-title">Кладовище</span>
+                        </div>
+                        <div class="test-map-picker__step-body">
+                            <div class="test-select-host">
+                                <select id="cemetery-select" class="test-map-select"<?= !$cemeteries ? ' disabled' : '' ?> disabled>
+                                    <option value="">Спочатку оберіть район</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="test-map-picker__actions">
+                        <button type="submit" id="cemetery-picker-submit" class="test-map-picker__submit"<?= !$cemeteries ? ' disabled' : '' ?>>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7l6 -3l6 3l6 -3v13l-6 3l-6 -3l-6 3v-13"/><path d="M9 4v13"/><path d="M15 7v13"/></svg>
+                            Карта
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <select id="quarter-select" class="test-map-hidden-select" disabled aria-hidden="true" tabindex="-1">
+            <option value="">Спочатку оберіть кладовище</option>
+        </select>
+
+        <section id="map-summary-section" class="test-map-summary"<?= $initialCemeteryId > 0 ? '' : ' hidden' ?>>
+            <button type="button" id="change-cemetery-btn" class="test-map-summary__change">Змінити кладовище</button>
             <article class="test-map-summary__item">
                 <span class="test-map-summary__label">Кладовище</span>
                 <strong id="summary-cemetery">-</strong>
@@ -295,7 +425,7 @@ echo Menu_Up();
             </article>
         </section>
 
-        <section class="test-quarter-card">
+        <section id="quarter-map-section" class="test-quarter-card"<?= $initialCemeteryId > 0 ? '' : ' hidden' ?>>
             <div class="test-quarter-card__header">
                 <div>
                     <span class="test-map-section-label">Рівень 1</span>
@@ -315,11 +445,13 @@ echo Menu_Up();
 
             <div class="test-quarter-frame">
                 <div class="test-quarter-frame__caption">Карта кварталів</div>
-                <div id="quarter-map-grid" class="test-quarter-map" aria-live="polite"></div>
+                <div class="test-quarter-map-scroller">
+                    <div id="quarter-map-grid" class="test-quarter-map" aria-live="polite"></div>
+                </div>
             </div>
         </section>
 
-        <section class="test-quarter-card">
+        <section id="quarter-detail-section" class="test-quarter-card"<?= $initialCemeteryId > 0 ? '' : ' hidden' ?>>
             <div class="test-quarter-card__header">
                 <div>
                     <span class="test-map-section-label">Рівень 2</span>
@@ -329,7 +461,7 @@ echo Menu_Up();
                 <div class="test-quarter-legend">
                     <span class="test-quarter-legend__item">
                         <i class="test-quarter-legend__dot test-quarter-legend__dot--empty"></i>
-                        Вільне місце
+                        Вільно
                     </span>
                     <span class="test-quarter-legend__item">
                         <i class="test-quarter-legend__dot test-quarter-legend__dot--occupied"></i>
@@ -348,11 +480,29 @@ echo Menu_Up();
     </div>
 </main>
 
+<div id="test-place-popover" class="test-place-popover" hidden>
+    <div class="test-place-popover__panel" role="dialog" aria-modal="false" aria-live="polite">
+        <button type="button" class="test-place-popover__close" aria-label="Закрити меню місця">×</button>
+        <div class="test-place-popover__content"></div>
+    </div>
+</div>
+
 <script>
 const initialCemeteryId = <?= (int)$initialCemeteryId ?>;
+const initialQuarterKey = <?= json_encode($requestedInitialQuarterKey, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+const configuredMapDataPath = <?= json_encode((string)CEMETERY_MAP_DATA_ROUTE, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+const configuredMapRoutePath = <?= json_encode((string)CEMETERY_MAP_ROUTE, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+const cemeteryPickerSection = document.getElementById('cemetery-picker-section');
+const cemeteryPickerForm = document.getElementById('cemetery-picker-form');
+const cemeteryPickerSubmit = document.getElementById('cemetery-picker-submit');
+const changeCemeteryBtn = document.getElementById('change-cemetery-btn');
+const regionSelect = document.getElementById('region-select');
+const districtSelect = document.getElementById('district-select');
 const cemeterySelect = document.getElementById('cemetery-select');
 const quarterSelect = document.getElementById('quarter-select');
-const mapStatus = document.getElementById('map-status');
+const mapSummarySection = document.getElementById('map-summary-section');
+const quarterMapSection = document.getElementById('quarter-map-section');
+const quarterDetailSection = document.getElementById('quarter-detail-section');
 const quarterMapGrid = document.getElementById('quarter-map-grid');
 const quarterMapFrame = quarterMapGrid.closest('.test-quarter-frame');
 const quarterMapTitle = document.getElementById('quarter-map-title');
@@ -363,12 +513,363 @@ const summaryQuarter = document.getElementById('summary-quarter');
 const summaryRows = document.getElementById('summary-rows');
 const summaryPlaces = document.getElementById('summary-places');
 const summaryBurials = document.getElementById('summary-burials');
+const placePopover = document.getElementById('test-place-popover');
+const placePopoverPanel = placePopover ? placePopover.querySelector('.test-place-popover__panel') : null;
+const placePopoverContent = placePopover ? placePopover.querySelector('.test-place-popover__content') : null;
+const placePopoverClose = placePopover ? placePopover.querySelector('.test-place-popover__close') : null;
 
 let currentPayload = null;
+let activePlaceTrigger = null;
+let allCemeteryOptions = [];
+let customSelectEnabled = true;
+const customSelectWrappers = new Map();
 
-function setStatus(message, state = '') {
-    mapStatus.textContent = message;
-    mapStatus.className = 'test-map-status' + (state ? ' is-' + state : '');
+function closeAllCustomSelects(exceptWrapper) {
+    document.querySelectorAll('.custom-select-wrapper.open').forEach((wrapper) => {
+        if (exceptWrapper && wrapper === exceptWrapper) return;
+        wrapper.classList.remove('open');
+        wrapper.classList.remove('open-up');
+        const optionsBox = wrapper.querySelector('.custom-options');
+        if (optionsBox) optionsBox.style.display = 'none';
+    });
+}
+
+function getCustomWrapper(selectEl) {
+    if (!selectEl || !selectEl.id) return null;
+    return selectEl.parentNode
+        ? selectEl.parentNode.querySelector('.custom-select-wrapper[data-select-id="' + selectEl.id + '"]')
+        : null;
+}
+
+function ensureCustomSelect(selectEl) {
+    if (!customSelectEnabled || !selectEl || !selectEl.id) return null;
+    let wrapper = getCustomWrapper(selectEl);
+    if (wrapper) return wrapper;
+
+    wrapper = document.createElement('div');
+    wrapper.className = 'custom-select-wrapper';
+    wrapper.dataset.selectId = selectEl.id;
+
+    const trigger = document.createElement('div');
+    trigger.className = 'custom-select-trigger';
+
+    const optionsBox = document.createElement('div');
+    optionsBox.className = 'custom-options';
+
+    trigger.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (selectEl.disabled) return;
+
+        const willOpen = !wrapper.classList.contains('open');
+        closeAllCustomSelects(wrapper);
+        if (willOpen) {
+            wrapper.classList.remove('open-up');
+            const triggerRect = trigger.getBoundingClientRect();
+            const viewportSpaceBelow = window.innerHeight - triggerRect.bottom;
+            const optionsHeight = Math.min(optionsBox.scrollHeight || 240, 240) + 10;
+            if (viewportSpaceBelow < optionsHeight) {
+                wrapper.classList.add('open-up');
+            }
+        } else {
+            wrapper.classList.remove('open-up');
+        }
+
+        wrapper.classList.toggle('open', willOpen);
+        optionsBox.style.display = willOpen ? 'flex' : 'none';
+    });
+
+    wrapper.addEventListener('mousedown', (event) => {
+        event.stopPropagation();
+    });
+
+    wrapper.appendChild(trigger);
+    wrapper.appendChild(optionsBox);
+    selectEl.classList.add('test-select-native-hidden');
+
+    if (selectEl.nextSibling) {
+        selectEl.parentNode.insertBefore(wrapper, selectEl.nextSibling);
+    } else {
+        selectEl.parentNode.appendChild(wrapper);
+    }
+
+    customSelectWrappers.set(selectEl.id, wrapper);
+    return wrapper;
+}
+
+function syncCustomSelect(selectEl, placeholderText = 'Оберіть') {
+    if (!customSelectEnabled || !selectEl) return;
+    const wrapper = ensureCustomSelect(selectEl);
+    if (!wrapper) return;
+    const trigger = wrapper.querySelector('.custom-select-trigger');
+    const optionsBox = wrapper.querySelector('.custom-options');
+    if (!trigger || !optionsBox) return;
+
+    const options = Array.from(selectEl.options || []).filter((opt) => !opt.hidden);
+    optionsBox.innerHTML = '';
+
+    const selectedOption = options.find((opt) => opt.value !== '' && opt.value === selectEl.value);
+    const triggerText = selectedOption
+        ? selectedOption.textContent
+        : (options[0] && options[0].textContent ? options[0].textContent : placeholderText);
+    trigger.textContent = triggerText;
+
+    options.forEach((opt) => {
+        const optionNode = document.createElement('span');
+        optionNode.textContent = opt.textContent;
+        if (!opt.value) {
+            optionNode.className = 'custom-option disabled';
+            optionsBox.appendChild(optionNode);
+            return;
+        }
+
+        optionNode.className = 'custom-option';
+        if (opt.value === selectEl.value) optionNode.classList.add('is-selected');
+        optionNode.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (selectEl.disabled) return;
+            selectEl.value = opt.value;
+            syncCustomSelect(selectEl, placeholderText);
+            closeAllCustomSelects();
+            selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        optionsBox.appendChild(optionNode);
+    });
+
+    wrapper.classList.toggle('disabled', !!selectEl.disabled);
+}
+
+function setPickerVisible(isVisible) {
+    if (cemeteryPickerSection) {
+        cemeteryPickerSection.hidden = !isVisible;
+    }
+    if (changeCemeteryBtn) {
+        changeCemeteryBtn.hidden = isVisible;
+    }
+}
+
+function resolveMapDataBaseUrl(path) {
+    const currentPath = window.location.pathname || '';
+    const normalizedPath = String(path || '').trim();
+
+    if (/cemetery-map\.php$/i.test(currentPath)) {
+        return window.location.origin + currentPath;
+    }
+
+    if (/^https?:\/\//i.test(normalizedPath)) {
+        const parsed = new URL(normalizedPath);
+        return window.location.origin === parsed.origin
+            ? parsed.toString()
+            : (window.location.origin + parsed.pathname);
+    }
+
+    return new URL(normalizedPath || currentPath, window.location.origin).toString();
+}
+
+const mapDataBaseUrl = resolveMapDataBaseUrl(configuredMapDataPath);
+
+const placeholderById = {
+    'region-select': 'Оберіть область',
+    'district-select': 'Оберіть район',
+    'cemetery-select': 'Оберіть кладовище',
+};
+
+function closeAllCustomSelects(exceptWrapper) {
+    document.querySelectorAll('.custom-select-wrapper.open').forEach((wrapper) => {
+        if (exceptWrapper && wrapper === exceptWrapper) return;
+        wrapper.classList.remove('open');
+        wrapper.classList.remove('open-up');
+        const optionsBox = wrapper.querySelector('.custom-options');
+        if (optionsBox) optionsBox.style.display = 'none';
+    });
+}
+
+function getCustomWrapper(selectEl) {
+    const host = selectEl && selectEl.parentNode ? selectEl.parentNode : null;
+    return host ? host.querySelector('.custom-select-wrapper[data-select-id="' + selectEl.id + '"]') : null;
+}
+
+function ensureCustomSelect(selectEl) {
+    if (!selectEl || !selectEl.id) return null;
+    let wrapper = getCustomWrapper(selectEl);
+    if (wrapper) return wrapper;
+
+    wrapper = document.createElement('div');
+    wrapper.className = 'custom-select-wrapper';
+    wrapper.dataset.selectId = selectEl.id;
+
+    const trigger = document.createElement('div');
+    trigger.className = 'custom-select-trigger';
+
+    const optionsBox = document.createElement('div');
+    optionsBox.className = 'custom-options';
+
+    trigger.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (selectEl.disabled) return;
+        const willOpen = !wrapper.classList.contains('open');
+        closeAllCustomSelects(wrapper);
+        if (willOpen) {
+            wrapper.classList.remove('open-up');
+            const triggerRect = trigger.getBoundingClientRect();
+            const viewportSpaceBelow = window.innerHeight - triggerRect.bottom;
+            const optionsHeight = Math.min(optionsBox.scrollHeight || 220, 220) + 10;
+            if (viewportSpaceBelow < optionsHeight) wrapper.classList.add('open-up');
+        } else {
+            wrapper.classList.remove('open-up');
+        }
+        wrapper.classList.toggle('open', willOpen);
+        optionsBox.style.display = willOpen ? 'flex' : 'none';
+    });
+
+    wrapper.addEventListener('mousedown', (event) => event.stopPropagation());
+    wrapper.appendChild(trigger);
+    wrapper.appendChild(optionsBox);
+
+    selectEl.classList.add('test-select-native-hidden');
+    const host = selectEl.parentNode;
+    if (selectEl.nextSibling) host.insertBefore(wrapper, selectEl.nextSibling);
+    else host.appendChild(wrapper);
+    return wrapper;
+}
+
+function syncCustomSelect(selectEl) {
+    const wrapper = ensureCustomSelect(selectEl);
+    if (!wrapper) return;
+    const trigger = wrapper.querySelector('.custom-select-trigger');
+    const optionsBox = wrapper.querySelector('.custom-options');
+    const options = Array.from(selectEl.options || []);
+    const placeholder = placeholderById[selectEl.id] || 'Оберіть';
+
+    optionsBox.innerHTML = '';
+    const selectedOption = options.find((opt) => opt.value !== '' && opt.value === selectEl.value) || null;
+    let triggerText = placeholder;
+    if (selectedOption) triggerText = selectedOption.textContent;
+    else if (options[0] && options[0].textContent) triggerText = options[0].textContent;
+    trigger.textContent = triggerText;
+
+    options.forEach((opt) => {
+        const optionNode = document.createElement('span');
+        optionNode.textContent = opt.textContent;
+        if (!opt.value) {
+            optionNode.className = 'custom-option disabled';
+            optionsBox.appendChild(optionNode);
+            return;
+        }
+        optionNode.className = 'custom-option';
+        if (opt.value === selectEl.value) optionNode.classList.add('is-selected');
+        optionNode.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (selectEl.disabled) return;
+            selectEl.value = opt.value;
+            syncCustomSelect(selectEl);
+            closeAllCustomSelects();
+            selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        optionsBox.appendChild(optionNode);
+    });
+
+    wrapper.classList.toggle('disabled', !!selectEl.disabled);
+}
+
+function resetDistrict() {
+    if (!districtSelect) return;
+    districtSelect.innerHTML = '<option value="">Спочатку оберіть область</option>';
+    districtSelect.disabled = true;
+    syncCustomSelect(districtSelect);
+}
+
+function resetCemetery() {
+    if (!cemeterySelect) return;
+    cemeterySelect.innerHTML = '<option value="">Спочатку оберіть район</option>';
+    cemeterySelect.disabled = true;
+    syncCustomSelect(cemeterySelect);
+    if (cemeteryPickerSubmit) cemeteryPickerSubmit.disabled = true;
+}
+
+function resolveAjaxEndpoint() {
+    const path = window.location.pathname && window.location.pathname !== '/' ? window.location.pathname : '/test.php';
+    return path;
+}
+
+function loadDistricts(regionId) {
+    if (!districtSelect) return;
+    resetCemetery();
+    districtSelect.disabled = true;
+    districtSelect.innerHTML = '<option value="">Завантаження...</option>';
+    syncCustomSelect(districtSelect);
+
+    const endpoint = resolveAjaxEndpoint();
+    fetch(endpoint + '?ajax_districts=1&region_id=' + encodeURIComponent(regionId), { credentials: 'same-origin' })
+        .then((res) => res.text())
+        .then((html) => {
+            districtSelect.innerHTML = html;
+            districtSelect.disabled = false;
+            syncCustomSelect(districtSelect);
+        })
+        .catch(() => {
+            districtSelect.innerHTML = '<option value="">Помилка завантаження</option>';
+            districtSelect.disabled = true;
+            syncCustomSelect(districtSelect);
+        });
+}
+
+function loadCemeteriesByDistrict(districtId) {
+    if (!cemeterySelect) return;
+    cemeterySelect.disabled = true;
+    cemeterySelect.innerHTML = '<option value="">Завантаження...</option>';
+    syncCustomSelect(cemeterySelect);
+    if (cemeteryPickerSubmit) cemeteryPickerSubmit.disabled = true;
+
+    const endpoint = resolveAjaxEndpoint();
+    fetch(endpoint + '?ajax_cemeteries=1&district_id=' + encodeURIComponent(districtId), { credentials: 'same-origin' })
+        .then((res) => res.text())
+        .then((html) => {
+            cemeterySelect.innerHTML = html;
+            cemeterySelect.disabled = false;
+            syncCustomSelect(cemeterySelect);
+            if (cemeteryPickerSubmit) cemeteryPickerSubmit.disabled = !String(cemeterySelect.value || '').trim();
+        })
+        .catch(() => {
+            cemeterySelect.innerHTML = '<option value="">Помилка завантаження</option>';
+            cemeterySelect.disabled = true;
+            syncCustomSelect(cemeterySelect);
+        });
+}
+
+function initializeCemeteryFilters() {
+    syncCustomSelect(regionSelect);
+    syncCustomSelect(districtSelect);
+    syncCustomSelect(cemeterySelect);
+    resetDistrict();
+    resetCemetery();
+}
+
+function hasRenderableMapPayload(payload) {
+    return !!(
+        payload
+        && payload.status === 'ok'
+        && payload.cemetery
+        && Array.isArray(payload.quarters)
+        && payload.quarters.length > 0
+    );
+}
+
+function setMapSectionsVisibility(isVisible) {
+    [mapSummarySection, quarterMapSection, quarterDetailSection].forEach((section) => {
+        if (!section) {
+            return;
+        }
+        section.hidden = !isVisible;
+        if (isVisible) {
+            section.style.removeProperty('display');
+        } else {
+            section.style.display = 'none';
+        }
+    });
 }
 
 function resetSummary() {
@@ -377,6 +878,132 @@ function resetSummary() {
     summaryRows.textContent = '-';
     summaryPlaces.textContent = '-';
     summaryBurials.textContent = '-';
+}
+
+function extractJsonPayload(rawText) {
+    const text = String(rawText || '').trim();
+    if (!text) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        const start = text.indexOf('{');
+        const end = text.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            const sliced = text.slice(start, end + 1);
+            try {
+                return JSON.parse(sliced);
+            } catch (nestedError) {
+                return null;
+            }
+        }
+    }
+
+    return null;
+}
+
+function buildServerErrorMessage(rawText, fallbackText) {
+    const text = String(rawText || '').replace(/\s+/g, ' ').trim();
+    if (!text) {
+        return fallbackText;
+    }
+
+    if (/warning|fatal error|notice|syntaxerror|parse error/i.test(text)) {
+        return 'Сервер повернув некоректну відповідь під час завантаження карти.';
+    }
+
+    if (text.length > 180) {
+        return text.slice(0, 177) + '...';
+    }
+
+    return text;
+}
+
+function buildMapRequestCandidates(cemeteryId) {
+    const candidates = [];
+    const seen = new Set();
+
+    const addCandidate = (path) => {
+        const normalizedPath = String(path || '').trim();
+        if (!normalizedPath) {
+            return;
+        }
+
+        const url = new URL(normalizedPath, window.location.origin);
+        url.searchParams.set('action', 'map_data');
+        url.searchParams.set('cemetery_id', String(cemeteryId));
+
+        const key = url.toString();
+        if (seen.has(key)) {
+            return;
+        }
+
+        seen.add(key);
+        candidates.push(key);
+    };
+
+    addCandidate(mapDataBaseUrl);
+    addCandidate('/cemetery-map.php');
+    addCandidate('/cemetery-map');
+    addCandidate(configuredMapRoutePath);
+    addCandidate(window.location.pathname || configuredMapRoutePath);
+
+    return candidates;
+}
+
+async function fetchMapPayload(cemeteryId) {
+    const candidates = buildMapRequestCandidates(cemeteryId);
+    let lastErrorMessage = 'Сталася помилка під час завантаження карти.';
+
+    for (const requestUrl of candidates) {
+        try {
+            const response = await fetch(requestUrl, {
+                credentials: 'same-origin'
+            });
+            const rawText = await response.text();
+            const payload = extractJsonPayload(rawText);
+
+            if (response.ok && payload && typeof payload === 'object') {
+                return payload;
+            }
+
+            lastErrorMessage = buildServerErrorMessage(rawText, 'Не вдалося завантажити карту.');
+        } catch (error) {
+            lastErrorMessage = error instanceof Error && error.message
+                ? error.message
+                : 'Сталася помилка під час завантаження карти.';
+        }
+    }
+
+    throw new Error(lastErrorMessage);
+}
+
+function syncUrlState() {
+    const cemeteryId = String(cemeterySelect.value || '').trim();
+    const quarterKey = String(quarterSelect.value || '').trim();
+    const params = new URLSearchParams(window.location.search);
+
+    if (cemeteryId) {
+        params.set('cemetery_id', cemeteryId);
+    } else {
+        params.delete('cemetery_id');
+    }
+
+    params.delete('idx');
+
+    if (quarterKey) {
+        params.set('quarter', quarterKey);
+    } else {
+        params.delete('quarter');
+    }
+
+    const nextUrl = window.location.origin
+        + window.location.pathname
+        + (params.toString() ? '?' + params.toString() : '')
+        + window.location.hash;
+    window.history.replaceState({}, '', nextUrl);
 }
 
 function clearMapView() {
@@ -521,30 +1148,36 @@ function renderQuarterMap() {
 function createPlaceCell(rowNumber, placeNumber, cellData) {
     const burials = cellData && Array.isArray(cellData.burials) ? cellData.burials : [];
     const firstBurial = burials[0] || null;
-    const root = firstBurial && firstBurial.url ? document.createElement('a') : document.createElement('div');
+    const hasMenu = !firstBurial || burials.length > 1;
+    const root = hasMenu
+        ? document.createElement('button')
+        : (firstBurial && firstBurial.url ? document.createElement('a') : document.createElement('div'));
     root.className = 'test-place' + (firstBurial ? ' test-place--occupied' : '');
 
-    if (firstBurial && firstBurial.url) {
+    if (root instanceof HTMLButtonElement) {
+        root.type = 'button';
+        root.classList.add('test-place--interactive');
+    }
+
+    if (!hasMenu && firstBurial && firstBurial.url) {
         root.href = firstBurial.url;
     }
 
-    if (!firstBurial) {
-        root.appendChild(createEmptyPlaceIcon());
-
-        const state = document.createElement('div');
-        state.className = 'test-place__state';
-        state.textContent = 'Вільно';
-        root.appendChild(state);
-
-        root.setAttribute('aria-label', 'Ряд ' + rowNumber + ', місце ' + placeNumber + ', вільно');
-        return root;
-    }
+    root.dataset.row = String(rowNumber);
+    root.dataset.place = String(placeNumber);
 
     const names = burials.map((burial) => burial.short_name || burial.name).filter(Boolean);
-    root.title = names.join(', ');
-    root.setAttribute('aria-label', 'Ряд ' + rowNumber + ', місце ' + placeNumber + '. ' + names.join(', '));
+    const tooltipText = firstBurial
+        ? ('Ряд ' + rowNumber + ', місце ' + placeNumber + ' • ' + names.join(', '))
+        : '';
+    root.setAttribute(
+        'aria-label',
+        firstBurial
+            ? ('Ряд ' + rowNumber + ', місце ' + placeNumber + '. ' + names.join(', '))
+            : ('Ряд ' + rowNumber + ', місце ' + placeNumber + ', вільно')
+    );
 
-    if (firstBurial.photo) {
+    if (firstBurial && firstBurial.photo) {
         root.className += ' test-place--with-photo';
         root.style.setProperty('--place-photo', 'url("' + firstBurial.photo + '")');
     }
@@ -558,6 +1191,29 @@ function createPlaceCell(rowNumber, placeNumber, cellData) {
 
     const info = document.createElement('div');
     info.className = 'test-place__body';
+    if (tooltipText) {
+        info.dataset.tooltip = tooltipText;
+    }
+    info.tabIndex = -1;
+
+    if (!firstBurial) {
+        root.className += ' test-place--empty';
+
+        const state = document.createElement('div');
+        state.className = 'test-place__vacant';
+        state.textContent = 'Вільно';
+        info.appendChild(state);
+
+        root._placePayload = {
+            mode: 'empty',
+            row: rowNumber,
+            place: placeNumber,
+            quarterKey: quarterSelect.value || '',
+        };
+
+        root.appendChild(info);
+        return root;
+    }
 
     const name = document.createElement('div');
     name.className = 'test-place__person';
@@ -571,18 +1227,216 @@ function createPlaceCell(rowNumber, placeNumber, cellData) {
         info.appendChild(years);
     }
 
+    if (burials.length > 1) {
+        const stack = document.createElement('div');
+        stack.className = 'test-place__hint';
+        stack.textContent = '';
+        info.appendChild(stack);
+    }
+
+    if (burials.length > 1) {
+        root._placePayload = {
+            mode: 'burials',
+            row: rowNumber,
+            place: placeNumber,
+            quarterKey: quarterSelect.value || '',
+            burials: burials,
+        };
+    }
+
     root.appendChild(info);
     return root;
 }
 
+function buildAddBurialUrl(payload) {
+    const cemetery = currentPayload && currentPayload.cemetery ? currentPayload.cemetery : null;
+    const url = new URL('/graveaddform.php', window.location.origin);
+    if (cemetery && cemetery.id) {
+        url.searchParams.set('cemetery_id', String(cemetery.id));
+    }
+    if (payload && payload.quarterKey) {
+        url.searchParams.set('quarter', String(payload.quarterKey));
+        url.searchParams.set('pos1', String(payload.quarterKey));
+    }
+    if (payload && payload.row) {
+        url.searchParams.set('row', String(payload.row));
+        url.searchParams.set('pos2', String(payload.row));
+    }
+    if (payload && payload.place) {
+        url.searchParams.set('place', String(payload.place));
+        url.searchParams.set('pos3', String(payload.place));
+    }
+    url.searchParams.set('from_map', '1');
+    return url.toString();
+}
+
+function createPopoverHeading(title, subtitle) {
+    const heading = document.createElement('div');
+    heading.className = 'test-place-popover__heading';
+
+    const titleNode = document.createElement('strong');
+    titleNode.textContent = title;
+    heading.appendChild(titleNode);
+
+    const subtitleNode = document.createElement('span');
+    subtitleNode.textContent = subtitle;
+    heading.appendChild(subtitleNode);
+
+    return heading;
+}
+
+function hidePlacePopover() {
+    if (!placePopover) {
+        return;
+    }
+
+    if (activePlaceTrigger) {
+        activePlaceTrigger.classList.remove('is-active');
+    }
+
+    activePlaceTrigger = null;
+    placePopover.removeAttribute('data-side');
+    placePopover.hidden = true;
+    if (placePopoverContent) {
+        placePopoverContent.innerHTML = '';
+    }
+    if (placePopoverPanel) {
+        placePopoverPanel.style.left = '';
+        placePopoverPanel.style.top = '';
+        placePopoverPanel.style.right = '';
+        placePopoverPanel.style.bottom = '';
+    }
+    placePopover.removeAttribute('data-mode');
+    document.body.classList.remove('test-popover-open');
+}
+
+function updatePlacePopoverPosition() {
+    if (!placePopover || !placePopoverPanel || !activePlaceTrigger || !document.body.contains(activePlaceTrigger)) {
+        hidePlacePopover();
+        return;
+    }
+
+    const isMobilePopover = window.matchMedia('(max-width: 768px)').matches;
+    const triggerRect = activePlaceTrigger.getBoundingClientRect();
+    placePopover.hidden = false;
+    placePopoverPanel.style.left = '';
+    placePopoverPanel.style.top = '';
+    placePopoverPanel.style.right = '';
+    placePopoverPanel.style.bottom = '';
+
+    if (isMobilePopover) {
+        placePopover.dataset.mode = 'mobile';
+        placePopover.removeAttribute('data-side');
+        placePopoverPanel.style.left = '0';
+        placePopoverPanel.style.right = '0';
+        placePopoverPanel.style.bottom = '0';
+        return;
+    }
+
+    placePopover.dataset.mode = 'desktop';
+    placePopoverPanel.style.left = '0px';
+    placePopoverPanel.style.top = '0px';
+
+    const panelRect = placePopoverPanel.getBoundingClientRect();
+    let left = triggerRect.left + (triggerRect.width / 2) - (panelRect.width / 2);
+    left = Math.max(12, Math.min(window.innerWidth - panelRect.width - 12, left));
+
+    let top = triggerRect.bottom + 14;
+    let isTop = false;
+    if (top + panelRect.height > window.innerHeight - 12) {
+        top = triggerRect.top - panelRect.height - 14;
+        isTop = true;
+    }
+    top = Math.max(12, top);
+
+    placePopoverPanel.style.left = Math.round(left) + 'px';
+    placePopoverPanel.style.top = Math.round(top) + 'px';
+    placePopover.dataset.side = isTop ? 'top' : 'bottom';
+}
+
+function showPlacePopover(trigger, payload) {
+    if (!placePopoverContent || !placePopover || !payload) {
+        return;
+    }
+
+    if (activePlaceTrigger && activePlaceTrigger !== trigger) {
+        activePlaceTrigger.classList.remove('is-active');
+    }
+
+    activePlaceTrigger = trigger;
+    activePlaceTrigger.classList.add('is-active');
+    document.body.classList.add('test-popover-open');
+
+    const title = payload.mode === 'burials'
+        ? 'Місце ' + payload.place + ' • кілька поховань'
+        : 'Місце ' + payload.place + ' вільне';
+    const subtitle = 'Квартал ' + payload.quarterKey + ' • ряд ' + payload.row;
+    placePopoverContent.innerHTML = '';
+    const heading = createPopoverHeading(title, subtitle);
+    placePopoverContent.appendChild(heading);
+
+    const body = document.createElement('div');
+    body.className = 'test-place-popover__body';
+    placePopoverContent.appendChild(body);
+
+    if (payload.mode === 'burials') {
+        const list = document.createElement('div');
+        list.className = 'test-place-popover__list';
+        payload.burials.forEach((burial) => {
+            const label = [burial.name || burial.short_name || 'Поховання', burial.years || ''].filter(Boolean).join(' • ');
+            const link = document.createElement('a');
+            link.className = 'test-place-popover__link';
+            link.href = burial.url;
+            if (burial.photo) {
+                const thumb = document.createElement('img');
+                thumb.className = 'test-place-popover__thumb';
+                thumb.src = burial.photo;
+                thumb.alt = burial.short_name || burial.name || 'Фото поховання';
+                thumb.loading = 'lazy';
+                link.appendChild(thumb);
+            } else {
+                const thumbPlaceholder = document.createElement('span');
+                thumbPlaceholder.className = 'test-place-popover__thumb test-place-popover__thumb--empty';
+                thumbPlaceholder.setAttribute('aria-hidden', 'true');
+                link.appendChild(thumbPlaceholder);
+            }
+            const text = document.createElement('span');
+            text.className = 'test-place-popover__link-text';
+            text.textContent = label;
+            link.appendChild(text);
+            list.appendChild(link);
+        });
+        body.appendChild(list);
+    } else {
+        const addUrl = buildAddBurialUrl(payload);
+        const text = document.createElement('p');
+        text.className = 'test-place-popover__text';
+        text.textContent = 'Тут ще немає поховань. Можна одразу відкрити форму з уже підставленими координатами.';
+        body.appendChild(text);
+
+        const action = document.createElement('a');
+        action.className = 'test-place-popover__action';
+        action.href = addUrl;
+        action.textContent = 'Додати поховання';
+        body.appendChild(action);
+    }
+    updatePlacePopoverPosition();
+}
+
 function renderQuarter() {
+    hidePlacePopover();
     quarterGrid.innerHTML = '';
     resetSummary();
+
+    if (currentPayload && currentPayload.cemetery) {
+        summaryCemetery.textContent = currentPayload.cemetery.title || '-';
+    }
 
     const quarters = getQuarterList();
     if (quarters.length === 0) {
         renderQuarterMap();
         quarterTitle.textContent = 'Карта місць недоступна';
+        syncUrlState();
         return;
     }
 
@@ -590,6 +1444,7 @@ function renderQuarter() {
     if (!quarter) {
         renderQuarterMap();
         quarterTitle.textContent = 'Карта місць недоступна';
+        syncUrlState();
         return;
     }
 
@@ -646,6 +1501,7 @@ function renderQuarter() {
     }
 
     renderQuarterMap();
+    syncUrlState();
 }
 
 async function loadCemeteryMap(cemeteryId, preferredQuarterKey = '') {
@@ -653,30 +1509,37 @@ async function loadCemeteryMap(cemeteryId, preferredQuarterKey = '') {
         currentPayload = null;
         quarterSelect.disabled = true;
         quarterSelect.innerHTML = '<option value="">Спочатку оберіть кладовище</option>';
+        setPickerVisible(true);
+        setMapSectionsVisibility(false);
         clearMapView();
         resetSummary();
-        setStatus('Оберіть кладовище, щоб переглянути квартали.');
+        syncUrlState();
         return;
     }
 
-    setStatus('Завантаження карти кладовища...');
+    setMapSectionsVisibility(false);
+    clearMapView();
+    resetSummary();
+    setPickerVisible(false);
 
     try {
-        const response = await fetch('/test.php?action=map_data&cemetery_id=' + encodeURIComponent(cemeteryId), {
-            credentials: 'same-origin'
-        });
-        const payload = await response.json();
+        const payload = await fetchMapPayload(cemeteryId);
 
         currentPayload = payload;
 
         if (!payload || payload.status !== 'ok') {
             quarterSelect.disabled = true;
             quarterSelect.innerHTML = '<option value="">Немає даних</option>';
-            clearMapView();
-            quarterMapTitle.textContent = 'Дані недоступні';
-            quarterTitle.textContent = 'Дані недоступні';
-            resetSummary();
-            setStatus(payload && payload.message ? payload.message : 'Не вдалося завантажити карту.', 'error');
+            setPickerVisible(true);
+            syncUrlState();
+            return;
+        }
+
+        if (!hasRenderableMapPayload(payload)) {
+            quarterSelect.disabled = true;
+            quarterSelect.innerHTML = '<option value="">Немає кварталів</option>';
+            setPickerVisible(true);
+            syncUrlState();
             return;
         }
 
@@ -684,33 +1547,71 @@ async function loadCemeteryMap(cemeteryId, preferredQuarterKey = '') {
         if (selectedQuarter) {
             quarterSelect.value = selectedQuarter;
         }
+        setMapSectionsVisibility(true);
         renderQuarter();
-
-        if (payload.message) {
-            setStatus(payload.message, payload.quarters.length > 0 ? '' : 'warning');
-        } else if (payload.cemetery) {
-            setStatus('Показано схему за даними, вже внесеними для кладовища "' + payload.cemetery.title + '".', 'success');
-        } else {
-            setStatus('Дані карти завантажено.', 'success');
-        }
 
     } catch (error) {
         currentPayload = null;
         quarterSelect.disabled = true;
         quarterSelect.innerHTML = '<option value="">Помилка завантаження</option>';
-        clearMapView();
-        quarterMapTitle.textContent = 'Дані недоступні';
-        quarterTitle.textContent = 'Дані недоступні';
-        resetSummary();
-        setStatus('Сталася помилка під час завантаження карти.', 'error');
+        setPickerVisible(true);
+        setMapSectionsVisibility(false);
+        console.error(error);
+        syncUrlState();
     }
 }
 
-cemeterySelect.addEventListener('change', () => {
-    loadCemeteryMap(cemeterySelect.value);
-});
+if (cemeteryPickerForm) {
+    cemeteryPickerForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        hidePlacePopover();
+        const cemeteryId = String(cemeterySelect.value || '').trim();
+        if (!cemeteryId) return;
+        loadCemeteryMap(cemeteryId);
+    });
+}
 
-quarterSelect.addEventListener('change', renderQuarter);
+if (cemeterySelect && cemeteryPickerSubmit) {
+    cemeterySelect.addEventListener('change', () => {
+        cemeteryPickerSubmit.disabled = !String(cemeterySelect.value || '').trim();
+    });
+}
+
+if (regionSelect) {
+    regionSelect.addEventListener('change', () => {
+        const regionId = String(regionSelect.value || '').trim();
+        if (!regionId) {
+            resetDistrict();
+            resetCemetery();
+            return;
+        }
+        loadDistricts(regionId);
+    });
+}
+
+if (districtSelect) {
+    districtSelect.addEventListener('change', () => {
+        const districtId = String(districtSelect.value || '').trim();
+        if (!districtId) {
+            resetCemetery();
+            return;
+        }
+        loadCemeteriesByDistrict(districtId);
+    });
+}
+
+if (changeCemeteryBtn) {
+    changeCemeteryBtn.addEventListener('click', () => {
+        hidePlacePopover();
+        setPickerVisible(true);
+        cemeteryPickerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+}
+
+quarterSelect.addEventListener('change', () => {
+    hidePlacePopover();
+    renderQuarter();
+});
 
 quarterMapGrid.addEventListener('click', (event) => {
     const tile = event.target.closest('.test-quarter-tile');
@@ -727,11 +1628,120 @@ quarterMapGrid.addEventListener('click', (event) => {
     renderQuarter();
 });
 
-if (initialCemeteryId > 0) {
-    loadCemeteryMap(String(initialCemeteryId));
-} else {
-    setStatus('У системі немає доступних кладовищ для відображення.', 'warning');
+quarterGrid.addEventListener('click', (event) => {
+    const trigger = event.target.closest('.test-place--interactive');
+    if (!trigger) {
+        return;
+    }
+
+    const payload = trigger._placePayload || null;
+    if (!payload) {
+        return;
+    }
+
+    if (activePlaceTrigger === trigger && !placePopover.hidden) {
+        hidePlacePopover();
+        return;
+    }
+
+    showPlacePopover(trigger, payload);
+});
+
+if (placePopoverClose) {
+    placePopoverClose.addEventListener('click', hidePlacePopover);
 }
+
+if (placePopover) {
+    placePopover.addEventListener('click', (event) => {
+        if (event.target === placePopover) {
+            hidePlacePopover();
+        }
+    });
+}
+
+document.addEventListener('click', (event) => {
+    if (placePopover.hidden) {
+        return;
+    }
+
+    const clickedInsidePopover = placePopover.contains(event.target);
+    const clickedTrigger = activePlaceTrigger && activePlaceTrigger.contains(event.target);
+    if (!clickedInsidePopover && !clickedTrigger) {
+        hidePlacePopover();
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        hidePlacePopover();
+    }
+});
+
+window.addEventListener('resize', () => {
+    if (!placePopover.hidden) {
+        updatePlacePopoverPosition();
+    }
+});
+
+window.addEventListener('scroll', () => {
+    if (!placePopover.hidden) {
+        updatePlacePopoverPosition();
+    }
+}, true);
+
+initializeCemeteryFilters();
+
+document.addEventListener('click', (event) => {
+    if (!event.target.closest('.custom-select-wrapper')) {
+        closeAllCustomSelects();
+    }
+});
+
+if (initialCemeteryId > 0) {
+    setPickerVisible(false);
+    loadCemeteryMap(String(initialCemeteryId), initialQuarterKey);
+} else {
+    setPickerVisible(true);
+    if (cemeteryPickerSubmit) {
+        cemeteryPickerSubmit.disabled = !String(cemeterySelect.value || '').trim();
+    }
+    setMapSectionsVisibility(false);
+}
+
+function syncStepStates() {
+    const steps = document.querySelectorAll('.test-map-picker__step');
+    const regionVal = regionSelect ? String(regionSelect.value || '').trim() : '';
+    const districtVal = districtSelect ? String(districtSelect.value || '').trim() : '';
+    const cemeteryVal = cemeterySelect ? String(cemeterySelect.value || '').trim() : '';
+
+    steps.forEach(function(step) {
+        const stepNum = step.dataset.step;
+        if (stepNum === '1') {
+            step.dataset.state = regionVal ? 'completed' : 'active';
+        } else if (stepNum === '2') {
+            if (!regionVal) {
+                step.dataset.state = 'waiting';
+            } else if (districtVal) {
+                step.dataset.state = 'completed';
+            } else {
+                step.dataset.state = 'active';
+            }
+        } else if (stepNum === '3') {
+            if (!districtVal) {
+                step.dataset.state = 'waiting';
+            } else if (cemeteryVal) {
+                step.dataset.state = 'completed';
+            } else {
+                step.dataset.state = 'active';
+            }
+        }
+    });
+}
+
+if (regionSelect) regionSelect.addEventListener('change', syncStepStates);
+if (districtSelect) districtSelect.addEventListener('change', syncStepStates);
+if (cemeterySelect) cemeterySelect.addEventListener('change', syncStepStates);
+syncStepStates();
 </script>
 <?php
 echo Page_Down();

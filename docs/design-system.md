@@ -13,6 +13,7 @@ Use these files as the main style references before adding new UI:
 - `assets/css/grave.css` for data forms and record editing states
 - `assets/css/profile.css` for account settings, tabs, and dashboard-like layouts
 - `assets/css/common.css` for legacy shared patterns that still shape many screens
+- `docs/modal-style-system.md` for the unified modal pattern used across the site
 
 ## Brand Direction
 

@@ -16,6 +16,10 @@
     display: block;
 }
 
+.xdp-popup.is-month-mode {
+    width: min(344px, calc(100vw - 24px));
+}
+
 .xdp-head {
     display: flex;
     align-items: center;
@@ -213,6 +217,62 @@
     font-weight: 700;
 }
 
+.xdp-popup.is-month-mode .xdp-pickers {
+    grid-template-columns: 1fr;
+}
+
+.xdp-popup.is-month-mode .xdp-select[data-kind="month"] {
+    display: none;
+}
+
+.xdp-popup.is-month-mode .xdp-weekdays {
+    display: none;
+}
+
+.xdp-popup.is-month-mode .xdp-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.xdp-month {
+    min-height: 44px;
+    border: 1px solid #d5e2f4;
+    border-radius: 10px;
+    background: #f8fbff;
+    color: #173b62;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.xdp-month:hover {
+    background: #e8f1ff;
+    border-color: #9bbce0;
+    transform: translateY(-1px);
+}
+
+.xdp-month.is-selected {
+    border-color: #0f3250;
+    background: linear-gradient(145deg, #174d78, #0a2a4a);
+    color: #ffffff;
+    box-shadow: 0 12px 24px rgba(15, 50, 80, 0.18);
+}
+
+.xdp-month.is-disabled {
+    color: #c1ccde;
+    background: #f7f9fd;
+    border-color: #e3eaf4;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.xdp-month.is-disabled:hover {
+    transform: none;
+    background: #f7f9fd;
+    border-color: #e3eaf4;
+}
+
 .xdp-actions {
     display: flex;
     justify-content: space-between;
@@ -248,5 +308,9 @@
 @media (max-width: 560px) {
     .xdp-popup {
         width: min(290px, calc(100vw - 16px));
+    }
+
+    .xdp-popup.is-month-mode {
+        width: min(320px, calc(100vw - 16px));
     }
 }

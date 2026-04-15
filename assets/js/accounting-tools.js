@@ -282,6 +282,29 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    function syncTransactionsFilterMode(form) {
+        if (!form) {
+            return;
+        }
+
+        const activeModeInput = form.querySelector("input[name='filter_mode']:checked");
+        const activeMode = activeModeInput ? activeModeInput.value : "range";
+        form.dataset.filterMode = activeMode;
+
+        Array.from(form.querySelectorAll("[data-transactions-filter-mode-option]")).forEach(function (option) {
+            option.classList.toggle("is-active", option.dataset.transactionsFilterModeOption === activeMode);
+        });
+
+        Array.from(form.querySelectorAll("[data-transactions-filter-panel]")).forEach(function (panel) {
+            const isActive = panel.dataset.transactionsFilterPanel === activeMode;
+            panel.hidden = !isActive;
+
+            Array.from(panel.querySelectorAll("input, select, textarea")).forEach(function (field) {
+                field.disabled = !isActive;
+            });
+        });
+    }
+
     function refreshTransactionsPanel(requestUrl, shouldPushState) {
         const currentPanel = getPanel("transactions");
         if (!currentPanel) {
@@ -350,6 +373,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const tabLinks = Array.from(panel.querySelectorAll("[data-transactions-currency-link]"));
         initTransactionsDatepicker(panel);
         updateTransactionFilterPills(panel);
+        syncTransactionsFilterMode(dateForm);
 
         if (filterShell && filterShell.dataset.tabsBound !== "1") {
             filterShell.dataset.tabsBound = "1";
@@ -363,6 +387,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (dateForm && dateForm.dataset.bound !== "1") {
             dateForm.dataset.bound = "1";
+            Array.from(dateForm.querySelectorAll("[data-transactions-filter-mode-option]")).forEach(function (option) {
+                option.addEventListener("click", function () {
+                    window.requestAnimationFrame(function () {
+                        syncTransactionsFilterMode(dateForm);
+                    });
+                });
+            });
+            dateForm.addEventListener("change", function (event) {
+                if (event.target && event.target.name === "filter_mode") {
+                    syncTransactionsFilterMode(dateForm);
+                }
+            });
             dateForm.addEventListener("submit", function (event) {
                 event.preventDefault();
                 const params = serializeFilterForm(dateForm);

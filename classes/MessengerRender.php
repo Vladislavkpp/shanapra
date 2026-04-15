@@ -15,7 +15,7 @@ class MessengerRender
         $mobileView = $chatId > 0 ? 'chat' : 'list';
 
         $out = '<link rel="stylesheet" href="/assets/css/msg.css">';
-        $out .= '<div class="messenger-page" id="messengerRoot" data-chat-id="' . $chatId . '" data-type="' . (int)$type . '" data-mobile-view="' . $mobileView . '">';
+        $out .= '<div class="messenger-page messenger-page--workchat" id="messengerRoot" data-chat-id="' . $chatId . '" data-type="' . (int)$type . '" data-mobile-view="' . $mobileView . '">';
         $out .= '<aside class="messenger-sidebar">';
         $out .= $this->renderChatList($user_id, $userChats, $chatId);
         $out .= '</aside>';
@@ -49,7 +49,7 @@ class MessengerRender
         $out .= '<span class="messenger-list__head-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l3.65 -3.65a9 9 0 1 1 3.35 2.29l-7 1.36z" /></svg>
         </span>';
-        $out .= '<div><p class="messenger-list__eyebrow">Внутрішній messenger</p><h1>Робочі чати</h1><p class="messenger-list__subtitle">Оберіть діалог зі списку або продовжіть поточну переписку.</p></div>';
+        $out .= '<div class="messenger-list__head-copy"><p class="messenger-list__eyebrow">Внутрішній messenger</p><h1>Робочі чати</h1></div>';
         $out .= '</div>';
         $out .= '</div>';
 
@@ -149,17 +149,26 @@ class MessengerRender
                 $lastDate = $date;
             }
 
-            $messageClass = ((int)$msg['sender_idx'] === (int)$user_id) ? 'message--me' : 'message--other';
-            if ((int)$msg['sender_idx'] === -1) {
-                $messageClass = 'message--system';
-            }
+            $isSystemMessage = $this->isSystemMessage($msg);
+            $messageClass = $isSystemMessage
+                ? 'message--system'
+                : (((int)$msg['sender_idx'] === (int)$user_id) ? 'message--me' : 'message--other');
 
             $time = !empty($msg['idtadd']) ? date('H:i', strtotime((string)$msg['idtadd'])) : '';
-            $out .= '<article class="message ' . $messageClass . '" data-idx="' . (int)$msg['idx'] . '">';
+            $out .= '<article class="message ' . $messageClass;
+            if ($isSystemMessage) {
+                $out .= ' support-chat-message support-chat-message--system';
+            }
+            $out .= '" data-idx="' . (int)$msg['idx'] . '" data-date-key="' . htmlspecialchars($date, ENT_QUOTES, 'UTF-8') . '">';
+
+            if ($isSystemMessage) {
+                $out .= '<div class="support-chat-message__sender">Система</div>';
+            }
 
             if (!empty($msg['img'])) {
                 $imgSrc = htmlspecialchars((string)$msg['img'], ENT_QUOTES, 'UTF-8');
-                $out .= '<div class="message__image"><a href="' . $imgSrc . '" class="msg-img-link" data-full-img="' . $imgSrc . '"><img src="' . $imgSrc . '" alt=""></a></div>';
+                $imageClass = $isSystemMessage ? 'message__image support-chat-message__image' : 'message__image';
+                $out .= '<div class="' . $imageClass . '"><a href="' . $imgSrc . '" class="msg-img-link" data-full-img="' . $imgSrc . '"><img src="' . $imgSrc . '" alt=""></a></div>';
             }
 
             if (trim((string)($msg['message'] ?? '')) !== '') {
@@ -174,6 +183,16 @@ class MessengerRender
         }
 
         return $out;
+    }
+
+    private function isSystemMessage(array $message): bool
+    {
+        $messageType = strtolower(trim((string)($message['message_type'] ?? '')));
+        if ($messageType === 'system') {
+            return true;
+        }
+
+        return (int)($message['sender_idx'] ?? 0) === -1;
     }
 
     private function renderInputField($chat_id)
@@ -212,15 +231,23 @@ class MessengerRender
         }
 
         $partner = $this->getChatPartnerData($user_id, $currentChat);
+        $orders = $this->getOrdersForChat((int)$currentChat['idx']);
         $createdAt = !empty($currentChat['idtadd']) ? date('d.m.Y H:i', strtotime((string)$currentChat['idtadd'])) : '';
         $lastMessage = $this->getLastMessage((int)$currentChat['idx']);
         $lastActivity = !empty($lastMessage['idtadd']) ? date('d.m.Y H:i', strtotime((string)$lastMessage['idtadd'])) : $createdAt;
 
+        $out .= '<div class="chat-info__head workchat-info__head">';
+        $out .= '<h2>Інформація про користувача</h2>';
+        $out .= '</div>';
+
         $out .= '<div class="chat-info__card">';
         $out .= '<img src="' . htmlspecialchars($partner['avatar'], ENT_QUOTES, 'UTF-8') . '" alt="' . htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8') . '" class="chat-info__avatar">';
         $out .= '<h2>' . htmlspecialchars($partner['name'], ENT_QUOTES, 'UTF-8') . '</h2>';
-        $out .= '<p>У цьому блоці зібрана коротка інформація по робочому діалогу.</p>';
         $out .= '</div>';
+
+        if (!empty($orders)) {
+            $out .= $this->renderOrderInfoSection($orders);
+        }
 
         $out .= '<div class="chat-info__section">';
         $out .= '<div class="chat-info__row"><span>Тип</span><strong>Робочий чат</strong></div>';
@@ -237,6 +264,231 @@ class MessengerRender
 
         $out .= '</div>';
         return $out;
+    }
+
+    private function renderOrderInfoSection(array $orders): string
+    {
+        $out = '<section class="chat-info__section chat-info__section--orders">';
+        $out .= '<div class="chat-info__section-head">';
+        $out .= '<span class="chat-info__section-label">Замовлення</span>';
+        $out .= '<span class="chat-info__section-badge">' . count($orders) . '</span>';
+        $out .= '</div>';
+
+        foreach ($orders as $order) {
+            $status = (string)($order['normalized_status'] ?? 'pending');
+            $statusLabel = (string)($order['status_label'] ?? $this->getOrderStatusLabel($status));
+            $preferredDate = $this->formatDateValue((string)($order['preferred_date'] ?? ''), false);
+            $createdAt = $this->formatDateValue((string)($order['created_at'] ?? ''), true);
+            $completedAt = $this->formatDateValue((string)($order['completed_at'] ?? ''), true, '');
+            $cemeteryPlace = trim((string)($order['cemetery_place'] ?? ''));
+            $approximatePrice = trim((string)($order['approximate_price'] ?? ''));
+            $comment = trim((string)($order['comment'] ?? ''));
+            $rejectionReason = trim((string)($order['rejection_reason'] ?? ''));
+            $completionComment = trim((string)($order['completion_comment'] ?? ''));
+            $services = isset($order['services']) && is_array($order['services']) ? $order['services'] : [];
+            $preferredDateLabel = $preferredDate !== 'Не вказано' ? $preferredDate : 'Дата не вказана';
+            $priceLabel = $approximatePrice !== '' ? $approximatePrice : 'Не вказано';
+            $cemeteryLabel = $cemeteryPlace !== '' ? $cemeteryPlace : 'Не вказано';
+
+            $out .= '<article class="chat-order-card">';
+            $out .= '<div class="chat-order-card__head">';
+            $out .= '<div class="chat-order-card__title-wrap"><span class="chat-order-card__eyebrow">Картка замовлення</span><strong>Замовлення #' . (int)$order['idx'] . '</strong></div>';
+            $out .= '<span class="chat-order-card__status chat-order-card__status--' . htmlspecialchars($status, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') . '</span>';
+            $out .= '</div>';
+
+            $out .= '<div class="chat-order-card__rows">';
+            $out .= '<div class="chat-order-card__meta-grid">';
+            $out .= $this->renderOrderMetaItem('Бажана дата', $preferredDateLabel, ' chat-order-card__meta-item--wide');
+            $out .= $this->renderOrderMetaItem('Орієнтовна вартість', $priceLabel);
+            $out .= $this->renderOrderMetaItem('Створено', $createdAt);
+            $out .= '</div>';
+            $out .= '<div class="chat-order-card__row chat-order-card__row--stack"><span>Місце виконання</span><strong class="chat-order-card__primary-value">' . htmlspecialchars($cemeteryLabel, ENT_QUOTES, 'UTF-8') . '</strong></div>';
+
+            if (!empty($services)) {
+                $out .= '<div class="chat-order-card__row chat-order-card__row--stack"><span>Обрані послуги</span><div class="chat-order-card__chips">';
+                foreach ($services as $serviceName) {
+                    $out .= '<span class="chat-order-card__chip">' . htmlspecialchars((string)$serviceName, ENT_QUOTES, 'UTF-8') . '</span>';
+                }
+                $out .= '</div></div>';
+            }
+
+            if ($comment !== '') {
+                $out .= '<div class="chat-order-card__note"><span>Коментар</span><p>' . nl2br(htmlspecialchars($comment, ENT_QUOTES, 'UTF-8')) . '</p></div>';
+            }
+
+            if ($status === 'completion_pending') {
+                $out .= '<div class="chat-order-card__note chat-order-card__note--soft"><span>Статус звіту</span><p>Фото надіслані, очікує підтвердження клієнта.</p></div>';
+            }
+
+            if ($status === 'rejected' && $rejectionReason !== '') {
+                $out .= '<div class="chat-order-card__note chat-order-card__note--danger"><span>Причина відмови</span><p>' . nl2br(htmlspecialchars($rejectionReason, ENT_QUOTES, 'UTF-8')) . '</p></div>';
+            }
+
+            if ($status === 'cancelled' && $rejectionReason !== '') {
+                $out .= '<div class="chat-order-card__note chat-order-card__note--danger"><span>Причина скасування</span><p>' . nl2br(htmlspecialchars($rejectionReason, ENT_QUOTES, 'UTF-8')) . '</p></div>';
+            }
+
+            if (($status === 'completed' || $status === 'completion_pending') && $completedAt !== '') {
+                $out .= '<div class="chat-order-card__row"><span>Дата звіту</span><strong>' . htmlspecialchars($completedAt, ENT_QUOTES, 'UTF-8') . '</strong></div>';
+            }
+
+            if (($status === 'completed' || $status === 'completion_pending') && $completionComment !== '') {
+                $out .= '<div class="chat-order-card__note"><span>Коментар до звіту</span><p>' . nl2br(htmlspecialchars($completionComment, ENT_QUOTES, 'UTF-8')) . '</p></div>';
+            }
+
+            $out .= '</div>';
+            $out .= '</article>';
+        }
+
+        $out .= '</section>';
+        return $out;
+    }
+
+    private function renderOrderMetaItem(string $label, string $value, string $extraClass = ''): string
+    {
+        return '<div class="chat-order-card__meta-item' . $extraClass . '"><span>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span><strong>' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</strong></div>';
+    }
+
+    private function getOrdersForChat(int $chatId): array
+    {
+        if ($chatId <= 0 || !function_exists('dbTableExists') || !dbTableExists($this->dblink, 'cleaner_orders')) {
+            return [];
+        }
+
+        $orders = [];
+        $sql = "SELECT idx, cleaner_id, client_id, client_name, client_phone, client_email, cemetery_place, preferred_date, comment,
+                       selected_services_json, approximate_price, status, rejection_reason, completed_at, completion_comment, created_at
+                FROM cleaner_orders
+                WHERE chat_idx = {$chatId}
+                ORDER BY created_at DESC, idx DESC";
+        $res = mysqli_query($this->dblink, $sql);
+        if (!$res) {
+            return [];
+        }
+
+        while ($row = mysqli_fetch_assoc($res)) {
+            $row['normalized_status'] = $this->normalizeOrderStatus($row);
+            $row['status_label'] = $this->getOrderStatusLabel((string)$row['normalized_status']);
+            $row['services'] = $this->getOrderServices(
+                (int)($row['idx'] ?? 0),
+                (int)($row['cleaner_id'] ?? 0),
+                (string)($row['selected_services_json'] ?? '')
+            );
+            $orders[] = $row;
+        }
+
+        return $orders;
+    }
+
+    private function getOrderServices(int $orderId, int $cleanerId, string $selectedServicesJson = ''): array
+    {
+        if ($orderId <= 0 || !function_exists('dbTableExists') || !dbTableExists($this->dblink, 'cleaner_services')) {
+            return [];
+        }
+
+        $services = [];
+
+        if (dbTableExists($this->dblink, 'cleaner_order_services')) {
+            $sql = "SELECT cs.service_name
+                    FROM cleaner_order_services cos
+                    INNER JOIN cleaner_services cs ON cs.id = cos.service_id
+                    WHERE cos.order_id = {$orderId}
+                    ORDER BY cs.sort_order ASC, cs.id ASC";
+            $res = mysqli_query($this->dblink, $sql);
+            if ($res) {
+                while ($row = mysqli_fetch_assoc($res)) {
+                    $serviceName = trim((string)($row['service_name'] ?? ''));
+                    if ($serviceName !== '') {
+                        $services[] = $serviceName;
+                    }
+                }
+            }
+        }
+
+        if (!empty($services) || $selectedServicesJson === '') {
+            return $services;
+        }
+
+        $decodedIds = json_decode($selectedServicesJson, true);
+        if (!is_array($decodedIds)) {
+            return [];
+        }
+
+        $serviceIds = [];
+        foreach ($decodedIds as $serviceId) {
+            $serviceId = (int)$serviceId;
+            if ($serviceId > 0) {
+                $serviceIds[$serviceId] = $serviceId;
+            }
+        }
+
+        if (empty($serviceIds)) {
+            return [];
+        }
+
+        $userFilter = $cleanerId > 0 ? " AND user_id = {$cleanerId}" : '';
+        $sql = "SELECT id, service_name
+                FROM cleaner_services
+                WHERE id IN (" . implode(',', $serviceIds) . ")" . $userFilter . "
+                ORDER BY sort_order ASC, id ASC";
+        $res = mysqli_query($this->dblink, $sql);
+        if (!$res) {
+            return [];
+        }
+
+        $mappedServices = [];
+        while ($row = mysqli_fetch_assoc($res)) {
+            $mappedServices[(int)$row['id']] = trim((string)($row['service_name'] ?? ''));
+        }
+
+        foreach ($serviceIds as $serviceId) {
+            if (!empty($mappedServices[$serviceId])) {
+                $services[] = $mappedServices[$serviceId];
+            }
+        }
+
+        return $services;
+    }
+
+    private function normalizeOrderStatus(array $order): string
+    {
+        $status = trim((string)($order['status'] ?? ''));
+        $hasCompletionReport = !empty($order['completed_at']) && (string)$order['completed_at'] !== '0000-00-00 00:00:00';
+
+        if ($status === 'accepted' && $hasCompletionReport) {
+            return 'completion_pending';
+        }
+
+        return $status !== '' ? $status : 'pending';
+    }
+
+    private function getOrderStatusLabel(string $status): string
+    {
+        $labels = [
+            'pending' => 'Очікує прийняття',
+            'accepted' => 'Прийнято',
+            'completion_pending' => 'Очікує підтвердження',
+            'rejected' => 'Відхилено',
+            'completed' => 'Виконано',
+            'cancelled' => 'Скасовано',
+        ];
+
+        return $labels[$status] ?? 'Замовлення';
+    }
+
+    private function formatDateValue(string $value, bool $withTime = false, string $fallback = 'Не вказано'): string
+    {
+        $value = trim($value);
+        if ($value === '' || $value === '0000-00-00' || $value === '0000-00-00 00:00:00') {
+            return $fallback;
+        }
+
+        $timestamp = strtotime($value);
+        if ($timestamp === false) {
+            return $fallback;
+        }
+
+        return date($withTime ? 'd.m.Y H:i' : 'd.m.Y', $timestamp);
     }
 
     private function getChatPartnerData($user_id, $chat)
@@ -320,6 +572,7 @@ class MessengerRender
                 let lastMessageId = 0;
                 let pollTimer = null;
                 let initialScrollRestored = false;
+                let isDeletingChat = false;
 
                 function escapeHTML(value) {
                     return String(value).replace(/[&<>"']/g, function (char) {
@@ -634,18 +887,67 @@ class MessengerRender
                     }
                 }
 
-                function buildMessageHtml(message) {
-                    const senderClass = parseInt(message.sender_idx || 0, 10) === userId ? "message--me" : "message--other";
-                    const time = message.idtadd
-                        ? new Date(message.idtadd).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                function parseMessageDate(value) {
+                    if (!value) return null;
+                    const date = new Date(value);
+                    return Number.isNaN(date.getTime()) ? null : date;
+                }
+
+                function formatDateKey(date) {
+                    if (!date) return "";
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                    const day = String(date.getDate()).padStart(2, "0");
+                    return year + "-" + month + "-" + day;
+                }
+
+                function formatDateLabel(date) {
+                    if (!date) return "";
+                    const currentDateKey = formatDateKey(date);
+                    const now = new Date();
+                    const todayKey = formatDateKey(now);
+                    const yesterday = new Date(now);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayKey = formatDateKey(yesterday);
+
+                    if (currentDateKey === todayKey) return "Сьогодні";
+                    if (currentDateKey === yesterdayKey) return "Вчора";
+
+                    const day = String(date.getDate()).padStart(2, "0");
+                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                    return day + "." + month + "." + date.getFullYear();
+                }
+
+                function isSystemMessage(message) {
+                    const messageType = String(message.message_type || "").trim().toLowerCase();
+                    return messageType === "system" || parseInt(message.sender_idx || 0, 10) === -1;
+                }
+
+                function buildMessageHtml(message, includeDateDivider) {
+                    const isSystem = isSystemMessage(message);
+                    const senderClass = isSystem
+                        ? "message--system"
+                        : (parseInt(message.sender_idx || 0, 10) === userId ? "message--me" : "message--other");
+                    const createdAt = parseMessageDate(message.idtadd);
+                    const dateKey = formatDateKey(createdAt);
+                    const time = createdAt
+                        ? createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                        : "";
+                    const imageClass = isSystem ? "message__image support-chat-message__image" : "message__image";
+                    const senderPart = isSystem
+                        ? '<div class="support-chat-message__sender">Система</div>'
                         : "";
                     const imgPart = message.img
-                        ? '<div class="message__image"><a href="' + escapeHTML(message.img) + '" class="msg-img-link" data-full-img="' + escapeHTML(message.img) + '"><img src="' + escapeHTML(message.img) + '" alt=""></a></div>'
+                        ? '<div class="' + imageClass + '"><a href="' + escapeHTML(message.img) + '" class="msg-img-link" data-full-img="' + escapeHTML(message.img) + '"><img src="' + escapeHTML(message.img) + '" alt=""></a></div>'
                         : "";
                     const textPart = message.message && String(message.message).trim()
                         ? '<div class="message__text">' + escapeHTML(message.message).replace(/\n/g, "<br>") + '</div>'
                         : "";
-                    return '<article class="message ' + senderClass + '" data-idx="' + parseInt(message.idx || 0, 10) + '">' + imgPart + textPart + '<div class="message__time">' + escapeHTML(time) + '</div></article>';
+                    const dateDividerPart = includeDateDivider && dateKey
+                        ? '<div class="date-divider"><span>' + escapeHTML(formatDateLabel(createdAt)) + '</span></div>'
+                        : "";
+                    const extraClass = isSystem ? " support-chat-message support-chat-message--system" : "";
+                    return dateDividerPart + '<article class="message ' + senderClass + extraClass + '" data-idx="' + parseInt(message.idx || 0, 10) + '" data-date-key="' + escapeHTML(dateKey) + '">' + senderPart + imgPart + textPart + '<div class="message__time">' + escapeHTML(time) + '</div></article>';
                 }
 
                 function appendMessages(messages) {
@@ -656,13 +958,23 @@ class MessengerRender
                     if (empty) empty.remove();
 
                     const stickToBottom = isNearBottom();
+                    let lastRenderedDateKey = "";
+                    chatMessages.querySelectorAll(".message[data-date-key]").forEach(function (messageNode) {
+                        if (messageNode.dataset.dateKey) {
+                            lastRenderedDateKey = messageNode.dataset.dateKey;
+                        }
+                    });
 
                     messages.forEach(function (message) {
                         const messageId = parseInt(message.idx || "0", 10) || 0;
                         if (!messageId || chatMessages.querySelector('.message[data-idx="' + String(messageId) + '"]')) {
                             return;
                         }
-                        chatMessages.insertAdjacentHTML("beforeend", buildMessageHtml(message));
+                        const nextDateKey = formatDateKey(parseMessageDate(message.idtadd));
+                        chatMessages.insertAdjacentHTML("beforeend", buildMessageHtml(message, nextDateKey !== "" && nextDateKey !== lastRenderedDateKey));
+                        if (nextDateKey) {
+                            lastRenderedDateKey = nextDateKey;
+                        }
                         if (messageId > lastMessageId) {
                             lastMessageId = messageId;
                         }
@@ -677,7 +989,7 @@ class MessengerRender
                 }
 
                 async function pollMessages() {
-                    if (!currentChatId) return;
+                    if (!currentChatId || isDeletingChat) return;
 
                     try {
                         const res = await fetch("messenger.php?action=get_new_messages&chat=" + encodeURIComponent(currentChatId) + "&last_msg_id=" + encodeURIComponent(lastMessageId), {
@@ -687,6 +999,16 @@ class MessengerRender
                         const data = await res.json();
                         if (data.status === "ok" && Array.isArray(data.messages) && data.messages.length > 0) {
                             appendMessages(data.messages);
+                            return;
+                        }
+                        if (data.status === "error" && data.redirect_url) {
+                            if (pollTimer) {
+                                window.clearInterval(pollTimer);
+                                pollTimer = null;
+                            }
+                            currentChatId = 0;
+                            root.dataset.chatId = "0";
+                            window.location.replace(data.redirect_url);
                         }
                     } catch (error) {
                         console.error(error);
@@ -857,7 +1179,15 @@ class MessengerRender
                     if (backdrop) backdrop.onclick = closeModal;
 
                     confirmBtn.onclick = async function () {
-                        if (!currentChatId) return;
+                        if (!currentChatId || isDeletingChat) return;
+
+                        isDeletingChat = true;
+                        confirmBtn.disabled = true;
+                        cancelBtn.disabled = true;
+                        if (pollTimer) {
+                            window.clearInterval(pollTimer);
+                            pollTimer = null;
+                        }
 
                         try {
                             const res = await fetch("messenger.php", {
@@ -872,20 +1202,40 @@ class MessengerRender
                             const data = await res.json();
                             if (data.status !== "ok") {
                                 alert(data.msg || "Не вдалося видалити чат.");
+                                isDeletingChat = false;
+                                confirmBtn.disabled = false;
+                                cancelBtn.disabled = false;
+                                startPolling();
                                 return;
                             }
 
                             closeModal();
-                            location.href = "/messenger.php?type=2";
+                            currentChatId = 0;
+                            root.dataset.chatId = "0";
+                            window.location.replace(data.redirect_url || "/messenger.php?type=2");
                         } catch (error) {
                             console.error(error);
+                            isDeletingChat = false;
+                            confirmBtn.disabled = false;
+                            cancelBtn.disabled = false;
+                            startPolling();
                             alert("Не вдалося видалити чат.");
                         }
                     };
                 }
 
+                async function parseHtmlResponse(response) {
+                    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+                    if (contentType.indexOf("application/json") !== -1) {
+                        const payload = await response.json();
+                        throw payload;
+                    }
+
+                    return response.text();
+                }
+
                 async function loadChat(chatId, updateHistory, preserveScroll) {
-                    if (!chatId) return;
+                    if (!chatId || isDeletingChat) return;
 
                     try {
                         const [threadRes, infoRes] = await Promise.all([
@@ -899,8 +1249,8 @@ class MessengerRender
                             })
                         ]);
 
-                        const threadHtml = await threadRes.text();
-                        const infoHtml = await infoRes.text();
+                        const threadHtml = await parseHtmlResponse(threadRes);
+                        const infoHtml = await parseHtmlResponse(infoRes);
 
                         threadPanel.innerHTML = threadHtml;
                         infoPanel.innerHTML = infoHtml;
@@ -925,6 +1275,12 @@ class MessengerRender
                             history.pushState(null, "", "/messenger.php?type=2&chat=" + chatId);
                         }
                     } catch (error) {
+                        if (error && error.redirect_url) {
+                            currentChatId = 0;
+                            root.dataset.chatId = "0";
+                            window.location.replace(error.redirect_url);
+                            return;
+                        }
                         console.error(error);
                     }
                 }

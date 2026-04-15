@@ -1,0 +1,161 @@
+- generic [ref=e2]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "Логотип Shana ІПС Шана Інформаційно Пошукова Система" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img "Логотип Shana" [ref=e8]
+        - generic [ref=e9]:
+          - strong [ref=e10]: ІПС Шана
+          - generic [ref=e11]: Інформаційно Пошукова Система
+      - navigation "Головна навігація" [ref=e12]:
+        - link "Головна" [ref=e13] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e14]: Послуги
+        - link "Церкви" [ref=e15] [cursor=pointer]:
+          - /url: /in-dev.php?from=/church.php
+        - link "Наші клієнти" [ref=e16] [cursor=pointer]:
+          - /url: /in-dev.php?from=/clients.php
+        - generic [ref=e17]: Додати публікацію
+      - generic [ref=e18]:
+        - link "Підтримка" [ref=e19] [cursor=pointer]:
+          - /url: /messenger.php?type=3
+        - link "Увійти" [ref=e20] [cursor=pointer]:
+          - /url: /auth.php
+  - main [ref=e21]:
+    - generic [ref=e22]:
+      - generic [ref=e24]:
+        - text: Інтерактивна мапа
+        - heading "Карта кладовища" [level=1] [ref=e25]
+        - paragraph [ref=e26]: Оберіть кладовище та квартал, щоб переглянути розміщення місць, перейти до наявних поховань або швидко додати новий запис у вільну позицію.
+        - generic [ref=e27]: Пошук кварталів і місць Навігація по схемі
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: Кладовище
+          - combobox "Кладовище" [ref=e31]:
+            - option "Єврейський цвинтар" [selected]
+            - option "Балабинське"
+            - option "Великодубове кладовище"
+            - option "Восточное"
+            - option "Капустяное"
+            - option "Кушугумское"
+            - option "Леваневское"
+            - option "Матвеевское"
+            - option "Нижне-Хортицкое"
+            - option "Новотаврійске кладовище"
+            - option "Новофедорівське"
+            - option "Павлокичкасское"
+            - option "Песчаное"
+            - option "Правобережное"
+            - option "Святого Николая"
+            - option "Хортицкое"
+        - generic [ref=e32]:
+          - generic [ref=e33]: Квартал
+          - combobox "Квартал" [disabled] [ref=e34]:
+            - option "Спочатку оберіть кладовище" [selected]
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - text: Обрано
+            - strong [ref=e37]: Кладовище не вибрано
+          - generic [ref=e38]:
+            - text: Локація
+            - strong [ref=e39]: Параметри карти ще не задані
+          - generic [ref=e40]:
+            - text: Поточний запит
+            - code [ref=e41]: "?"
+      - generic [ref=e42]: Завантаження карти кладовища...
+      - generic [ref=e43]:
+        - article [ref=e44]:
+          - generic [ref=e45]: Кладовище
+          - strong [ref=e46]: "-"
+        - article [ref=e47]:
+          - generic [ref=e48]: Квартал
+          - strong [ref=e49]: "-"
+        - article [ref=e50]:
+          - generic [ref=e51]: Рядів
+          - strong [ref=e52]: "-"
+        - article [ref=e53]:
+          - generic [ref=e54]: Позицій у схемі
+          - strong [ref=e55]: "-"
+        - article [ref=e56]:
+          - generic [ref=e57]: Поховань у кварталі
+          - strong [ref=e58]: "-"
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - generic [ref=e61]:
+            - generic [ref=e62]: Рівень 1
+            - heading "Оберіть кладовище" [level=2] [ref=e63]
+          - generic [ref=e64]:
+            - generic [ref=e65]: Обраний квартал
+            - generic [ref=e67]: Є поховання
+        - generic [ref=e70]: Карта кварталів
+      - generic [ref=e72]:
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - generic [ref=e75]: Рівень 2
+            - heading "Оберіть квартал" [level=2] [ref=e76]
+            - paragraph [ref=e77]: Схема показує лише координати, уже внесені на сайт. Якщо реальних місць більше, вони з'являться після заповнення даних.
+          - generic [ref=e78]:
+            - generic [ref=e79]: Вільне місце
+            - generic [ref=e81]: Є поховання
+        - generic [ref=e84]: Карта місць
+  - dialog [ref=e87]:
+    - button "Закрити меню місця" [ref=e88]: ×
+  - contentinfo [ref=e89]:
+    - generic [ref=e90]:
+      - generic [ref=e91]:
+        - generic [ref=e92]:
+          - link "Shana logo ІПС Шана Shanapra.com" [ref=e93] [cursor=pointer]:
+            - /url: /
+            - img "Shana logo" [ref=e95]
+            - generic [ref=e96]:
+              - strong [ref=e97]: ІПС Шана
+              - generic [ref=e98]: Shanapra.com
+          - paragraph [ref=e99]: "Інформаційно-пошукова система пам'яті: пошук поховань і збереження пам'яті"
+        - group [ref=e100]:
+          - generic "Розділи":
+            - heading "Розділи" [level=2]
+          - list [ref=e101]:
+            - listitem [ref=e102]:
+              - link "Головна" [ref=e103] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e104]:
+              - link "Додати поховання" [ref=e105] [cursor=pointer]:
+                - /url: /graveaddform.php
+            - listitem [ref=e106]:
+              - link "Послуги" [ref=e107] [cursor=pointer]:
+                - /url: /clean-cemeteries.php
+            - listitem [ref=e108]:
+              - link "FAQ" [ref=e109] [cursor=pointer]:
+                - /url: /faq.php
+        - group [ref=e110]:
+          - generic "Інформація":
+            - heading "Інформація" [level=2]
+          - list [ref=e111]:
+            - listitem [ref=e112]:
+              - link "Про нас" [ref=e113] [cursor=pointer]:
+                - /url: /about_us.php
+            - listitem [ref=e114]:
+              - link "Контакти" [ref=e115] [cursor=pointer]:
+                - /url: /contacts.php
+            - listitem [ref=e116]:
+              - link "Конфіденційність" [ref=e117] [cursor=pointer]:
+                - /url: /in-dev.php?from=/privacy
+            - listitem [ref=e118]:
+              - link "Авторське право" [ref=e119] [cursor=pointer]:
+                - /url: /in-dev.php?from=/copyright
+        - generic [ref=e120]:
+          - heading "Підтримка" [level=2] [ref=e121]
+          - paragraph [ref=e122]:
+            - text: "Технічна підтримка:"
+            - link "Написати в чат підтримки" [ref=e123] [cursor=pointer]:
+              - /url: /messenger.php?type=3
+          - generic [ref=e124]:
+            - generic [ref=e125]: 24/7 Онлайн
+            - generic [ref=e126]: Безпечний доступ
+      - generic [ref=e127]:
+        - paragraph [ref=e128]: © 2014-2026 shanapra.com. Всі права захищені.
+        - generic [ref=e129]:
+          - link "Посилання" [ref=e130] [cursor=pointer]:
+            - /url: /in-dev.php?from=/links
+          - link "Нормативно-правова інформація" [ref=e131] [cursor=pointer]:
+            - /url: /in-dev.php?from=/npinfo

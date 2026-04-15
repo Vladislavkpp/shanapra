@@ -248,6 +248,32 @@
     font-weight: 700;
 }
 
+.menu-up-new-submenu a.menu-up-new-submenu-link--icon {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.menu-up-new-submenu-icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: currentColor;
+}
+
+.menu-up-new-submenu-icon svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+.menu-up-new-submenu-label {
+    flex: 1 1 auto;
+}
+
 .menu-up-new-nav-group:hover .menu-up-new-submenu,
 .menu-up-new-nav-group:focus-within .menu-up-new-submenu {
     opacity: 1;

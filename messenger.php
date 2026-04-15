@@ -122,6 +122,10 @@ if ($type !== 2 && $type !== 3) {
     $_GET['type'] = 2;
 }
 
+if (!$isAjax) {
+    showMessage();
+}
+
 if ($type === 3) {
     $supportTicketId = (int)($_GET['chat'] ?? ($_GET['ticket_id'] ?? $_POST['ticket_id'] ?? 0));
 
@@ -229,7 +233,14 @@ if (($_POST['action'] ?? '') === 'delete_chat') {
         }
 
         if ($res1 && $res2) {
-            $resp['status'] = 'ok';
+            $_SESSION['message'] = 'Чат було видалено';
+            $_SESSION['messageType'] = 'success';
+            $resp = [
+                'status' => 'ok',
+                'redirect_url' => '/messenger.php?type=2',
+            ];
+        } else {
+            $resp['msg'] = 'Не вдалося видалити чат.';
         }
     }
 
@@ -260,7 +271,10 @@ if (($_POST['action'] ?? '') === 'end_chat') {
             ");
 
             $ok = (!$resExist || mysqli_num_rows($resExist) === 0)
-                ? $chats->addMessage($chat_id, -1, $msg_text, $msg_idx)
+                ? $chats->addMessage($chat_id, -1, $msg_text, $msg_idx, null, [
+                    'message_type' => 'system',
+                    'system_code' => 'chat_closed_by_specialist',
+                ])
                 : true;
 
             if ($ok) {
@@ -269,6 +283,8 @@ if (($_POST['action'] ?? '') === 'end_chat') {
                     'msg_idx' => $msg_idx,
                     'message' => $msg_text,
                     'sender_idx' => -1,
+                    'message_type' => 'system',
+                    'system_code' => 'chat_closed_by_specialist',
                 ];
             }
         } else {
@@ -283,7 +299,7 @@ if (isset($_GET['action'])) {
     if ($_GET['action'] === 'get_chat_html' && isset($_GET['chat'])) {
         $chatId = (int)$_GET['chat'];
         if (!$chats->isParticipant($chatId, $currentUser)) {
-            sendJson(['status' => 'error', 'msg' => 'Чат недоступний']);
+            sendJson(['status' => 'error', 'msg' => 'Чат недоступний', 'redirect_url' => '/messenger.php?type=2']);
         }
         $messages = $chats->getMessages($chatId);
         echo NormalizePublicMarkup($renderer->renderChatWindow($currentUser, $chats->getChatById($chatId), $messages, $chatId, $type));
@@ -293,7 +309,7 @@ if (isset($_GET['action'])) {
     if ($_GET['action'] === 'get_chat_info' && isset($_GET['chat'])) {
         $chatId = (int)$_GET['chat'];
         if (!$chats->isParticipant($chatId, $currentUser)) {
-            sendJson(['status' => 'error', 'msg' => 'Чат недоступний']);
+            sendJson(['status' => 'error', 'msg' => 'Чат недоступний', 'redirect_url' => '/messenger.php?type=2']);
         }
         $chat = $chats->getChatById($chatId);
         echo NormalizePublicMarkup($renderer->renderChatInfo($currentUser, $chat));
@@ -304,7 +320,7 @@ if (isset($_GET['action'])) {
         $chat_id = (int)$_GET['chat'];
         $last_msg_id = (int)$_GET['last_msg_id'];
         if (!$chats->isParticipant($chat_id, $currentUser)) {
-            sendJson(['status' => 'error', 'msg' => 'Чат недоступний']);
+            sendJson(['status' => 'error', 'msg' => 'Чат недоступний', 'redirect_url' => '/messenger.php?type=2']);
         }
         sendJson(['status' => 'ok', 'messages' => $chats->getNewMessages($chat_id, $last_msg_id)]);
     }
@@ -364,16 +380,17 @@ View_Add('</div>');
 View_Add('
 <div id="deleteChatModal" class="modal hidden">
     <div class="modal-backdrop"></div>
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Підтвердження видалення</h3>
+    <div class="modal-content delete-chat-modal">
+        <div class="modal-header delete-chat-modal__header">
+            <span class="delete-chat-modal__eyebrow">Робочий чат</span>
+            <h3>Видалити чат?</h3>
         </div>
-        <div class="modal-body">
-            Ви впевнені, що хочете видалити цей чат?
+        <div class="modal-body delete-chat-modal__body">
+            Історію листування буде видалено. Цю дію не можна скасувати.
         </div>
-        <div class="modal-footer">
-            <button id="confirmDeleteBtn" class="btn-confirm">Видалити</button>
-            <button id="cancelDeleteBtn" class="btn-cancel">Скасувати</button>
+        <div class="modal-footer delete-chat-modal__footer">
+            <button id="cancelDeleteBtn" class="btn-cancel delete-chat-modal__cancel">Скасувати</button>
+            <button id="confirmDeleteBtn" class="btn-confirm delete-chat-modal__confirm">Видалити</button>
         </div>
     </div>
 </div>

@@ -273,7 +273,11 @@ if (!$isAuthorized) {
         $alertHtml = '<div class="acm-alert ' . $alertClass . '">' . kladbUpdateEsc($messageText) . '</div>';
     }
 
-    View_Add('<link rel="stylesheet" href="/assets/css/grave.css?v=1">');
+    $graveCssVersion = (int)@filemtime(__DIR__ . '/assets/css/grave.css');
+    if ($graveCssVersion <= 0) {
+        $graveCssVersion = time();
+    }
+    View_Add('<link rel="stylesheet" href="/assets/css/grave.css?v=' . $graveCssVersion . '">');
     View_Add('<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">');
     View_Add('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>');
     View_Add('
@@ -294,7 +298,7 @@ if (!$isAuthorized) {
 .acm-map-hint{margin-top:8px;min-height:20px;color:#476787;font-size:12px}
 @media (max-width:760px){#acm-map-canvas{height:300px}}
 </style>
-<div class="out">
+<div class="out acm-out">
     <main class="acm-page">');
 
     if (!$cemetery) {
@@ -398,12 +402,12 @@ if (!$isAuthorized) {
                         <p class="acm-section-title">Координати</p>
                         <div class="acm-row acm-row--two acm-row--coords">
                             <div class="acm-field">
-                                <label for="acm-gpsx">GPS X</label>
-                                <input id="acm-gpsx" type="text" name="gpsx" value="' . $safeGpsx . '">
+                                <label for="acm-gpsy">GPS Y (широта)</label>
+                                <input id="acm-gpsy" type="text" name="gpsy" value="' . $safeGpsy . '">
                             </div>
                             <div class="acm-field">
-                                <label for="acm-gpsy">GPS Y</label>
-                                <input id="acm-gpsy" type="text" name="gpsy" value="' . $safeGpsy . '">
+                                <label for="acm-gpsx">GPS X (довгота)</label>
+                                <input id="acm-gpsx" type="text" name="gpsx" value="' . $safeGpsx . '">
                             </div>
                         </div>
                         <div class="acm-map-picker-row">
@@ -728,20 +732,26 @@ if (!$isAuthorized) {
         ];
         var best = null;
         var bestScore = -999;
-        variants.forEach(function (v) {
+
+        variants.forEach(function (variant) {
             var score = 0;
-            if (v.lat < -90 || v.lat > 90 || v.lon < -180 || v.lon > 180) {
+            if (variant.lat < -90 || variant.lat > 90 || variant.lon < -180 || variant.lon > 180) {
                 score = -999;
             } else {
                 score += 2;
-                if (v.lat >= 44 && v.lat <= 53 && v.lon >= 22 && v.lon <= 41) score += 3;
-                else if (v.lat >= 35 && v.lat <= 60 && v.lon >= 10 && v.lon <= 60) score += 1;
+                if (variant.lat >= 44 && variant.lat <= 53 && variant.lon >= 22 && variant.lon <= 41) {
+                    score += 3;
+                } else if (variant.lat >= 35 && variant.lat <= 60 && variant.lon >= 10 && variant.lon <= 60) {
+                    score += 1;
+                }
             }
+
             if (score > bestScore) {
                 bestScore = score;
-                best = v;
+                best = variant;
             }
         });
+
         return bestScore < 0 ? null : best;
     }
 
@@ -768,7 +778,7 @@ if (!$isAuthorized) {
             mapMarker.setLatLng([lat, lon]);
         }
         if (moveMap) map.setView([lat, lon], Math.max(map.getZoom(), 15));
-        setMapHint("Обрано: Lat " + formatCoord(lat) + ", Lon " + formatCoord(lon), false);
+        setMapHint("Обрано: Lon " + formatCoord(lon) + ", Lat " + formatCoord(lat), false);
     }
 
     function ensureMap() {
@@ -962,26 +972,22 @@ function cemeteryResolveCoordinates(?float $gpsx, ?float $gpsy): ?array
     if ($gpsx === null || $gpsy === null) {
         return null;
     }
-
     $variants = [
         ['lat' => $gpsx, 'lon' => $gpsy, 'source' => 'xy'],
         ['lat' => $gpsy, 'lon' => $gpsx, 'source' => 'yx'],
     ];
-
     $best = null;
     $bestScore = -999;
-    foreach ($variants as $variant) {
-        $lat = $variant['lat'];
-        $lon = $variant['lon'];
-        $score = 0;
 
-        if ($lat < -90 || $lat > 90 || $lon < -180 || $lon > 180) {
+    foreach ($variants as $variant) {
+        $score = 0;
+        if ($variant['lat'] < -90 || $variant['lat'] > 90 || $variant['lon'] < -180 || $variant['lon'] > 180) {
             $score = -999;
         } else {
             $score += 2;
-            if ($lat >= 44 && $lat <= 53 && $lon >= 22 && $lon <= 41) {
+            if ($variant['lat'] >= 44 && $variant['lat'] <= 53 && $variant['lon'] >= 22 && $variant['lon'] <= 41) {
                 $score += 3;
-            } elseif ($lat >= 35 && $lat <= 60 && $lon >= 10 && $lon <= 60) {
+            } elseif ($variant['lat'] >= 35 && $variant['lat'] <= 60 && $variant['lon'] >= 10 && $variant['lon'] <= 60) {
                 $score += 1;
             }
         }
@@ -992,11 +998,7 @@ function cemeteryResolveCoordinates(?float $gpsx, ?float $gpsy): ?array
         }
     }
 
-    if ($bestScore < 0 || $best === null) {
-        return null;
-    }
-
-    return $best;
+    return $bestScore < 0 ? null : $best;
 }
 
 function cemeteryFormatCoord(float $value): string
@@ -1004,7 +1006,33 @@ function cemeteryFormatCoord(float $value): string
     return rtrim(rtrim(sprintf('%.7F', $value), '0'), '.');
 }
 
-function cemeteryLoadGravesPage(mysqli $dblink, int $cemeteryId, int $page, int $perPage): array
+function cemeteryVisibilityConditionSql(int $viewerId, string $tableAlias = ''): string
+{
+    $prefix = $tableAlias !== '' ? $tableAlias . '.' : '';
+    $approvedCondition = "LOWER(COALESCE({$prefix}moderation_status, 'pending')) <> 'rejected'";
+
+    if ($viewerId > 0) {
+        return '(' . $approvedCondition . " OR {$prefix}idxadd = $viewerId)";
+    }
+
+    return '(' . $approvedCondition . ')';
+}
+
+function cemeteryCanViewPublication(?array $publication, int $currentUserId): bool
+{
+    if (!$publication) {
+        return false;
+    }
+
+    $status = strtolower(trim((string)($publication['moderation_status'] ?? 'pending')));
+    if ($status !== 'rejected') {
+        return true;
+    }
+
+    return $currentUserId > 0 && $currentUserId === (int)($publication['idxadd'] ?? 0);
+}
+
+function cemeteryLoadGravesPage(mysqli $dblink, int $cemeteryId, int $page, int $perPage, int $viewerId = 0): array
 {
     if ($cemeteryId <= 0 || $perPage <= 0) {
         return [];
@@ -1012,10 +1040,12 @@ function cemeteryLoadGravesPage(mysqli $dblink, int $cemeteryId, int $page, int 
 
     $page = max(1, $page);
     $offset = ($page - 1) * $perPage;
+    $visibilityCondition = cemeteryVisibilityConditionSql($viewerId);
     $query = "
-        SELECT idx, lname, fname, mname, dt1, dt2, photo1
+        SELECT idx, lname, fname, mname, dt1, dt1_year, dt1_month, dt1_day, dt2, dt2_year, dt2_month, dt2_day, photo1
         FROM grave
         WHERE idxkladb = $cemeteryId
+          AND $visibilityCondition
         ORDER BY idx DESC
         LIMIT $perPage OFFSET $offset
     ";
@@ -1081,7 +1111,7 @@ function cemeteryRenderGravesCards(array $graves): string
         $out .= '<span class="cemdet-grave-media"><img src="' . cemeteryEsc($photo) . '" alt="' . cemeteryEsc($graveName) . '"></span>';
         $out .= '<div class="cemdet-grave-data">';
         $out .= '<b class="cemdet-grave-title">' . cemeteryEsc($graveName) . '</b>';
-        $out .= '<span class="cemdet-grave-dates">' . cemeteryDateRange((string)($grave['dt1'] ?? ''), (string)($grave['dt2'] ?? '')) . '</span>';
+        $out .= '<span class="cemdet-grave-dates">' . cemeteryEsc(graveDateFormatRangeFromRow($grave)) . '</span>';
         $out .= '</div>';
         $out .= '</a>';
     }
@@ -1151,6 +1181,7 @@ $latestGraves = [];
 $gravesPerPage = 10;
 $gravesPage = max(1, (int)($_GET['page'] ?? 1));
 $gravesTotalPages = 1;
+$currentUserId = (int)($_SESSION['uzver'] ?? 0);
 
 if ($idx > 0) {
     $query = "
@@ -1171,20 +1202,28 @@ if ($idx > 0) {
     }
 }
 
+if (!cemeteryCanViewPublication($cemetery, $currentUserId)) {
+    $cemetery = null;
+}
+
 if ($cemetery) {
-    $countRes = mysqli_query($dblink, "SELECT COUNT(*) AS cnt FROM grave WHERE idxkladb = $idx");
+    $countRes = mysqli_query(
+        $dblink,
+        "SELECT COUNT(*) AS cnt FROM grave WHERE idxkladb = $idx AND " . cemeteryVisibilityConditionSql($currentUserId)
+    );
     if ($countRes && ($countRow = mysqli_fetch_assoc($countRes))) {
         $gravesCount = (int)($countRow['cnt'] ?? 0);
     }
 
     $gravesTotalPages = max(1, (int)ceil($gravesCount / $gravesPerPage));
     $gravesPage = min($gravesPage, $gravesTotalPages);
-    $latestGraves = cemeteryLoadGravesPage($dblink, $idx, $gravesPage, $gravesPerPage);
+    $latestGraves = cemeteryLoadGravesPage($dblink, $idx, $gravesPage, $gravesPerPage, $currentUserId);
 }
 
 if ($isAjaxGraves) {
     header('Content-Type: application/json; charset=UTF-8');
     if (!$cemetery) {
+        http_response_code(404);
         echo json_encode(['ok' => false, 'message' => 'Кладовище не знайдено'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     } else {
         echo json_encode([
@@ -1257,8 +1296,11 @@ if ($region !== '') {
     $locationParts[] = cemeteryEsc($region) . ' область';
 }
 $locationLine = !empty($locationParts) ? implode(', ', $locationParts) : 'Локація не вказана';
-$currentUserId = (int)($_SESSION['uzver'] ?? 0);
 $canEdit = ($cemetery && $currentUserId > 0 && (int)($cemetery['idxadd'] ?? 0) === $currentUserId);
+
+if (!$cemetery) {
+    http_response_code(404);
+}
 
 View_Clear();
 View_Add(Page_Up($pageTitle));
@@ -1266,14 +1308,17 @@ View_Add(Menu_Up());
 View_Add('<link rel="stylesheet" href="/assets/css/cemetery-detail.css?v=6">');
 
 View_Add('<div class="out out-cemdet">');
-View_Add('<main class="cemdet-page">');
+View_Add('<main class="cemdet-page' . (!$cemetery ? ' cemdet-page--empty' : '') . '">');
 
 if (!$cemetery) {
     View_Add('
     <section class="cemdet-empty">
         <h1>Кладовище не знайдено</h1>
-        <p>Запис за вказаним ідентифікатором відсутній або був видалений.</p>
-        <a href="/searchcem" class="cemdet-btn cemdet-btn--dark">Повернутися до пошуку</a>
+        <p>Запис за вказаним ідентифікатором не знайдено або він недоступний.</p>
+        <div class="cemdet-actions cemdet-empty-actions">
+            <a href="/searchcem" class="cemdet-btn cemdet-btn--dark">Повернутися до пошуку</a>
+            <a href="/" class="cemdet-btn cemdet-btn--light">На головну</a>
+        </div>
     </section>
     ');
 } else {
@@ -1321,12 +1366,12 @@ if (!$cemetery) {
     View_Add('</div>');
 
     View_Add('<div class="cemdet-actions">');
-    View_Add('<a href="/searchcem" class="cemdet-btn cemdet-btn--light">До списку кладовищ</a>');
+    View_Add('<a href="/searchcem" class="cemdet-btn cemdet-btn--light"><span class="cemdet-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-list-search"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M11 15a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M18.5 18.5l2.5 2.5" /><path d="M4 6h16" /><path d="M4 12h4" /><path d="M4 18h4" /></svg></span><span>До списку кладовищ</span></a>');
     if ($hasCoordinates && !$isZeroCoordinates) {
-        View_Add('<a href="' . $mapLink . '" class="cemdet-btn cemdet-btn--dark" target="_blank" rel="noopener">Відкрити в Google Maps</a>');
+        View_Add('<a href="' . $mapLink . '" class="cemdet-btn cemdet-btn--dark" target="_blank" rel="noopener"><span class="cemdet-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-google-maps"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9.5 9.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0" /><path d="M6.428 12.494l7.314 -9.252" /><path d="M10.002 7.935l-2.937 -2.545" /><path d="M17.693 6.593l-8.336 9.979" /><path d="M17.591 6.376c.472 .907 .715 1.914 .709 2.935a7.263 7.263 0 0 1 -.72 3.18a19.085 19.085 0 0 1 -2.089 3c-.784 .933 -1.49 1.93 -2.11 2.98c-.314 .62 -.568 1.27 -.757 1.938c-.121 .36 -.277 .591 -.622 .591c-.315 0 -.463 -.136 -.626 -.593a10.595 10.595 0 0 0 -.779 -1.978a18.18 18.18 0 0 0 -1.423 -2.091c-.877 -1.184 -2.179 -2.535 -2.853 -4.071a7.077 7.077 0 0 1 -.621 -2.967a6.226 6.226 0 0 1 1.476 -4.055a6.25 6.25 0 0 1 4.811 -2.245a6.462 6.462 0 0 1 1.918 .284a6.255 6.255 0 0 1 3.686 3.092" /></svg></span><span>Відкрити в Google Maps</span></a>');
     }
     if ($canEdit) {
-        View_Add('<a href="/cemetery/editcemform?idx=' . $idx . '" class="cemdet-btn cemdet-btn--ghost">Редагувати</a>');
+        View_Add('<a href="/cemetery/editcemform?idx=' . $idx . '" class="cemdet-btn cemdet-btn--ghost"><span class="cemdet-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415" /><path d="M16 5l3 3" /></svg></span><span>Редагувати</span></a>');
     }
     View_Add('</div>');
     View_Add('</div>');

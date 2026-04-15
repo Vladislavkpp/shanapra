@@ -446,6 +446,19 @@
     font-weight: 800;
 }
 
+.admin-tools-stat-value--with-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-tools-stat-value-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    object-fit: contain;
+}
+
 @media (max-width: 1024px) {
     .admin-tools-grid,
     .admin-tools-grid--stats,
@@ -805,6 +818,168 @@
     margin: 0;
 }
 
+.admin-tools-filter-form--transactions {
+    display: grid;
+    gap: 12px;
+}
+
+.admin-tools-filter-stack {
+    display: grid;
+    gap: 12px;
+}
+
+.admin-tools-filter-form--transactions .admin-tools-filter-row--tabs {
+    justify-content: flex-start;
+}
+
+.admin-tools-filter-form--transactions .admin-tools-filter-row--controls {
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.admin-tools-filter-form--transactions .admin-tools-filter-row {
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.admin-tools-filter-form--transactions .admin-tools-filter-group--dates {
+    width: 100%;
+    max-width: 100%;
+    flex: 1 1 auto;
+    display: block;
+    margin-right: 0;
+}
+
+.admin-tools-filter-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 24px;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.admin-tools-filter-primary {
+    display: flex;
+    flex: 1 1 520px;
+    min-width: 0;
+}
+
+.admin-tools-filter-form--transactions .admin-tools-filter-values {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-left: auto;
+    justify-content: flex-end;
+}
+
+.admin-tools-filter-form--transactions .admin-tools-filter-mode-shell {
+    flex: 0 0 auto;
+    margin-right: 24px;
+    padding-right: 24px;
+    border-right: 1px solid rgba(200, 219, 239, 0.9);
+}
+
+.admin-tools-filter-mode-shell,
+.admin-tools-filter-values,
+.admin-tools-filter-mode-list,
+.admin-tools-filter-panels,
+.admin-tools-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.admin-tools-filter-mode-shell {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    flex: 0 0 auto;
+}
+
+.admin-tools-filter-mode-label {
+    color: #6a7f94;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.admin-tools-filter-mode-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    align-items: stretch;
+}
+
+.admin-tools-filter-mode-item {
+    display: flex;
+}
+
+.admin-tools-filter-pill.admin-tools-filter-mode-pill {
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border-color: #b9d1ea;
+    background: linear-gradient(180deg, #ffffff 0%, #f2f7fd 100%);
+    color: #214c73;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    box-shadow: 0 6px 14px rgba(32, 77, 118, 0.08);
+}
+
+.admin-tools-filter-pill.admin-tools-filter-mode-pill:hover {
+    border-color: #7ea8d4;
+    background: linear-gradient(180deg, #ffffff 0%, #eaf3fd 100%);
+    color: #153d62;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(29, 78, 216, 0.12);
+}
+
+.admin-tools-filter-pill.admin-tools-filter-mode-pill.is-active {
+    border-color: #2458d3;
+    background: linear-gradient(180deg, #3b73ff 0%, #2458d3 100%);
+    color: #ffffff;
+    box-shadow: 0 10px 20px rgba(36, 88, 211, 0.22);
+}
+
+.admin-tools-filter-panels {
+    align-items: flex-end;
+    flex: 0 1 auto;
+    min-width: auto;
+}
+
+.admin-tools-filter-values {
+    align-items: flex-end;
+    flex: 0 1 auto;
+    gap: 12px;
+    justify-content: flex-start;
+}
+
+.admin-tools-filter-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    min-height: 44px;
+}
+
+.admin-tools-filter-panel[hidden] {
+    display: none !important;
+}
+
+.admin-tools-filter-panel--month {
+    width: auto;
+}
+
+.admin-tools-filter-actions {
+    align-items: flex-end;
+    flex: 0 0 auto;
+    align-self: flex-end;
+    white-space: nowrap;
+    gap: 8px;
+}
+
 .admin-tools-filter-form.is-loading {
     pointer-events: none;
     opacity: 0.72;
@@ -886,6 +1061,14 @@
     border-color: #1d4ed8;
     background: #fdfefe;
     box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.12);
+}
+
+.admin-tools-filter-field--month input {
+    min-width: 190px;
+}
+
+.admin-tools-filter-field--month {
+    min-width: 210px;
 }
 
 .admin-tools-filter-btn,
@@ -1004,16 +1187,100 @@
     box-shadow: 0 10px 22px rgba(16, 40, 62, 0.08);
 }
 
+.admin-wallet-detail__summary {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+}
+
+.admin-wallet-detail__identity {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+.admin-wallet-detail__avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    overflow: hidden;
+    flex: 0 0 64px;
+    background: linear-gradient(180deg, #3f8cff 0%, #174d78 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.admin-wallet-detail__avatar-image,
+.admin-wallet-detail__avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.admin-wallet-detail__avatar-image {
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.admin-wallet-detail__avatar-fallback {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+}
+
+.admin-wallet-detail__identity-copy {
+    min-width: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.admin-wallet-detail__title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
 .admin-wallet-detail__title {
-    margin: 14px 0 0;
+    margin: 0;
     color: #123b61;
     font-size: 28px;
     line-height: 1.12;
     font-weight: 800;
 }
 
+.admin-wallet-detail__profile-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid #d4e4f3;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.86);
+    color: #4d6680;
+    text-decoration: none;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.admin-wallet-detail__profile-link:hover {
+    color: #1d4ed8;
+    border-color: #b8d2ea;
+    background: #ffffff;
+    transform: translateY(-1px);
+}
+
+.admin-wallet-detail__profile-link svg {
+    width: 18px;
+    height: 18px;
+}
+
 .admin-wallet-detail__meta {
-    margin-top: 10px;
+    margin-top: 0;
     color: #59728c;
     font-size: 14px;
     line-height: 1.6;
@@ -1078,6 +1345,7 @@
     display: inline-flex;
     align-items: center;
     min-height: 38px;
+    width: max-content;
     padding: 0 14px;
     border-radius: 999px;
     font-size: 11px;
@@ -1161,9 +1429,38 @@
 @media (max-width: 640px) {
     .admin-tools-filter-row,
     .admin-tools-filter-group,
-    .admin-tools-filter-group--dates {
+    .admin-tools-filter-group--dates,
+    .admin-tools-filter-layout,
+    .admin-tools-filter-primary {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .admin-tools-filter-mode-shell,
+    .admin-tools-filter-values,
+    .admin-tools-filter-mode-list,
+    .admin-tools-filter-panels,
+    .admin-tools-filter-panel,
+    .admin-tools-filter-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-tools-filter-mode-shell {
+        display: grid;
+    }
+
+    .admin-tools-filter-form--transactions .admin-tools-filter-mode-shell {
+        margin-right: 0;
+        padding-right: 0;
+        border-right: 0;
+        border-top: 1px solid rgba(200, 219, 239, 0.9);
+        padding-top: 14px;
+    }
+
+    .admin-tools-filter-form--transactions .admin-tools-filter-values {
+        margin-left: 0;
+        justify-content: flex-start;
     }
 
     .admin-tools-filter-pill {
@@ -1197,6 +1494,19 @@
     .admin-wallet-detail__header {
         padding: 18px;
         flex-direction: column;
+    }
+
+    .admin-wallet-detail__identity {
+        width: 100%;
+        align-items: flex-start;
+    }
+
+    .admin-wallet-detail__summary {
+        width: 100%;
+    }
+
+    .admin-wallet-detail__title-row {
+        flex-wrap: wrap;
     }
 
     .admin-wallet-detail__stats,

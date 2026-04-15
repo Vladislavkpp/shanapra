@@ -1995,10 +1995,12 @@ body {
 .popup-content {
     background: #fff;
     padding: 20px;
-    border-radius: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(17, 24, 39, 0.10);
     min-width: 360px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     font-family: sans-serif;
+    position: relative;
 }
 
 .close-pop {
@@ -2675,12 +2677,7 @@ body {
     padding: 2px 8px;
     margin-left: -8px;
     border: 1px solid transparent;
-    transition:
-        color 0.2s ease,
-        background-color 0.2s ease,
-        border-color 0.2s ease,
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
+
 }
 
 .site-footer-v2__legal a:hover {
@@ -7733,6 +7730,7 @@ select.form-input-kladb option[value=""] {
     transform: translateX(400px);
     transition: all 0.3s ease;
     pointer-events: none;
+    font-family: "Manrope", "Segoe UI", Tahoma, sans-serif;
 }
 
 #global-alert.show,
@@ -7771,6 +7769,7 @@ select.form-input-kladb option[value=""] {
     font-weight: 500;
     line-height: 1.4;
     flex: 1;
+    font-family: inherit;
 }
 
 #global-alert.notification-success {
@@ -8215,6 +8214,63 @@ select.form-input-kladb option[value=""] {
     margin-bottom: 0;
 }
 
+.faq-status-row {
+    margin: 0 0 0.9rem;
+    line-height: 1.8;
+}
+
+.faq-status-row + .faq-status-row {
+    margin-top: 0.8rem;
+}
+
+.faq-status-row:last-child {
+    margin-bottom: 0;
+}
+
+.faq-status-row .faq-status-badge {
+    margin-right: 0.2rem;
+    vertical-align: middle;
+}
+
+.faq-status-separator {
+    display: inline;
+    margin-right: 0.38rem;
+    color: #5c7691;
+    font-weight: 700;
+}
+
+.faq-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.42rem 0.82rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.faq-status-badge--pending {
+    border-color: rgba(180, 121, 16, 0.28);
+    background: linear-gradient(135deg, rgba(255, 242, 213, 0.95) 0%, rgba(255, 249, 231, 0.98) 100%);
+    color: #8a6110;
+}
+
+.faq-status-badge--approved {
+    border-color: rgba(18, 123, 91, 0.24);
+    background: linear-gradient(135deg, rgba(223, 248, 238, 0.95) 0%, rgba(241, 253, 247, 0.98) 100%);
+    color: #127255;
+}
+
+.faq-status-badge--rejected {
+    border-color: rgba(174, 53, 71, 0.24);
+    background: linear-gradient(135deg, rgba(255, 230, 234, 0.95) 0%, rgba(255, 244, 246, 0.98) 100%);
+    color: #a03144;
+}
+
 .faq-link {
     display: inline-block;
     color: #1f6fc4;
@@ -8280,6 +8336,10 @@ select.form-input-kladb option[value=""] {
 
     .faq-answer__inner {
         padding: 0.9rem 1rem 1rem;
+    }
+
+    .faq-status-row {
+        line-height: 1.7;
     }
 
     .faq-link {

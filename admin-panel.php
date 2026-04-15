@@ -3,7 +3,48 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . "/roles.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/function.php";
 
-$dblink = DbConnect();
+function adminPanelEsc(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function adminPanelRenderAccessPage(int $code): void
+{
+    global $hide_page_down;
+
+    $code = $code === 401 ? 401 : 403;
+    $requestUri = adminPanelEsc((string)($_SERVER['REQUEST_URI'] ?? ''));
+    $isUnauthorized = $code === 401;
+    $title = $isUnauthorized ? 'Потрібна авторизація' : 'Доступ заборонено';
+    $text = $isUnauthorized
+        ? 'Для перегляду цієї сторінки потрібен вхід в обліковий запис.'
+        : 'Ви авторизовані, але ваш обліковий запис не має прав доступу до адмін-панелі.';
+    $primaryUrl = $isUnauthorized ? '/auth.php' : '/';
+    $primaryLabel = $isUnauthorized ? 'Увійти' : 'На головну';
+
+    http_response_code($code);
+    $hide_page_down = true;
+    View_Clear();
+    View_Add(Page_Up($title . ' — ' . $code));
+    View_Add('<link rel="stylesheet" href="/assets/css/404.css">');
+    View_Add(Menu_Up());
+    View_Add('<div class="out-index out-index--404">');
+    View_Add('<div class="page-404"><div class="page-404__inner"><div class="page-404__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div><div class="page-404__code" aria-hidden="true">' . $code . '</div><h1 class="page-404__title">' . adminPanelEsc($title) . '</h1><p class="page-404__text">' . adminPanelEsc($text) . '</p>' . ($requestUri !== '' ? '<div class="page-404__uri">' . $requestUri . '</div>' : '') . '<div class="page-404__actions"><a href="' . $primaryUrl . '" class="page-404__btn page-404__btn--primary">' . adminPanelEsc($primaryLabel) . '</a></div></div></div>');
+    View_Add('</div>');
+    View_Add(Page_Down());
+    View_Out();
+    exit;
+}
+
+$isAuthenticated = isset($_SESSION['uzver']) && (int)$_SESSION['uzver'] > 0;
+$accessDeniedCode = $isAuthenticated ? 403 : 401;
+$hasAdminPanelAccess = isset($_SESSION['status'])
+    && function_exists('hasAnyRole')
+    && hasAnyRole((int)$_SESSION['status'], [ROLE_CREATOR, ROLE_WEBMASTER]);
+
+if (!$hasAdminPanelAccess) {
+    adminPanelRenderAccessPage($accessDeniedCode);
+}
 
 View_Clear();
 View_Add(Page_Up('Адмін-Панель'));
@@ -20,19 +61,6 @@ View_Add('</aside>');
 View_Add('<main class="content-admin">');
 View_Add('<div class="content-inner">');
 View_Add('<div class="out-admin">');
-
-
-
-if (!isset($_SESSION['status']) || !hasAnyRole((int)$_SESSION['status'], [ROLE_CREATOR, ROLE_WEBMASTER])) {
-    View_Clear();
-    View_Add(Page_Up('Access Denied'));
-    View_Add(Menu_Up());
-    View_Add('<div class="error-message">Відмовлено у доступі.</div>');
-    View_Add(Page_Down());
-    View_Out();
-    exit;
-}
-
 
 $md = isset($_GET['md']) ? (int)$_GET['md'] : 0;
 

@@ -228,7 +228,11 @@ if (!$isAuthorized) {
         $alertHtml = '<div class="acm-alert ' . $alertClass . '">' . addCemeteryEsc($messageText) . '</div>';
     }
 
-    View_Add('<link rel="stylesheet" href="/assets/css/grave.css">');
+    $graveCssVersion = (int)@filemtime(__DIR__ . '/assets/css/grave.css');
+    if ($graveCssVersion <= 0) {
+        $graveCssVersion = time();
+    }
+    View_Add('<link rel="stylesheet" href="/assets/css/grave.css?v=' . $graveCssVersion . '">');
     View_Add('<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">');
     View_Add('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>');
     View_Add('
@@ -241,7 +245,7 @@ if (!$isAuthorized) {
 .acm-map-hint{margin-top:8px;min-height:20px;color:#476787;font-size:12px}
 @media (max-width:760px){#acm-map-canvas{height:300px}}
 </style>
-<div class="out">
+<div class="out acm-out">
     <main class="acm-page">
         <section class="acm-layout">
             <aside class="acm-aside">
@@ -314,12 +318,12 @@ if (!$isAuthorized) {
                         <p class="acm-section-title">Координати</p>
                         <div class="acm-row acm-row--two acm-row--coords">
                             <div class="acm-field">
-                                <label for="acm-gpsx">GPS X</label>
-                                <input id="acm-gpsx" type="text" name="gpsx" value="' . $safeGpsx . '">
+                                <label for="acm-gpsy">GPS Y (широта)</label>
+                                <input id="acm-gpsy" type="text" name="gpsy" value="' . $safeGpsy . '">
                             </div>
                             <div class="acm-field">
-                                <label for="acm-gpsy">GPS Y</label>
-                                <input id="acm-gpsy" type="text" name="gpsy" value="' . $safeGpsy . '">
+                                <label for="acm-gpsx">GPS X (довгота)</label>
+                                <input id="acm-gpsx" type="text" name="gpsx" value="' . $safeGpsx . '">
                             </div>
                         </div>
                         <div class="acm-map-picker-row">
@@ -703,27 +707,17 @@ if (!$isAuthorized) {
 
     function resolveLatLonFromFields(xVal, yVal) {
         if (xVal === null || yVal === null) return null;
-        const variants = [
-            { lat: xVal, lon: yVal },
-            { lat: yVal, lon: xVal }
-        ];
-        let best = null;
-        let bestScore = -999;
-        variants.forEach(function (v) {
-            let score = 0;
-            if (v.lat < -90 || v.lat > 90 || v.lon < -180 || v.lon > 180) {
-                score = -999;
-            } else {
-                score += 2;
-                if (v.lat >= 44 && v.lat <= 53 && v.lon >= 22 && v.lon <= 41) score += 3;
-                else if (v.lat >= 35 && v.lat <= 60 && v.lon >= 10 && v.lon <= 60) score += 1;
-            }
-            if (score > bestScore) {
-                bestScore = score;
-                best = v;
-            }
-        });
-        return bestScore < 0 ? null : best;
+        const preferred = { lat: yVal, lon: xVal };
+        if (preferred.lat >= -90 && preferred.lat <= 90 && preferred.lon >= -180 && preferred.lon <= 180) {
+            return preferred;
+        }
+
+        const legacy = { lat: xVal, lon: yVal };
+        if (legacy.lat >= -90 && legacy.lat <= 90 && legacy.lon >= -180 && legacy.lon <= 180) {
+            return legacy;
+        }
+
+        return null;
     }
 
     let map = null;
@@ -749,7 +743,7 @@ if (!$isAuthorized) {
             mapMarker.setLatLng([lat, lon]);
         }
         if (moveMap) map.setView([lat, lon], Math.max(map.getZoom(), 15));
-        setMapHint("Обрано: Lat " + formatCoord(lat) + ", Lon " + formatCoord(lon), false);
+        setMapHint("Обрано: Lon " + formatCoord(lon) + ", Lat " + formatCoord(lat), false);
     }
 
     function ensureMap() {

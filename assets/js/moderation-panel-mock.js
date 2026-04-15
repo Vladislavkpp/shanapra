@@ -14,6 +14,7 @@
         var searchInput = document.getElementById('modDashboardSearch');
         var emptyState = document.getElementById('modEmpty');
         var entryList = document.getElementById('modEntryList');
+        var entryListLoading = document.getElementById('modEntryListLoading');
         var moderationView = document.getElementById('modModerationView');
         var journalView = document.getElementById('modJournalView');
         var notifyView = document.getElementById('modNotifyView');
@@ -49,6 +50,7 @@
             activeType = 'grave';
         }
         var activePanel = 'moderation';
+        var isDashboardLoading = false;
         var currentCard = null;
         var entryModalViewTemplate = entryModalView ? entryModalView.innerHTML : '';
         var photoModal = document.getElementById('mod-photo-modal');
@@ -195,6 +197,9 @@
                 anyOpen = true;
             }
             if (rejectModal && rejectModal.classList.contains('is-open')) {
+                anyOpen = true;
+            }
+            if (document.querySelector('.mod-partial-date-modal.is-open')) {
                 anyOpen = true;
             }
             document.body.classList.toggle('mod-body-locked', anyOpen);
@@ -524,6 +529,37 @@
             activityItems = Array.prototype.slice.call(document.querySelectorAll('.mod-activity-item'));
         }
 
+        function setEntryListLoading(isLoading, message) {
+            if (!entryList) {
+                isDashboardLoading = !!isLoading;
+                return;
+            }
+
+            isDashboardLoading = !!isLoading;
+            entryList.classList.toggle('is-loading', isDashboardLoading);
+
+            if (isDashboardLoading) {
+                if (!entryListLoading) {
+                    entryListLoading = document.createElement('div');
+                    entryListLoading.id = 'modEntryListLoading';
+                    entryListLoading.className = 'mod-entry-list__loading';
+                }
+                entryListLoading.textContent = message || 'Завантаження карток...';
+                if (!entryList.contains(entryListLoading)) {
+                    entryList.innerHTML = '';
+                    entryList.appendChild(entryListLoading);
+                }
+                if (emptyState) {
+                    emptyState.hidden = true;
+                }
+                return;
+            }
+
+            if (entryListLoading && entryListLoading.parentNode === entryList) {
+                entryListLoading.parentNode.removeChild(entryListLoading);
+            }
+        }
+
         function setStatValue(selector, value) {
             var node = document.querySelector(selector);
             if (node) {
@@ -614,6 +650,13 @@
         }
 
         function applyFilters() {
+            if (isDashboardLoading) {
+                if (emptyState) {
+                    emptyState.hidden = true;
+                }
+                return;
+            }
+
             var visible = 0;
 
             cards.forEach(function (card) {
@@ -657,6 +700,57 @@
                 notifyView.classList.toggle('is-active', activePanel === 'notify');
             }
             syncStateToUrl();
+        }
+
+        function loadDashboardCards() {
+            if (!entryList) {
+                return Promise.resolve(false);
+            }
+
+            setEntryListLoading(true, 'Завантаження карток...');
+
+            return fetch('/moderation-panel.php?ajax_dashboard_cards=1', {
+                credentials: 'same-origin'
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (payload) {
+                    if (!payload || !payload.success || !Array.isArray(payload.items)) {
+                        throw new Error('Не вдалося завантажити картки.');
+                    }
+
+                    cards = [];
+                    entryList.innerHTML = '';
+
+                    if (!payload.items.length) {
+                        entryList.innerHTML = '<div class="mod-empty">Наразі немає записів для модерації.</div>';
+                        return true;
+                    }
+
+                    var fragment = document.createDocumentFragment();
+                    payload.items.forEach(function (item) {
+                        var card = createCardElement(item);
+                        cards.push(card);
+                        fragment.appendChild(card);
+                    });
+                    entryList.appendChild(fragment);
+                    return true;
+                })
+                .catch(function () {
+                    cards = [];
+                    if (entryList) {
+                        entryList.innerHTML = '<div class="mod-empty">Не вдалося завантажити записи. Оновіть сторінку ще раз.</div>';
+                    }
+                    return false;
+                })
+                .then(function (success) {
+                    setEntryListLoading(false);
+                    if (success) {
+                        pendingFeedSinceIso = getLatestPendingIso();
+                        updateBannerStats();
+                        applyFilters();
+                    }
+                    return success;
+                });
         }
 
         function syncFilterButtons() {
@@ -1386,7 +1480,7 @@
             return latest;
         }
 
-        var pendingFeedSinceIso = getLatestPendingIso();
+        var pendingFeedSinceIso = '';
         var pendingFeedTimer = null;
 
         function fetchPendingFeed() {
@@ -1507,6 +1601,637 @@
             entryModal.classList.add('is-open');
             entryModal.setAttribute('aria-hidden', 'false');
             updateBodyLock();
+        }
+
+        function initPartialDateForm(form) {
+            if (!form || form.dataset.modPartialDateBound === '1') {
+                return;
+            }
+
+            var openPartialDatesBtn = form.querySelector('[data-mod-open-partial-dates]');
+            var partialDateModal = form.querySelector('[data-mod-partial-date-modal]');
+            var partialDateHint = form.querySelector('[data-mod-partial-date-hint]');
+            var savePartialDatesBtn = form.querySelector('[data-mod-save-partial-dates]');
+            var closePartialModalNodes = partialDateModal ? partialDateModal.querySelectorAll('[data-mod-close-partial-modal]') : [];
+            var partialDateClearButtons = form.querySelectorAll('[data-mod-clear-partial-date]');
+
+            if (!openPartialDatesBtn || !partialDateModal || !partialDateHint || !savePartialDatesBtn) {
+                form.dataset.modPartialDateBound = '1';
+                return;
+            }
+
+            var partialDateFields = {
+                dt1: {
+                    key: 'dt1',
+                    label: 'Дата народження',
+                    input: form.querySelector('[name="dt1"]'),
+                    display: form.querySelector('[data-mod-partial-display="dt1"]'),
+                    shell: form.querySelector('[data-mod-partial-display-shell="dt1"]'),
+                    clearButton: form.querySelector('[data-mod-clear-partial-date="dt1"]'),
+                    unknownNote: form.querySelector('[data-mod-date-unknown-note="dt1"]'),
+                    hidden: {
+                        day: form.querySelector('[data-mod-partial-hidden="dt1-day"]'),
+                        month: form.querySelector('[data-mod-partial-hidden="dt1-month"]'),
+                        year: form.querySelector('[data-mod-partial-hidden="dt1-year"]')
+                    },
+                    modal: {
+                        day: form.querySelector('[data-mod-modal-input="dt1-day"]'),
+                        month: form.querySelector('[data-mod-modal-input="dt1-month"]'),
+                        year: form.querySelector('[data-mod-modal-input="dt1-year"]')
+                    },
+                    unknown: {
+                        hidden: form.querySelector('[data-mod-date-unknown-hidden="dt1"]'),
+                        full: form.querySelector('[data-mod-full-unknown="dt1"]'),
+                        day: form.querySelector('[data-mod-modal-unknown="dt1-day"]'),
+                        month: form.querySelector('[data-mod-modal-unknown="dt1-month"]'),
+                        year: form.querySelector('[data-mod-modal-unknown="dt1-year"]')
+                    }
+                },
+                dt2: {
+                    key: 'dt2',
+                    label: 'Дата смерті',
+                    input: form.querySelector('[name="dt2"]'),
+                    display: form.querySelector('[data-mod-partial-display="dt2"]'),
+                    shell: form.querySelector('[data-mod-partial-display-shell="dt2"]'),
+                    clearButton: form.querySelector('[data-mod-clear-partial-date="dt2"]'),
+                    unknownNote: form.querySelector('[data-mod-date-unknown-note="dt2"]'),
+                    hidden: {
+                        day: form.querySelector('[data-mod-partial-hidden="dt2-day"]'),
+                        month: form.querySelector('[data-mod-partial-hidden="dt2-month"]'),
+                        year: form.querySelector('[data-mod-partial-hidden="dt2-year"]')
+                    },
+                    modal: {
+                        day: form.querySelector('[data-mod-modal-input="dt2-day"]'),
+                        month: form.querySelector('[data-mod-modal-input="dt2-month"]'),
+                        year: form.querySelector('[data-mod-modal-input="dt2-year"]')
+                    },
+                    unknown: {
+                        hidden: form.querySelector('[data-mod-date-unknown-hidden="dt2"]'),
+                        full: form.querySelector('[data-mod-full-unknown="dt2"]'),
+                        day: form.querySelector('[data-mod-modal-unknown="dt2-day"]'),
+                        month: form.querySelector('[data-mod-modal-unknown="dt2-month"]'),
+                        year: form.querySelector('[data-mod-modal-unknown="dt2-year"]')
+                    }
+                }
+            };
+
+            function setPartialHint(text, isError) {
+                partialDateHint.textContent = text || '';
+                partialDateHint.style.color = isError ? '#8b2330' : '#476787';
+            }
+
+            function sanitizePartialInput(inputEl, maxLength) {
+                if (!inputEl) {
+                    return;
+                }
+                inputEl.addEventListener('input', function () {
+                    var digits = String(inputEl.value || '').replace(/\D/g, '').slice(0, maxLength);
+                    inputEl.value = digits;
+                });
+            }
+
+            function getPartialDateConfig(fieldName) {
+                return partialDateFields[fieldName] || null;
+            }
+
+            function hasPartialDate(fieldName) {
+                var config = getPartialDateConfig(fieldName);
+                if (!config) {
+                    return false;
+                }
+                return ['day', 'month', 'year'].some(function (part) {
+                    return !!(config.hidden[part] && String(config.hidden[part].value || '').trim() !== '');
+                });
+            }
+
+            function splitIsoDateParts(value) {
+                var normalizedValue = String(value || '').trim();
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
+                    return null;
+                }
+                var parts = normalizedValue.split('-');
+                if (parts.length !== 3) {
+                    return null;
+                }
+                return {
+                    year: parts[0],
+                    month: parts[1],
+                    day: parts[2]
+                };
+            }
+
+            function syncStoredFullDate(fieldName) {
+                var config = getPartialDateConfig(fieldName);
+                if (!config || !config.input) {
+                    return;
+                }
+                var value = String(config.input.value || '').trim();
+                if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                    config.input.dataset.lastKnownIso = value;
+                }
+            }
+
+            function getFullDateParts(fieldName) {
+                var config = getPartialDateConfig(fieldName);
+                if (!config || !config.input) {
+                    return null;
+                }
+
+                var sources = [
+                    config.input.value,
+                    config.input.getAttribute('value'),
+                    config.input.dataset.lastKnownIso
+                ];
+
+                for (var i = 0; i < sources.length; i += 1) {
+                    var dateParts = splitIsoDateParts(sources[i]);
+                    if (dateParts) {
+                        return dateParts;
+                    }
+                }
+
+                return null;
+            }
+
+            function getModalDateParts(fieldName) {
+                var config = getPartialDateConfig(fieldName);
+                if (!config) {
+                    return null;
+                }
+
+                if (hasPartialDate(fieldName)) {
+                    return {
+                        day: config.hidden.day ? String(config.hidden.day.value || '').trim() : '',
+                        month: config.hidden.month ? String(config.hidden.month.value || '').trim() : '',
+                        year: config.hidden.year ? String(config.hidden.year.value || '').trim() : ''
+                    };
+                }
+
+                return getFullDateParts(fieldName);
+            }
+
+            function formatPartialMask(parts) {
+                return ['day', 'month', 'year'].map(function (part) {
+                    var value = String((parts && parts[part]) || '').trim();
+                    if (value === '') {
+                        return '??';
+                    }
+                    return part === 'year'
+                        ? value.padStart(4, '0')
+                        : value.padStart(2, '0');
+                }).join('.');
+            }
+
+            function setFullUnknownState(fieldName, isUnknown) {
+                var config = getPartialDateConfig(fieldName);
+                if (!config) {
+                    return;
+                }
+
+                if (config.unknown.full) {
+                    config.unknown.full.checked = !!isUnknown;
+                }
+
+                ['day', 'month', 'year'].forEach(function (part) {
+                    var modalInput = config.modal[part];
+                    var unknownCheckbox = config.unknown[part];
+                    var defaultPlaceholder = part === 'year' ? 'РРРР' : (part === 'month' ? 'ММ' : 'ДД');
+
+                    if (unknownCheckbox) {
+                        unknownCheckbox.disabled = !!isUnknown;
+                        if (isUnknown) {
+                            unknownCheckbox.checked = false;
+                        }
+                    }
+
+                    if (!modalInput) {
+                        return;
+                    }
+
+                    if (isUnknown) {
+                        modalInput.value = '';
+                        modalInput.disabled = true;
+                        modalInput.placeholder = 'Невідомо';
+                        return;
+                    }
+
+                    modalInput.disabled = !!(unknownCheckbox && unknownCheckbox.checked);
+                    modalInput.placeholder = modalInput.disabled ? 'Невідомо' : defaultPlaceholder;
+                });
+            }
+
+            function clearPartialDate(fieldName, skipApply) {
+                var config = getPartialDateConfig(fieldName);
+                if (!config) {
+                    return;
+                }
+
+                ['day', 'month', 'year'].forEach(function (part) {
+                    if (config.hidden[part]) {
+                        config.hidden[part].value = '';
+                    }
+                    if (config.modal[part]) {
+                        config.modal[part].value = '';
+                        config.modal[part].disabled = false;
+                        config.modal[part].placeholder = part === 'year' ? 'РРРР' : (part === 'month' ? 'ММ' : 'ДД');
+                    }
+                    if (config.unknown[part]) {
+                        config.unknown[part].checked = false;
+                        config.unknown[part].disabled = false;
+                    }
+                });
+
+                if (config.unknown.full) {
+                    config.unknown.full.checked = false;
+                }
+                if (config.unknown.hidden) {
+                    config.unknown.hidden.value = '0';
+                }
+                if (config.display) {
+                    config.display.value = '';
+                }
+                if (config.shell) {
+                    config.shell.classList.add('is-hidden');
+                }
+                if (config.unknownNote) {
+                    config.unknownNote.classList.add('is-hidden');
+                }
+                if (config.input) {
+                    config.input.classList.remove('is-hidden');
+                    config.input.disabled = false;
+                    config.input.setAttribute('required', '');
+                }
+                if (!skipApply) {
+                    applyPartialDateState(fieldName);
+                }
+            }
+
+            function applyPartialDateState(fieldName) {
+                var config = getPartialDateConfig(fieldName);
+                if (!config || !config.input || !config.display || !config.shell) {
+                    return;
+                }
+
+                var hasPartial = hasPartialDate(fieldName);
+                if (hasPartial) {
+                    config.display.value = formatPartialMask({
+                        day: config.hidden.day ? config.hidden.day.value : '',
+                        month: config.hidden.month ? config.hidden.month.value : '',
+                        year: config.hidden.year ? config.hidden.year.value : ''
+                    });
+                    config.shell.classList.remove('is-hidden');
+                    config.input.classList.add('is-hidden');
+                    config.input.value = '';
+                    config.input.disabled = true;
+                    config.input.removeAttribute('required');
+                    if (config.unknown.hidden) {
+                        config.unknown.hidden.value = '0';
+                    }
+                    if (config.unknownNote) {
+                        config.unknownNote.classList.add('is-hidden');
+                    }
+                    return;
+                }
+
+                config.display.value = '';
+                config.shell.classList.add('is-hidden');
+                config.input.classList.remove('is-hidden');
+
+                var isUnknown = !!(config.unknown.hidden && config.unknown.hidden.value === '1');
+                config.input.disabled = isUnknown;
+                if (isUnknown) {
+                    config.input.removeAttribute('required');
+                } else {
+                    config.input.setAttribute('required', '');
+                }
+
+                if (config.unknownNote) {
+                    config.unknownNote.classList.toggle('is-hidden', !isUnknown);
+                }
+            }
+
+            function syncPartialModalField(fieldName) {
+                var config = getPartialDateConfig(fieldName);
+                if (!config) {
+                    return;
+                }
+
+                var hasPartial = hasPartialDate(fieldName);
+                var isFullUnknown = !!(config.unknown.hidden && config.unknown.hidden.value === '1');
+                var modalDateParts = isFullUnknown ? null : getModalDateParts(fieldName);
+
+                setFullUnknownState(fieldName, isFullUnknown);
+
+                ['day', 'month', 'year'].forEach(function (part) {
+                    var modalInput = config.modal[part];
+                    var unknownCheckbox = config.unknown[part];
+                    if (!modalInput || !unknownCheckbox) {
+                        return;
+                    }
+
+                    if (isFullUnknown) {
+                        unknownCheckbox.checked = false;
+                        return;
+                    }
+
+                    var value = modalDateParts ? String(modalDateParts[part] || '').trim() : '';
+                    var isUnknown = value === '';
+                    unknownCheckbox.checked = isUnknown && hasPartial;
+                    unknownCheckbox.disabled = false;
+                    modalInput.value = value;
+                    modalInput.disabled = unknownCheckbox.checked;
+                    modalInput.placeholder = unknownCheckbox.checked
+                        ? 'Невідомо'
+                        : (part === 'year' ? 'РРРР' : (part === 'month' ? 'ММ' : 'ДД'));
+                });
+            }
+
+            function openPartialDateModal() {
+                setPartialHint('', false);
+                syncPartialModalField('dt1');
+                syncPartialModalField('dt2');
+                partialDateModal.classList.add('is-open');
+                partialDateModal.setAttribute('aria-hidden', 'false');
+                updateBodyLock();
+                setTimeout(function () {
+                    var firstInput = partialDateModal.querySelector('input[type="text"]:not(:disabled)');
+                    if (firstInput) {
+                        firstInput.focus();
+                    }
+                }, 0);
+            }
+
+            function closePartialDateModal() {
+                partialDateModal.classList.remove('is-open');
+                partialDateModal.setAttribute('aria-hidden', 'true');
+                setPartialHint('', false);
+                updateBodyLock();
+            }
+
+            function normalizePartialModalInput(value, maxLength) {
+                return String(value || '').replace(/\D/g, '').slice(0, maxLength);
+            }
+
+            function collectPartialModalValue(fieldName) {
+                var config = getPartialDateConfig(fieldName);
+                if (!config) {
+                    return { status: 'empty' };
+                }
+
+                if (config.unknown.full && config.unknown.full.checked) {
+                    return { status: 'full_unknown' };
+                }
+
+                var limits = {
+                    day: { maxLength: 2, min: 1, max: 31, label: 'день' },
+                    month: { maxLength: 2, min: 1, max: 12, label: 'місяць' },
+                    year: { maxLength: 4, min: 1, max: 9999, label: 'рік' }
+                };
+                var rawValues = {};
+                var checkedCount = 0;
+                var knownCount = 0;
+
+                ['day', 'month', 'year'].forEach(function (part) {
+                    var modalInput = config.modal[part];
+                    var unknownCheckbox = config.unknown[part];
+                    var maxLength = limits[part].maxLength;
+                    rawValues[part] = modalInput ? normalizePartialModalInput(modalInput.value, maxLength) : '';
+                    if (unknownCheckbox && unknownCheckbox.checked) {
+                        checkedCount += 1;
+                    }
+                    if (rawValues[part] !== '') {
+                        knownCount += 1;
+                    }
+                });
+
+                if (checkedCount === 0 && knownCount === 0) {
+                    return { status: 'empty' };
+                }
+
+                if (checkedCount === 3) {
+                    return { status: 'full_unknown' };
+                }
+
+                var result = {};
+                for (var i = 0; i < 3; i += 1) {
+                    var part = ['day', 'month', 'year'][i];
+                    var unknownCheckbox = config.unknown[part];
+                    var rules = limits[part];
+                    var currentValue = rawValues[part];
+                    if (unknownCheckbox && unknownCheckbox.checked) {
+                        result[part] = '';
+                        continue;
+                    }
+                    if (currentValue === '') {
+                        return {
+                            status: 'error',
+                            message: config.label + ': заповніть ' + rules.label + ' або позначте його як "невідомо".'
+                        };
+                    }
+
+                    var number = Number(currentValue);
+                    if (number < rules.min || number > rules.max) {
+                        return {
+                            status: 'error',
+                            message: config.label + ': некоректно вказано ' + rules.label + '.'
+                        };
+                    }
+                    result[part] = String(number);
+                }
+
+                return { status: 'filled', values: result };
+            }
+
+            function savePartialDates() {
+                var dt1Value = collectPartialModalValue('dt1');
+                if (dt1Value.status === 'error') {
+                    setPartialHint(dt1Value.message, true);
+                    return;
+                }
+
+                var dt2Value = collectPartialModalValue('dt2');
+                if (dt2Value.status === 'error') {
+                    setPartialHint(dt2Value.message, true);
+                    return;
+                }
+
+                [
+                    { field: 'dt1', value: dt1Value },
+                    { field: 'dt2', value: dt2Value }
+                ].forEach(function (item) {
+                    var config = getPartialDateConfig(item.field);
+                    if (!config) {
+                        return;
+                    }
+
+                    if (item.value.status === 'full_unknown') {
+                        ['day', 'month', 'year'].forEach(function (part) {
+                            if (config.hidden[part]) {
+                                config.hidden[part].value = '';
+                            }
+                        });
+                        if (config.input) {
+                            config.input.value = '';
+                        }
+                        if (config.unknown.hidden) {
+                            config.unknown.hidden.value = '1';
+                        }
+                        applyPartialDateState(item.field);
+                        return;
+                    }
+
+                    if (item.value.status === 'filled') {
+                        ['day', 'month', 'year'].forEach(function (part) {
+                            if (config.hidden[part]) {
+                                config.hidden[part].value = item.value.values[part] || '';
+                            }
+                        });
+                        if (config.input) {
+                            config.input.value = '';
+                        }
+                        if (config.unknown.hidden) {
+                            config.unknown.hidden.value = '0';
+                        }
+                    } else {
+                        ['day', 'month', 'year'].forEach(function (part) {
+                            if (config.hidden[part]) {
+                                config.hidden[part].value = '';
+                            }
+                        });
+                        if (config.unknown.hidden) {
+                            config.unknown.hidden.value = '0';
+                        }
+                    }
+
+                    applyPartialDateState(item.field);
+                });
+
+                setPartialHint('', false);
+                closePartialDateModal();
+            }
+
+            function getNextPartialModalInput(fieldName, part) {
+                var orderedFields = [
+                    { field: 'dt1', part: 'day' },
+                    { field: 'dt1', part: 'month' },
+                    { field: 'dt1', part: 'year' },
+                    { field: 'dt2', part: 'day' },
+                    { field: 'dt2', part: 'month' },
+                    { field: 'dt2', part: 'year' }
+                ];
+
+                var currentIndex = orderedFields.findIndex(function (item) {
+                    return item.field === fieldName && item.part === part;
+                });
+                if (currentIndex === -1) {
+                    return null;
+                }
+
+                for (var i = currentIndex + 1; i < orderedFields.length; i += 1) {
+                    var nextItem = orderedFields[i];
+                    var nextConfig = getPartialDateConfig(nextItem.field);
+                    var nextInput = nextConfig && nextConfig.modal ? nextConfig.modal[nextItem.part] : null;
+                    if (nextInput && !nextInput.disabled) {
+                        return nextInput;
+                    }
+                }
+
+                return null;
+            }
+
+            ['dt1', 'dt2'].forEach(function (fieldName) {
+                var config = getPartialDateConfig(fieldName);
+                if (!config) {
+                    return;
+                }
+
+                ['day', 'month', 'year'].forEach(function (part) {
+                    var modalInput = config.modal[part];
+                    var unknownCheckbox = config.unknown[part];
+                    var defaultPlaceholder = part === 'year' ? 'РРРР' : (part === 'month' ? 'ММ' : 'ДД');
+
+                    if (unknownCheckbox) {
+                        unknownCheckbox.addEventListener('change', function () {
+                            if (!modalInput) {
+                                return;
+                            }
+                            if (unknownCheckbox.checked) {
+                                modalInput.value = '';
+                                modalInput.disabled = true;
+                                modalInput.placeholder = 'Невідомо';
+                            } else {
+                                modalInput.disabled = false;
+                                modalInput.placeholder = defaultPlaceholder;
+                            }
+                            setPartialHint('', false);
+                        });
+                    }
+
+                    if (modalInput) {
+                        sanitizePartialInput(modalInput, part === 'year' ? 4 : 2);
+                        modalInput.addEventListener('input', function () {
+                            setPartialHint('', false);
+                            if (unknownCheckbox && unknownCheckbox.checked && modalInput.value !== '') {
+                                unknownCheckbox.checked = false;
+                                modalInput.disabled = false;
+                                modalInput.placeholder = defaultPlaceholder;
+                            }
+                            var maxLength = Number(modalInput.getAttribute('maxlength') || modalInput.maxLength || 0);
+                            if (maxLength > 0 && modalInput.value.length >= maxLength) {
+                                var nextInput = getNextPartialModalInput(fieldName, part);
+                                if (nextInput) {
+                                    nextInput.focus();
+                                    nextInput.select();
+                                }
+                            }
+                        });
+                    }
+                });
+
+                if (config.unknown.full) {
+                    config.unknown.full.addEventListener('change', function () {
+                        setFullUnknownState(fieldName, config.unknown.full.checked);
+                        setPartialHint('', false);
+                    });
+                }
+
+                if (config.input) {
+                    syncStoredFullDate(fieldName);
+                    config.input.addEventListener('input', function () {
+                        syncStoredFullDate(fieldName);
+                        if (config.input.value !== '') {
+                            clearPartialDate(fieldName);
+                        }
+                    });
+                    config.input.addEventListener('change', function () {
+                        syncStoredFullDate(fieldName);
+                    });
+                }
+            });
+
+            Array.prototype.slice.call(partialDateClearButtons).forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var fieldName = button.getAttribute('data-mod-clear-partial-date') || '';
+                    if (!fieldName) {
+                        return;
+                    }
+                    clearPartialDate(fieldName);
+                    var config = getPartialDateConfig(fieldName);
+                    if (config && config.input && !config.input.disabled) {
+                        config.input.focus();
+                    }
+                });
+            });
+
+            openPartialDatesBtn.addEventListener('click', openPartialDateModal);
+            savePartialDatesBtn.addEventListener('click', savePartialDates);
+            Array.prototype.slice.call(closePartialModalNodes).forEach(function (node) {
+                node.addEventListener('click', closePartialDateModal);
+            });
+
+            applyPartialDateState('dt1');
+            applyPartialDateState('dt2');
+            form.dataset.modPartialDateBound = '1';
         }
 
         function bindModalEditForm(form) {
@@ -1903,6 +2628,8 @@
                 return;
             }
 
+            initPartialDateForm(form);
+
             var region = form.querySelector('[data-role="region"]');
             var district = form.querySelector('[data-role="district"]');
             var town = form.querySelector('[data-role="town"]');
@@ -1910,6 +2637,7 @@
             var gpsxInput = form.querySelector('#mod-cemetery-gpsx');
             var gpsyInput = form.querySelector('#mod-cemetery-gpsy');
             var openMapBtn = form.querySelector('#mod-cemetery-open-map');
+            var unknownButtons = Array.prototype.slice.call(form.querySelectorAll('.mod-unknown-btn'));
             var placeholderById = {
                 'mod-grave-region': 'Оберіть область',
                 'mod-grave-district': 'Оберіть район',
@@ -2055,6 +2783,42 @@
                 normalize();
             }
 
+            function setUnknownState(button, isUnknown) {
+                if (!button) {
+                    return;
+                }
+                var inputId = button.dataset.textUnknown || '';
+                var hiddenId = button.dataset.unknownInput || '';
+                var input = inputId ? form.querySelector('#' + inputId) : null;
+                var hidden = hiddenId ? form.querySelector('#' + hiddenId) : null;
+                if (!input || !hidden) {
+                    return;
+                }
+
+                if (!input.dataset.defaultPlaceholder) {
+                    input.dataset.defaultPlaceholder = input.getAttribute('placeholder') || '';
+                }
+
+                hidden.value = isUnknown ? '1' : '0';
+                if (isUnknown) {
+                    input.value = '';
+                    input.disabled = true;
+                    input.removeAttribute('required');
+                    input.setAttribute('placeholder', button.dataset.unknownPlaceholder || 'Невідомо');
+                    button.classList.add('is-active');
+                    button.setAttribute('data-tooltip', button.dataset.labelOn || 'Вказати значення');
+                    button.setAttribute('aria-label', button.dataset.labelOn || 'Вказати значення');
+                    return;
+                }
+
+                input.disabled = false;
+                input.setAttribute('required', '');
+                input.setAttribute('placeholder', input.dataset.defaultPlaceholder || '');
+                button.classList.remove('is-active');
+                button.setAttribute('data-tooltip', button.dataset.labelOff || 'Позначити як невідомо');
+                button.setAttribute('aria-label', button.dataset.labelOff || 'Позначити як невідомо');
+            }
+
             function loadDistricts(selectedDistrict, callback) {
                 if (!region || !district) {
                     return;
@@ -2154,6 +2918,23 @@
 
             Array.prototype.slice.call(form.querySelectorAll('[data-positive-number="1"]')).forEach(bindPositiveNumber);
             Array.prototype.slice.call(form.querySelectorAll('select[data-role]')).forEach(syncCustomSelect);
+            unknownButtons.forEach(function (button) {
+                var hiddenId = button.dataset.unknownInput || '';
+                var hidden = hiddenId ? form.querySelector('#' + hiddenId) : null;
+                var isUnknown = hidden && hidden.value === '1';
+                setUnknownState(button, !!isUnknown);
+                button.addEventListener('click', function () {
+                    var currentUnknown = hidden && hidden.value === '1';
+                    setUnknownState(button, !currentUnknown);
+                    if (hidden && hidden.value !== '1') {
+                        var inputId = button.dataset.textUnknown || '';
+                        var input = inputId ? form.querySelector('#' + inputId) : null;
+                        if (input) {
+                            input.focus();
+                        }
+                    }
+                });
+            });
 
             if (region && region.value && district) {
                 loadDistricts(initialDistrict, function () {
@@ -2324,6 +3105,12 @@
             if (!document.body.dataset.modGlobalUiBound) {
                 document.addEventListener('keydown', function (event) {
                     if (event.key === 'Escape') {
+                        var openPartialModal = document.querySelector('.mod-partial-date-modal.is-open');
+                        if (openPartialModal) {
+                            openPartialModal.classList.remove('is-open');
+                            openPartialModal.setAttribute('aria-hidden', 'true');
+                            return;
+                        }
                         closeAllCustomSelects();
                         closeEntryModal();
                         closePhotoModal();
@@ -2480,12 +3267,17 @@
         initEditForm(document.getElementById('modCemeteryForm'));
         initNotifyForm();
         setActivePanel(activePanel || 'moderation');
-        updateBannerStats();
 
         if (panelView === 'list') {
-            applyFilters();
-            startPendingFeedPolling();
-            setTimeout(fetchPendingFeed, 3500);
+            loadDashboardCards().then(function (loaded) {
+                if (!loaded) {
+                    return;
+                }
+                startPendingFeedPolling();
+                setTimeout(fetchPendingFeed, 3500);
+            });
+        } else {
+            updateBannerStats();
         }
         syncStateToUrl();
     });

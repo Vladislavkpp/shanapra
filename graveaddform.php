@@ -16,6 +16,12 @@ $formData = [
     'mname' => '',
     'dt1' => '',
     'dt2' => '',
+    'dt1_year' => '',
+    'dt1_month' => '',
+    'dt1_day' => '',
+    'dt2_year' => '',
+    'dt2_month' => '',
+    'dt2_day' => '',
     'dt1_unknown' => '0',
     'dt2_unknown' => '0',
     'pos1_unknown' => '0',
@@ -25,6 +31,86 @@ $formData = [
     'pos2' => '',
     'pos3' => '',
 ];
+
+function graveAddPrefillDigits(?string $value): string
+{
+    $digits = preg_replace('/\D+/u', '', trim((string)$value));
+    if ($digits === null || $digits === '') {
+        return '';
+    }
+
+    $normalized = ltrim($digits, '0');
+    return $normalized !== '' ? $normalized : '';
+}
+
+function graveAddApplyQueryPrefill(array &$formData): bool
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        return false;
+    }
+
+    $cemeteryId = (int)($_GET['cemetery_id'] ?? ($_GET['idxkladb'] ?? 0));
+    $pos1 = graveAddPrefillDigits((string)($_GET['pos1'] ?? ($_GET['quarter'] ?? '')));
+    $pos2 = graveAddPrefillDigits((string)($_GET['pos2'] ?? ($_GET['row'] ?? '')));
+    $pos3 = graveAddPrefillDigits((string)($_GET['pos3'] ?? ($_GET['place'] ?? '')));
+
+    $hasCoords = ($pos1 !== '' || $pos2 !== '' || $pos3 !== '');
+    if ($cemeteryId <= 0 && !$hasCoords) {
+        return false;
+    }
+
+    if ($cemeteryId > 0) {
+        $dblink = DbConnect();
+        $select = [
+            'c.idx',
+            'c.district',
+            'c.town',
+        ];
+        $join = [];
+
+        if (dbTableExists($dblink, 'district')) {
+            $select[] = 'd.region';
+            $join[] = 'LEFT JOIN district d ON c.district = d.idx';
+        } else {
+            $select[] = "'' AS region";
+        }
+
+        $res = mysqli_query(
+            $dblink,
+            'SELECT ' . implode(', ', $select) . '
+             FROM cemetery c
+             ' . implode("\n", $join) . '
+             WHERE c.idx = ' . $cemeteryId . '
+             LIMIT 1'
+        );
+        $cemetery = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_close($dblink);
+
+        if ($cemetery) {
+            $formData['region'] = (string)($cemetery['region'] ?? '');
+            $formData['district'] = (string)($cemetery['district'] ?? '');
+            $formData['town'] = (string)($cemetery['town'] ?? '');
+            $formData['idxkladb'] = (string)($cemetery['idx'] ?? '');
+        }
+    }
+
+    if ($pos1 !== '') {
+        $formData['pos1_unknown'] = '0';
+        $formData['pos1'] = $pos1;
+    }
+    if ($pos2 !== '') {
+        $formData['pos2_unknown'] = '0';
+        $formData['pos2'] = $pos2;
+    }
+    if ($pos3 !== '') {
+        $formData['pos3_unknown'] = '0';
+        $formData['pos3'] = $pos3;
+    }
+
+    return $cemeteryId > 0 || $hasCoords;
+}
+
+$hasQueryPrefill = graveAddApplyQueryPrefill($formData);
 
 if (isset($_GET['ajax_districts']) && !empty($_GET['region_id'])) {
     echo getDistricts((int)$_GET['region_id']);
@@ -69,6 +155,12 @@ if (
     $formData['mname'] = trim((string)($_POST['mname'] ?? ''));
     $formData['dt1'] = trim((string)($_POST['dt1'] ?? ''));
     $formData['dt2'] = trim((string)($_POST['dt2'] ?? ''));
+    $formData['dt1_year'] = graveAddNormalizePartialDatePart((string)($_POST['dt1_year'] ?? ''), 4, 1, 9999);
+    $formData['dt1_month'] = graveAddNormalizePartialDatePart((string)($_POST['dt1_month'] ?? ''), 2, 1, 12);
+    $formData['dt1_day'] = graveAddNormalizePartialDatePart((string)($_POST['dt1_day'] ?? ''), 2, 1, 31);
+    $formData['dt2_year'] = graveAddNormalizePartialDatePart((string)($_POST['dt2_year'] ?? ''), 4, 1, 9999);
+    $formData['dt2_month'] = graveAddNormalizePartialDatePart((string)($_POST['dt2_month'] ?? ''), 2, 1, 12);
+    $formData['dt2_day'] = graveAddNormalizePartialDatePart((string)($_POST['dt2_day'] ?? ''), 2, 1, 31);
     $formData['dt1_unknown'] = (string)($_POST['dt1_unknown'] ?? '0');
     $formData['dt2_unknown'] = (string)($_POST['dt2_unknown'] ?? '0');
     $formData['pos1_unknown'] = (string)($_POST['pos1_unknown'] ?? '0');
@@ -78,8 +170,28 @@ if (
     $formData['pos2'] = trim((string)($_POST['pos2'] ?? ''));
     $formData['pos3'] = trim((string)($_POST['pos3'] ?? ''));
 
+    if ($formData['dt1'] !== '') {
+        graveAddResetPartialDate($formData, 'dt1');
+        $formData['dt1_unknown'] = '0';
+    } elseif (graveAddHasPartialDate($formData, 'dt1')) {
+        $formData['dt1_unknown'] = '0';
+    } elseif ($formData['dt1_unknown'] === '1') {
+        graveAddResetPartialDate($formData, 'dt1');
+    }
+
+    if ($formData['dt2'] !== '') {
+        graveAddResetPartialDate($formData, 'dt2');
+        $formData['dt2_unknown'] = '0';
+    } elseif (graveAddHasPartialDate($formData, 'dt2')) {
+        $formData['dt2_unknown'] = '0';
+    } elseif ($formData['dt2_unknown'] === '1') {
+        graveAddResetPartialDate($formData, 'dt2');
+    }
+
     $dt1Unknown = $formData['dt1_unknown'] === '1';
     $dt2Unknown = $formData['dt2_unknown'] === '1';
+    $dt1HasPartial = graveAddHasPartialDate($formData, 'dt1');
+    $dt2HasPartial = graveAddHasPartialDate($formData, 'dt2');
     $pos1Unknown = $formData['pos1_unknown'] === '1';
     $pos2Unknown = $formData['pos2_unknown'] === '1';
     $pos3Unknown = $formData['pos3_unknown'] === '1';
@@ -91,8 +203,8 @@ if (
         || (int)$formData['idxkladb'] <= 0
         || $formData['lname'] === ''
         || $formData['fname'] === ''
-        || (!$dt1Unknown && $formData['dt1'] === '')
-        || (!$dt2Unknown && $formData['dt2'] === '')
+        || (!$dt1Unknown && !$dt1HasPartial && $formData['dt1'] === '')
+        || (!$dt2Unknown && !$dt2HasPartial && $formData['dt2'] === '')
         || (!$pos1Unknown && $formData['pos1'] === '')
         || (!$pos2Unknown && $formData['pos2'] === '')
         || (!$pos3Unknown && $formData['pos3'] === '')
@@ -106,7 +218,7 @@ if (
         $dblink = DbConnect();
         $stmt = mysqli_prepare(
             $dblink,
-            'INSERT INTO grave (fname, lname, mname, dt1, dt2, idtadd, idxadd, idxkladb, pos1, pos2, pos3) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)'
+            'INSERT INTO grave (fname, lname, mname, dt1, dt1_year, dt1_month, dt1_day, dt2, dt2_year, dt2_month, dt2_day, idtadd, idxadd, idxkladb, pos1, pos2, pos3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)'
         );
 
         if (!$stmt) {
@@ -117,8 +229,14 @@ if (
             $fname = $formData['fname'];
             $lname = $formData['lname'];
             $mname = $formData['mname'];
-            $dt1 = $dt1Unknown ? '0000-00-00' : $formData['dt1'];
-            $dt2 = $dt2Unknown ? '0000-00-00' : $formData['dt2'];
+            $dt1 = ($dt1Unknown || $dt1HasPartial) ? '0000-00-00' : $formData['dt1'];
+            $dt1Year = $dt1HasPartial ? (int)($formData['dt1_year'] ?: 0) : 0;
+            $dt1Month = $dt1HasPartial ? (int)($formData['dt1_month'] ?: 0) : 0;
+            $dt1Day = $dt1HasPartial ? (int)($formData['dt1_day'] ?: 0) : 0;
+            $dt2 = ($dt2Unknown || $dt2HasPartial) ? '0000-00-00' : $formData['dt2'];
+            $dt2Year = $dt2HasPartial ? (int)($formData['dt2_year'] ?: 0) : 0;
+            $dt2Month = $dt2HasPartial ? (int)($formData['dt2_month'] ?: 0) : 0;
+            $dt2Day = $dt2HasPartial ? (int)($formData['dt2_day'] ?: 0) : 0;
             $authorId = (int)$_SESSION['uzver'];
             $cemeteryId = (int)$formData['idxkladb'];
             $pos1 = $pos1Unknown ? '' : $formData['pos1'];
@@ -127,12 +245,18 @@ if (
 
             mysqli_stmt_bind_param(
                 $stmt,
-                'sssssiisss',
+                'ssssiiisiiiiisss',
                 $fname,
                 $lname,
                 $mname,
                 $dt1,
+                $dt1Year,
+                $dt1Month,
+                $dt1Day,
                 $dt2,
+                $dt2Year,
+                $dt2Month,
+                $dt2Day,
                 $authorId,
                 $cemeteryId,
                 $pos1,
@@ -198,6 +322,12 @@ if (
                     'mname' => '',
                     'dt1' => '',
                     'dt2' => '',
+                    'dt1_year' => '',
+                    'dt1_month' => '',
+                    'dt1_day' => '',
+                    'dt2_year' => '',
+                    'dt2_month' => '',
+                    'dt2_day' => '',
                     'dt1_unknown' => '0',
                     'dt2_unknown' => '0',
                     'pos1_unknown' => '0',
@@ -217,6 +347,64 @@ if (
 function graveAddEsc(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function graveAddNormalizePartialDatePart(string $value, int $maxLength, int $min, int $max): string
+{
+    $digits = preg_replace('/\D+/u', '', trim($value));
+    if ($digits === null || $digits === '') {
+        return '';
+    }
+
+    if (strlen($digits) > $maxLength) {
+        $digits = substr($digits, 0, $maxLength);
+    }
+
+    $number = (int)$digits;
+    if ($number < $min || $number > $max) {
+        return '';
+    }
+
+    return (string)$number;
+}
+
+function graveAddHasPartialDate(array $formData, string $prefix): bool
+{
+    foreach (['day', 'month', 'year'] as $part) {
+        if (trim((string)($formData[$prefix . '_' . $part] ?? '')) !== '') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function graveAddResetPartialDate(array &$formData, string $prefix): void
+{
+    foreach (['day', 'month', 'year'] as $part) {
+        $formData[$prefix . '_' . $part] = '';
+    }
+}
+
+function graveAddBuildPartialDateMask(array $formData, string $prefix): string
+{
+    $segments = [];
+    foreach (['day', 'month', 'year'] as $part) {
+        $value = trim((string)($formData[$prefix . '_' . $part] ?? ''));
+        if ($value === '') {
+            $segments[] = '??';
+            continue;
+        }
+
+        if ($part === 'year') {
+            $segments[] = str_pad($value, 4, '0', STR_PAD_LEFT);
+            continue;
+        }
+
+        $segments[] = str_pad($value, 2, '0', STR_PAD_LEFT);
+    }
+
+    return implode('.', $segments);
 }
 
 function graveAddStorePosUnknownFlags(int $graveId, array $flags): void
@@ -346,11 +534,15 @@ if (!$isAuthorized) {
     $safeMname = graveAddEsc($formData['mname']);
     $dt1Unknown = ($formData['dt1_unknown'] ?? '0') === '1';
     $dt2Unknown = ($formData['dt2_unknown'] ?? '0') === '1';
+    $dt1HasPartial = graveAddHasPartialDate($formData, 'dt1');
+    $dt2HasPartial = graveAddHasPartialDate($formData, 'dt2');
     $pos1Unknown = ($formData['pos1_unknown'] ?? '0') === '1';
     $pos2Unknown = ($formData['pos2_unknown'] ?? '0') === '1';
     $pos3Unknown = ($formData['pos3_unknown'] ?? '0') === '1';
-    $safeDt1 = $dt1Unknown ? '' : graveAddEsc($formData['dt1']);
-    $safeDt2 = $dt2Unknown ? '' : graveAddEsc($formData['dt2']);
+    $safeDt1 = ($dt1Unknown || $dt1HasPartial) ? '' : graveAddEsc($formData['dt1']);
+    $safeDt2 = ($dt2Unknown || $dt2HasPartial) ? '' : graveAddEsc($formData['dt2']);
+    $safeDt1Mask = $dt1HasPartial ? graveAddEsc(graveAddBuildPartialDateMask($formData, 'dt1')) : '';
+    $safeDt2Mask = $dt2HasPartial ? graveAddEsc(graveAddBuildPartialDateMask($formData, 'dt2')) : '';
     $safePos1 = $pos1Unknown ? '' : graveAddEsc($formData['pos1']);
     $safePos2 = $pos2Unknown ? '' : graveAddEsc($formData['pos2']);
     $safePos3 = $pos3Unknown ? '' : graveAddEsc($formData['pos3']);
@@ -369,7 +561,7 @@ if (!$isAuthorized) {
 
     ob_start();
     ?>
-<div class="out">
+<div class="out acm-out">
     <main class="acm-page">
         <section class="acm-layout">
             <aside class="acm-aside">
@@ -426,20 +618,49 @@ if (!$isAuthorized) {
                             <div class="acm-row acm-row--two">
                                 <div class="acm-field">
                                     <label for="agf-dt1">Дата народження *</label>
-                                    <input id="agf-dt1" type="date" name="dt1" value="<?= $safeDt1 ?>" placeholder="дд.мм.рррр"<?= $dt1Unknown ? '' : ' required' ?><?= $dt1Unknown ? ' disabled' : '' ?>>
+                                    <div class="agf-date-field-stack">
+                                        <input id="agf-dt1" type="date" name="dt1" value="<?= $safeDt1 ?>" placeholder="дд.мм.рррр"<?= ($dt1Unknown || $dt1HasPartial) ? '' : ' required' ?><?= ($dt1Unknown || $dt1HasPartial) ? ' disabled' : '' ?><?= $dt1HasPartial ? ' class="agf-date-input is-hidden"' : ' class="agf-date-input"' ?>>
+                                        <div id="agf-dt1-display-shell" class="agf-partial-date-shell<?= $dt1HasPartial ? '' : ' is-hidden' ?>">
+                                            <input id="agf-dt1-display" type="text" value="<?= $safeDt1Mask ?>" class="agf-partial-date-display" placeholder="дд.мм.рррр" readonly tabindex="-1" aria-label="Часткова дата народження">
+                                            <button type="button" class="agf-partial-date-clear" data-clear-partial-date="dt1" aria-label="Очистити часткову дату народження">×</button>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="agf-dt1-year" name="dt1_year" value="<?= graveAddEsc($formData['dt1_year']) ?>">
+                                    <input type="hidden" id="agf-dt1-month" name="dt1_month" value="<?= graveAddEsc($formData['dt1_month']) ?>">
+                                    <input type="hidden" id="agf-dt1-day" name="dt1_day" value="<?= graveAddEsc($formData['dt1_day']) ?>">
                                     <input type="hidden" id="agf-dt1-unknown" name="dt1_unknown" value="<?= $dt1Unknown ? '1' : '0' ?>">
-                                    <button type="button" class="agf-unknown-btn<?= $dt1Unknown ? ' is-active' : '' ?>" data-date-unknown="agf-dt1" data-unknown-input="agf-dt1-unknown" data-label-off="Позначити дату - невідомо" data-label-on="Вказати дату">
+                                    <button type="button" class="agf-unknown-btn agf-date-toggle-btn<?= $dt1Unknown ? ' is-active' : '' ?>" data-date-unknown="agf-dt1" data-unknown-input="agf-dt1-unknown" data-label-off="Позначити дату - невідомо" data-label-on="Вказати дату"<?= $dt1HasPartial ? ' disabled' : '' ?>>
                                         <?= $dt1Unknown ? 'Вказати дату' : 'Позначити дату - невідомо' ?>
                                     </button>
                                 </div>
                                 <div class="acm-field">
                                     <label for="agf-dt2">Дата смерті *</label>
-                                    <input id="agf-dt2" type="date" name="dt2" value="<?= $safeDt2 ?>" placeholder="дд.мм.рррр"<?= $dt2Unknown ? '' : ' required' ?><?= $dt2Unknown ? ' disabled' : '' ?>>
+                                    <div class="agf-date-field-stack">
+                                        <input id="agf-dt2" type="date" name="dt2" value="<?= $safeDt2 ?>" placeholder="дд.мм.рррр"<?= ($dt2Unknown || $dt2HasPartial) ? '' : ' required' ?><?= ($dt2Unknown || $dt2HasPartial) ? ' disabled' : '' ?><?= $dt2HasPartial ? ' class="agf-date-input is-hidden"' : ' class="agf-date-input"' ?>>
+                                        <div id="agf-dt2-display-shell" class="agf-partial-date-shell<?= $dt2HasPartial ? '' : ' is-hidden' ?>">
+                                            <input id="agf-dt2-display" type="text" value="<?= $safeDt2Mask ?>" class="agf-partial-date-display" placeholder="дд.мм.рррр" readonly tabindex="-1" aria-label="Часткова дата смерті">
+                                            <button type="button" class="agf-partial-date-clear" data-clear-partial-date="dt2" aria-label="Очистити часткову дату смерті">×</button>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="agf-dt2-year" name="dt2_year" value="<?= graveAddEsc($formData['dt2_year']) ?>">
+                                    <input type="hidden" id="agf-dt2-month" name="dt2_month" value="<?= graveAddEsc($formData['dt2_month']) ?>">
+                                    <input type="hidden" id="agf-dt2-day" name="dt2_day" value="<?= graveAddEsc($formData['dt2_day']) ?>">
                                     <input type="hidden" id="agf-dt2-unknown" name="dt2_unknown" value="<?= $dt2Unknown ? '1' : '0' ?>">
-                                    <button type="button" class="agf-unknown-btn<?= $dt2Unknown ? ' is-active' : '' ?>" data-date-unknown="agf-dt2" data-unknown-input="agf-dt2-unknown" data-label-off="Позначити дату - невідомо" data-label-on="Вказати дату">
+                                    <button type="button" class="agf-unknown-btn agf-date-toggle-btn<?= $dt2Unknown ? ' is-active' : '' ?>" data-date-unknown="agf-dt2" data-unknown-input="agf-dt2-unknown" data-label-off="Позначити дату - невідомо" data-label-on="Вказати дату"<?= $dt2HasPartial ? ' disabled' : '' ?>>
                                         <?= $dt2Unknown ? 'Вказати дату' : 'Позначити дату - невідомо' ?>
                                     </button>
                                 </div>
+                            </div>
+                            <div class="agf-partial-trigger-row">
+                                <button type="button" id="agf-open-partial-dates" class="agf-partial-trigger-card">
+                                    <span class="agf-partial-trigger-icon" aria-hidden="true">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-click"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 12a1 1 0 0 1 -1 1h-3a1 1 0 0 1 0 -2h3a1 1 0 0 1 1 1m6 -9v3a1 1 0 0 1 -2 0v-3a1 1 0 0 1 2 0m-6.693 1.893l2.2 2.2a1 1 0 0 1 -1.414 1.414l-2.2 -2.2a1 1 0 0 1 1.414 -1.414m12.8 0a1 1 0 0 1 0 1.414l-2.2 2.2a1 1 0 0 1 -1.414 -1.414l2.2 -2.2a1 1 0 0 1 1.414 0m-10.6 10.6a1 1 0 0 1 0 1.414l-2.2 2.2a1 1 0 1 1 -1.414 -1.414l2.2 -2.2a1 1 0 0 1 1.414 0m3.42 -4.49l.049 -.003l.098 .003l.097 .012l.097 .022l9.048 3.014c.845 .282 .928 1.445 .131 1.843l-3.702 1.851l-1.85 3.702c-.399 .797 -1.562 .714 -1.844 -.13l-3.003 -9.011l-.033 -.135l-.012 -.097v-.148l.012 -.097l.022 -.097l.03 -.094l.04 -.09l.05 -.084l.086 -.117l.067 -.07l.037 -.034l.076 -.06l.081 -.052l.087 -.043l.103 -.04l.135 -.033z" /></svg>
+                                    </span>
+                                    <span class="agf-partial-trigger-copy">
+                                        <strong>Вказати частичні дати</strong>
+                                        <span>Якщо повна дата невідома, можна окремо задати день, місяць і рік.</span>
+                                    </span>
+                                </button>
                             </div>
                         </fieldset>
                         <div class="form-step-actions">
@@ -638,10 +859,90 @@ if (!$isAuthorized) {
             <label for="agf-new-settlement">Назва населеного пункту</label>
             <input id="agf-new-settlement" type="text" autocomplete="off">
         </div>
-        <div id="agf-settlement-hint" class="acm-modal-hint"></div>
+        <div id="agf-settlement-hint" class="acm-modal-hint is-hidden" hidden></div>
         <div class="acm-modal__actions">
             <button type="button" class="acm-btn acm-btn--ghost" data-agf-close-modal>Скасувати</button>
             <button type="button" id="agf-save-settlement" class="acm-btn acm-btn--primary">Додати</button>
+        </div>
+    </div>
+</div>
+
+<div class="acm-modal" id="agf-partial-date-modal" aria-hidden="true">
+    <div class="acm-modal__backdrop" data-agf-close-partial-modal></div>
+    <div class="acm-modal__card agf-partial-modal-card" role="dialog" aria-modal="true" aria-labelledby="agf-partial-date-title">
+        <h3 id="agf-partial-date-title" class="acm-modal__title">Вказати частичні дати</h3>
+        <p class="acm-modal__text">Заповніть лише відомі частини дати. Якщо частина невідома, позначте це чекбоксом.</p>
+
+        <div class="agf-partial-modal-grid">
+            <section class="agf-partial-group" data-partial-group="dt1">
+                <h4 class="agf-partial-group-title">Дата народження</h4>
+                <div class="agf-partial-input-row">
+                    <label class="agf-partial-input-box">
+                        <span>День</span>
+                        <input type="text" id="agf-modal-dt1-day" inputmode="numeric" maxlength="2" placeholder="ДД">
+                    </label>
+                    <label class="agf-partial-input-box">
+                        <span>Місяць</span>
+                        <input type="text" id="agf-modal-dt1-month" inputmode="numeric" maxlength="2" placeholder="ММ">
+                    </label>
+                    <label class="agf-partial-input-box">
+                        <span>Рік</span>
+                        <input type="text" id="agf-modal-dt1-year" inputmode="numeric" maxlength="4" placeholder="РРРР">
+                    </label>
+                </div>
+                <div class="agf-partial-check-grid">
+                    <label class="agf-partial-check">
+                        <input type="checkbox" id="agf-modal-dt1-day-unknown">
+                        <span>Позначити день невідомо</span>
+                    </label>
+                    <label class="agf-partial-check">
+                        <input type="checkbox" id="agf-modal-dt1-month-unknown">
+                        <span>Позначити місяць невідомо</span>
+                    </label>
+                    <label class="agf-partial-check">
+                        <input type="checkbox" id="agf-modal-dt1-year-unknown">
+                        <span>Позначити рік невідомо</span>
+                    </label>
+                </div>
+            </section>
+
+            <section class="agf-partial-group" data-partial-group="dt2">
+                <h4 class="agf-partial-group-title">Дата смерті</h4>
+                <div class="agf-partial-input-row">
+                    <label class="agf-partial-input-box">
+                        <span>День</span>
+                        <input type="text" id="agf-modal-dt2-day" inputmode="numeric" maxlength="2" placeholder="ДД">
+                    </label>
+                    <label class="agf-partial-input-box">
+                        <span>Місяць</span>
+                        <input type="text" id="agf-modal-dt2-month" inputmode="numeric" maxlength="2" placeholder="ММ">
+                    </label>
+                    <label class="agf-partial-input-box">
+                        <span>Рік</span>
+                        <input type="text" id="agf-modal-dt2-year" inputmode="numeric" maxlength="4" placeholder="РРРР">
+                    </label>
+                </div>
+                <div class="agf-partial-check-grid">
+                    <label class="agf-partial-check">
+                        <input type="checkbox" id="agf-modal-dt2-day-unknown">
+                        <span>Позначити день невідомо</span>
+                    </label>
+                    <label class="agf-partial-check">
+                        <input type="checkbox" id="agf-modal-dt2-month-unknown">
+                        <span>Позначити місяць невідомо</span>
+                    </label>
+                    <label class="agf-partial-check">
+                        <input type="checkbox" id="agf-modal-dt2-year-unknown">
+                        <span>Позначити рік невідомо</span>
+                    </label>
+                </div>
+            </section>
+        </div>
+
+        <div id="agf-partial-date-hint" class="acm-modal-hint is-hidden" hidden></div>
+        <div class="acm-modal__actions">
+            <button type="button" class="acm-btn acm-btn--ghost" data-agf-close-partial-modal>Скасувати</button>
+            <button type="button" id="agf-save-partial-dates" class="acm-btn acm-btn--primary">Зберегти</button>
         </div>
     </div>
 </div>
@@ -676,12 +977,68 @@ if (!$isAuthorized) {
     const saveSettlementBtn = document.getElementById("agf-save-settlement");
     const settlementHint = document.getElementById("agf-settlement-hint");
     const closeModalNodes = settlementModal ? settlementModal.querySelectorAll("[data-agf-close-modal]") : [];
+    const openPartialDatesBtn = document.getElementById("agf-open-partial-dates");
+    const partialDateModal = document.getElementById("agf-partial-date-modal");
+    const partialDateHint = document.getElementById("agf-partial-date-hint");
+    const savePartialDatesBtn = document.getElementById("agf-save-partial-dates");
+    const closePartialModalNodes = partialDateModal ? partialDateModal.querySelectorAll("[data-agf-close-partial-modal]") : [];
     const clearFormBtns = Array.from(form.querySelectorAll(".agf-clear-form"));
     const photoModal = document.getElementById("agf-photo-modal");
     const photoModalImg = document.getElementById("agf-photo-modal-img");
     const photoModalTitle = document.getElementById("agf-photo-modal-title");
     const closePhotoModalNodes = photoModal ? photoModal.querySelectorAll("[data-agf-close-photo-modal]") : [];
     const dateUnknownButtons = Array.from(form.querySelectorAll(".agf-unknown-btn"));
+    const partialDateClearButtons = Array.from(form.querySelectorAll("[data-clear-partial-date]"));
+    const partialDateFields = {
+        dt1: {
+            key: "dt1",
+            label: "Дата народження",
+            input: document.getElementById("agf-dt1"),
+            display: document.getElementById("agf-dt1-display"),
+            shell: document.getElementById("agf-dt1-display-shell"),
+            clearButton: form.querySelector("[data-clear-partial-date=\"dt1\"]"),
+            hidden: {
+                day: document.getElementById("agf-dt1-day"),
+                month: document.getElementById("agf-dt1-month"),
+                year: document.getElementById("agf-dt1-year")
+            },
+            modal: {
+                day: document.getElementById("agf-modal-dt1-day"),
+                month: document.getElementById("agf-modal-dt1-month"),
+                year: document.getElementById("agf-modal-dt1-year")
+            },
+            unknown: {
+                hidden: document.getElementById("agf-dt1-unknown"),
+                day: document.getElementById("agf-modal-dt1-day-unknown"),
+                month: document.getElementById("agf-modal-dt1-month-unknown"),
+                year: document.getElementById("agf-modal-dt1-year-unknown")
+            }
+        },
+        dt2: {
+            key: "dt2",
+            label: "Дата смерті",
+            input: document.getElementById("agf-dt2"),
+            display: document.getElementById("agf-dt2-display"),
+            shell: document.getElementById("agf-dt2-display-shell"),
+            clearButton: form.querySelector("[data-clear-partial-date=\"dt2\"]"),
+            hidden: {
+                day: document.getElementById("agf-dt2-day"),
+                month: document.getElementById("agf-dt2-month"),
+                year: document.getElementById("agf-dt2-year")
+            },
+            modal: {
+                day: document.getElementById("agf-modal-dt2-day"),
+                month: document.getElementById("agf-modal-dt2-month"),
+                year: document.getElementById("agf-modal-dt2-year")
+            },
+            unknown: {
+                hidden: document.getElementById("agf-dt2-unknown"),
+                day: document.getElementById("agf-modal-dt2-day-unknown"),
+                month: document.getElementById("agf-modal-dt2-month-unknown"),
+                year: document.getElementById("agf-modal-dt2-year-unknown")
+            }
+        }
+    };
 
     const filePairs = [
         {
@@ -709,10 +1066,12 @@ if (!$isAuthorized) {
     const stepNodes = Array.from(form.querySelectorAll(".form-step"));
     const stepIndicators = Array.from(form.querySelectorAll(".agf-step"));
     let currentStep = 1;
-    const draftStorageKey = "agf.graveaddform.draft.v1";
+    const draftStorageKey = "agf.graveaddform.draft.v2";
     const draftTtlMs = 1000 * 60 * 60 * 6;
     const isSubmitSuccess = form.dataset.submitSuccess === "1";
     let suppressDraftSave = false;
+    let bodyLockScrollY = 0;
+    let bodyLockActive = false;
 
     const placeholderById = {
         "agf-region": "Оберіть область",
@@ -721,7 +1080,7 @@ if (!$isAuthorized) {
         "agf-cemetery": "Оберіть кладовище"
     };
 
-    if (!regionSel || !districtSel || !townSel || !cemeterySel || !openSettlementBtn || !settlementModal || !newSettlementInput || !saveSettlementBtn) {
+    if (!regionSel || !districtSel || !townSel || !cemeterySel || !openSettlementBtn || !settlementModal || !newSettlementInput || !saveSettlementBtn || !openPartialDatesBtn || !partialDateModal || !partialDateHint || !savePartialDatesBtn) {
         return;
     }
 
@@ -741,6 +1100,17 @@ if (!$isAuthorized) {
         }
         hidden.value = isUnknown ? "1" : "0";
         if (isUnknown) {
+            if (button.dataset.dateUnknown) {
+                const partialConfig = getPartialDateConfig(input.name);
+                if (partialConfig) {
+                    const hasVisibleMask = partialConfig.shell && !partialConfig.shell.classList.contains("is-hidden");
+                    if (hasVisibleMask && partialConfig.clearButton) {
+                        partialConfig.clearButton.click();
+                    } else {
+                        clearPartialDate(input.name, true);
+                    }
+                }
+            }
             input.value = "";
             input.disabled = true;
             input.removeAttribute("required");
@@ -755,7 +1125,9 @@ if (!$isAuthorized) {
             }
         } else {
             input.disabled = false;
-            input.setAttribute("required", "");
+            if (!button.dataset.dateUnknown || !hasPartialDate(input.name)) {
+                input.setAttribute("required", "");
+            }
             input.setAttribute("placeholder", input.dataset.defaultPlaceholder);
             button.classList.remove("is-active");
             if (button.classList.contains("agf-unknown-btn--icon")) {
@@ -766,6 +1138,446 @@ if (!$isAuthorized) {
                 button.textContent = button.dataset.labelOff || "Позначити як невідомо";
             }
         }
+        if (button.dataset.dateUnknown) {
+            applyPartialDateState(input.name);
+        }
+    }
+
+    function setPartialHint(text, isError) {
+        const hintText = text || "";
+        partialDateHint.textContent = hintText;
+        partialDateHint.style.color = isError ? "#8b2330" : "#285c89";
+        partialDateHint.hidden = hintText === "";
+        partialDateHint.classList.toggle("is-hidden", hintText === "");
+    }
+
+    function updateBodyLock() {
+        const anyOpen = !!(partialDateModal && partialDateModal.classList.contains("is-open"));
+        document.body.classList.toggle("agf-body-locked", anyOpen);
+        document.documentElement.classList.toggle("agf-body-locked", anyOpen);
+
+        if (anyOpen && !bodyLockActive) {
+            bodyLockScrollY = window.scrollY || window.pageYOffset || 0;
+            document.body.style.position = "fixed";
+            document.body.style.top = "-" + bodyLockScrollY + "px";
+            document.body.style.left = "0";
+            document.body.style.right = "0";
+            document.body.style.width = "100%";
+            bodyLockActive = true;
+        } else if (!anyOpen && bodyLockActive) {
+            document.body.style.position = "";
+            document.body.style.top = "";
+            document.body.style.left = "";
+            document.body.style.right = "";
+            document.body.style.width = "";
+            window.scrollTo(0, bodyLockScrollY);
+            bodyLockActive = false;
+        }
+    }
+
+    function sanitizePartialInput(inputEl, maxLength) {
+        if (!inputEl) {
+            return;
+        }
+        inputEl.addEventListener("input", function () {
+            const digits = inputEl.value.replace(/\D/g, "").slice(0, maxLength);
+            inputEl.value = digits;
+        });
+    }
+
+    function getNextPartialModalInput(fieldName, part) {
+        const orderedFields = [
+            { field: "dt1", part: "day" },
+            { field: "dt1", part: "month" },
+            { field: "dt1", part: "year" },
+            { field: "dt2", part: "day" },
+            { field: "dt2", part: "month" },
+            { field: "dt2", part: "year" }
+        ];
+
+        const currentIndex = orderedFields.findIndex(function (item) {
+            return item.field === fieldName && item.part === part;
+        });
+        if (currentIndex === -1) {
+            return null;
+        }
+
+        for (let i = currentIndex + 1; i < orderedFields.length; i += 1) {
+            const nextItem = orderedFields[i];
+            const nextConfig = getPartialDateConfig(nextItem.field);
+            const nextInput = nextConfig && nextConfig.modal ? nextConfig.modal[nextItem.part] : null;
+            if (nextInput && !nextInput.disabled) {
+                return nextInput;
+            }
+        }
+
+        return null;
+    }
+
+    function getPartialDateConfig(fieldName) {
+        return partialDateFields[fieldName] || null;
+    }
+
+    function getDateUnknownButton(fieldName) {
+        const config = getPartialDateConfig(fieldName);
+        if (!config || !config.input) {
+            return null;
+        }
+        return form.querySelector("[data-date-unknown=\"" + config.input.id + "\"]");
+    }
+
+    function updateDateUnknownButtonState(fieldName) {
+        const button = getDateUnknownButton(fieldName);
+        if (!button) {
+            return;
+        }
+
+        const isDisabled = hasPartialDate(fieldName);
+        button.disabled = isDisabled;
+        if (isDisabled) {
+            button.setAttribute("aria-disabled", "true");
+            button.title = "Кнопка недоступна, поки вказана часткова дата.";
+        } else {
+            button.removeAttribute("aria-disabled");
+            button.removeAttribute("title");
+        }
+    }
+
+    function hasPartialDate(fieldName) {
+        const config = getPartialDateConfig(fieldName);
+        if (!config) {
+            return false;
+        }
+        return ["day", "month", "year"].some(function (part) {
+            return !!(config.hidden[part] && config.hidden[part].value.trim() !== "");
+        });
+    }
+
+    function clearPartialDate(fieldName, skipApply) {
+        const config = getPartialDateConfig(fieldName);
+        if (!config) {
+            return;
+        }
+        ["day", "month", "year"].forEach(function (part) {
+            if (config.hidden[part]) {
+                config.hidden[part].value = "";
+            }
+            if (config.modal[part]) {
+                config.modal[part].value = "";
+                config.modal[part].disabled = false;
+                config.modal[part].placeholder = part === "year" ? "РРРР" : (part === "month" ? "ММ" : "ДД");
+            }
+            if (config.unknown[part]) {
+                config.unknown[part].checked = false;
+            }
+        });
+        if (config.display) {
+            config.display.value = "";
+        }
+        if (config.shell) {
+            config.shell.classList.add("is-hidden");
+        }
+        if (config.input) {
+            config.input.classList.remove("is-hidden");
+        }
+        if (!skipApply) {
+            applyPartialDateState(fieldName);
+        }
+    }
+
+    function formatPartialMask(parts) {
+        return ["day", "month", "year"].map(function (part) {
+            const value = (parts[part] || "").trim();
+            if (value === "") {
+                return "??";
+            }
+            return part === "year"
+                ? value.padStart(4, "0")
+                : value.padStart(2, "0");
+        }).join(".");
+    }
+
+    function syncStoredFullDate(fieldName) {
+        const config = getPartialDateConfig(fieldName);
+        if (!config || !config.input) {
+            return;
+        }
+
+        const value = (config.input.value || "").trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+            config.input.dataset.lastKnownIso = value;
+        }
+    }
+
+    function splitIsoDateParts(value) {
+        const normalizedValue = (value || "").trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
+            return null;
+        }
+
+        const parts = normalizedValue.split("-");
+        if (parts.length !== 3) {
+            return null;
+        }
+
+        return {
+            year: parts[0],
+            month: parts[1],
+            day: parts[2]
+        };
+    }
+
+    function getFullDateParts(fieldName) {
+        const config = getPartialDateConfig(fieldName);
+        if (!config || !config.input) {
+            return null;
+        }
+
+        const sources = [
+            config.input.value,
+            config.input.getAttribute("value"),
+            config.input.dataset.lastKnownIso
+        ];
+
+        for (let i = 0; i < sources.length; i += 1) {
+            const dateParts = splitIsoDateParts(sources[i]);
+            if (dateParts) {
+                return dateParts;
+            }
+        }
+
+        return null;
+    }
+
+    function getModalDateParts(fieldName) {
+        const config = getPartialDateConfig(fieldName);
+        if (!config) {
+            return null;
+        }
+
+        if (hasPartialDate(fieldName)) {
+            return {
+                day: config.hidden.day ? config.hidden.day.value.trim() : "",
+                month: config.hidden.month ? config.hidden.month.value.trim() : "",
+                year: config.hidden.year ? config.hidden.year.value.trim() : ""
+            };
+        }
+
+        return getFullDateParts(fieldName);
+    }
+
+    function applyPartialDateState(fieldName) {
+        const config = getPartialDateConfig(fieldName);
+        if (!config || !config.input || !config.display || !config.shell) {
+            return;
+        }
+
+        const hasPartial = hasPartialDate(fieldName);
+        if (hasPartial) {
+            const mask = formatPartialMask({
+                day: config.hidden.day ? config.hidden.day.value : "",
+                month: config.hidden.month ? config.hidden.month.value : "",
+                year: config.hidden.year ? config.hidden.year.value : ""
+            });
+            config.display.value = mask;
+            config.shell.classList.remove("is-hidden");
+            config.input.classList.add("is-hidden");
+            config.input.value = "";
+            config.input.disabled = true;
+            config.input.removeAttribute("required");
+            if (config.unknown.hidden) {
+                config.unknown.hidden.value = "0";
+            }
+            updateDateUnknownButtonState(fieldName);
+            return;
+        }
+
+        config.display.value = "";
+        config.shell.classList.add("is-hidden");
+        config.input.classList.remove("is-hidden");
+        const isUnknown = !!(config.unknown.hidden && config.unknown.hidden.value === "1");
+        config.input.disabled = isUnknown;
+        if (isUnknown) {
+            config.input.removeAttribute("required");
+        } else {
+            config.input.setAttribute("required", "");
+        }
+        updateDateUnknownButtonState(fieldName);
+    }
+
+    function syncPartialModalField(fieldName) {
+        const config = getPartialDateConfig(fieldName);
+        if (!config) {
+            return;
+        }
+
+        const hasPartial = hasPartialDate(fieldName);
+        const modalDateParts = getModalDateParts(fieldName);
+
+        ["day", "month", "year"].forEach(function (part) {
+            const modalInput = config.modal[part];
+            const unknownCheckbox = config.unknown[part];
+            if (!modalInput || !unknownCheckbox) {
+                return;
+            }
+
+            const value = modalDateParts ? (modalDateParts[part] || "").trim() : "";
+
+            const isUnknown = value === "";
+            unknownCheckbox.checked = isUnknown && hasPartial;
+            modalInput.value = value;
+            modalInput.disabled = unknownCheckbox.checked;
+            modalInput.placeholder = unknownCheckbox.checked
+                ? "Невідомо"
+                : (part === "year" ? "РРРР" : (part === "month" ? "ММ" : "ДД"));
+        });
+    }
+
+    function openPartialDateModal() {
+        setPartialHint("", false);
+        syncPartialModalField("dt1");
+        syncPartialModalField("dt2");
+        partialDateModal.classList.add("is-open");
+        partialDateModal.setAttribute("aria-hidden", "false");
+        updateBodyLock();
+        setTimeout(function () {
+            const firstInput = partialDateModal.querySelector("input[type=\"text\"]");
+            if (firstInput) {
+                firstInput.focus();
+            }
+        }, 0);
+    }
+
+    function closePartialDateModal() {
+        partialDateModal.classList.remove("is-open");
+        partialDateModal.setAttribute("aria-hidden", "true");
+        setPartialHint("", false);
+        updateBodyLock();
+    }
+
+    function normalizePartialModalInput(value, maxLength) {
+        return value.replace(/\D/g, "").slice(0, maxLength);
+    }
+
+    function collectPartialModalValue(fieldName) {
+        const config = getPartialDateConfig(fieldName);
+        if (!config) {
+            return { status: "empty" };
+        }
+
+        const limits = {
+            day: { maxLength: 2, min: 1, max: 31, label: "день" },
+            month: { maxLength: 2, min: 1, max: 12, label: "місяць" },
+            year: { maxLength: 4, min: 1, max: 9999, label: "рік" }
+        };
+        const rawValues = {};
+        let checkedCount = 0;
+        let knownCount = 0;
+
+        ["day", "month", "year"].forEach(function (part) {
+            const modalInput = config.modal[part];
+            const unknownCheckbox = config.unknown[part];
+            const maxLength = limits[part].maxLength;
+            rawValues[part] = modalInput ? normalizePartialModalInput(modalInput.value, maxLength) : "";
+            if (unknownCheckbox && unknownCheckbox.checked) {
+                checkedCount += 1;
+            }
+            if (rawValues[part] !== "") {
+                knownCount += 1;
+            }
+        });
+
+        if (checkedCount === 0 && knownCount === 0) {
+            return { status: "empty" };
+        }
+
+        if (checkedCount === 3) {
+            return { status: "unknown" };
+        }
+
+        const result = {};
+        for (const part of ["day", "month", "year"]) {
+            const unknownCheckbox = config.unknown[part];
+            const rules = limits[part];
+            const currentValue = rawValues[part];
+            if (unknownCheckbox && unknownCheckbox.checked) {
+                result[part] = "";
+                continue;
+            }
+            if (currentValue === "") {
+                return {
+                    status: "error",
+                    message: config.label + ": заповніть " + rules.label + ' або позначте його як "невідомо".'
+                };
+            }
+
+            const number = Number(currentValue);
+            if (number < rules.min || number > rules.max) {
+                return {
+                    status: "error",
+                    message: config.label + ": некоректно вказано " + rules.label + "."
+                };
+            }
+            result[part] = String(number);
+        }
+
+        return { status: "filled", values: result };
+    }
+
+    function savePartialDates() {
+        const dt1Value = collectPartialModalValue("dt1");
+        if (dt1Value.status === "error") {
+            setPartialHint(dt1Value.message, true);
+            return;
+        }
+
+        const dt2Value = collectPartialModalValue("dt2");
+        if (dt2Value.status === "error") {
+            setPartialHint(dt2Value.message, true);
+            return;
+        }
+
+        [
+            { field: "dt1", value: dt1Value },
+            { field: "dt2", value: dt2Value }
+        ].forEach(function (item) {
+            const config = getPartialDateConfig(item.field);
+            const unknownButton = getDateUnknownButton(item.field);
+            if (!config) {
+                return;
+            }
+
+            if (item.value.status === "unknown") {
+                setUnknownState(unknownButton, true);
+                return;
+            }
+
+            if (item.value.status === "filled") {
+                ["day", "month", "year"].forEach(function (part) {
+                    if (config.hidden[part]) {
+                        config.hidden[part].value = item.value.values[part] || "";
+                    }
+                });
+                config.input.value = "";
+                if (config.unknown.hidden) {
+                    config.unknown.hidden.value = "0";
+                }
+                setUnknownState(unknownButton, false);
+            } else {
+                ["day", "month", "year"].forEach(function (part) {
+                    if (config.hidden[part]) {
+                        config.hidden[part].value = "";
+                    }
+                });
+            }
+
+            applyPartialDateState(item.field);
+            clearInvalid(config.input);
+        });
+
+        setPartialHint("", false);
+        closePartialDateModal();
+        saveDraft();
     }
 
     function loadDraft() {
@@ -813,6 +1625,12 @@ if (!$isAuthorized) {
             });
             const dt1Unknown = document.getElementById("agf-dt1-unknown");
             const dt2Unknown = document.getElementById("agf-dt2-unknown");
+            const dt1Day = document.getElementById("agf-dt1-day");
+            const dt1Month = document.getElementById("agf-dt1-month");
+            const dt1Year = document.getElementById("agf-dt1-year");
+            const dt2Day = document.getElementById("agf-dt2-day");
+            const dt2Month = document.getElementById("agf-dt2-month");
+            const dt2Year = document.getElementById("agf-dt2-year");
             const pos1Unknown = document.getElementById("agf-pos1-unknown");
             const pos2Unknown = document.getElementById("agf-pos2-unknown");
             const pos3Unknown = document.getElementById("agf-pos3-unknown");
@@ -821,6 +1639,24 @@ if (!$isAuthorized) {
             }
             if (dt2Unknown) {
                 values.dt2_unknown = dt2Unknown.value;
+            }
+            if (dt1Day) {
+                values.dt1_day = dt1Day.value;
+            }
+            if (dt1Month) {
+                values.dt1_month = dt1Month.value;
+            }
+            if (dt1Year) {
+                values.dt1_year = dt1Year.value;
+            }
+            if (dt2Day) {
+                values.dt2_day = dt2Day.value;
+            }
+            if (dt2Month) {
+                values.dt2_month = dt2Month.value;
+            }
+            if (dt2Year) {
+                values.dt2_year = dt2Year.value;
             }
             if (pos1Unknown) {
                 values.pos1_unknown = pos1Unknown.value;
@@ -857,6 +1693,12 @@ if (!$isAuthorized) {
 
         const dt1Unknown = document.getElementById("agf-dt1-unknown");
         const dt2Unknown = document.getElementById("agf-dt2-unknown");
+        const dt1Day = document.getElementById("agf-dt1-day");
+        const dt1Month = document.getElementById("agf-dt1-month");
+        const dt1Year = document.getElementById("agf-dt1-year");
+        const dt2Day = document.getElementById("agf-dt2-day");
+        const dt2Month = document.getElementById("agf-dt2-month");
+        const dt2Year = document.getElementById("agf-dt2-year");
         const pos1Unknown = document.getElementById("agf-pos1-unknown");
         const pos2Unknown = document.getElementById("agf-pos2-unknown");
         const pos3Unknown = document.getElementById("agf-pos3-unknown");
@@ -865,6 +1707,24 @@ if (!$isAuthorized) {
         }
         if (dt2Unknown && typeof values.dt2_unknown === "string") {
             dt2Unknown.value = values.dt2_unknown;
+        }
+        if (dt1Day && typeof values.dt1_day === "string") {
+            dt1Day.value = values.dt1_day;
+        }
+        if (dt1Month && typeof values.dt1_month === "string") {
+            dt1Month.value = values.dt1_month;
+        }
+        if (dt1Year && typeof values.dt1_year === "string") {
+            dt1Year.value = values.dt1_year;
+        }
+        if (dt2Day && typeof values.dt2_day === "string") {
+            dt2Day.value = values.dt2_day;
+        }
+        if (dt2Month && typeof values.dt2_month === "string") {
+            dt2Month.value = values.dt2_month;
+        }
+        if (dt2Year && typeof values.dt2_year === "string") {
+            dt2Year.value = values.dt2_year;
         }
         if (pos1Unknown && typeof values.pos1_unknown === "string") {
             pos1Unknown.value = values.pos1_unknown;
@@ -885,6 +1745,9 @@ if (!$isAuthorized) {
         if (typeof values.idxkladb === "string") {
             cemeterySel.dataset.selected = values.idxkladb;
         }
+
+        applyPartialDateState("dt1");
+        applyPartialDateState("dt2");
 
         const savedStep = Number(draft.step || 1);
         if (savedStep >= 1 && savedStep <= stepNodes.length) {
@@ -999,8 +1862,11 @@ if (!$isAuthorized) {
     }
 
     function setHint(text, isError) {
-        settlementHint.textContent = text || "";
+        const hintText = text || "";
+        settlementHint.textContent = hintText;
         settlementHint.style.color = isError ? "#8b2330" : "#285c89";
+        settlementHint.hidden = hintText === "";
+        settlementHint.classList.toggle("is-hidden", hintText === "");
     }
 
     function toggleSettlementButton() {
@@ -1272,6 +2138,8 @@ if (!$isAuthorized) {
         districtSel.value = "";
         townSel.value = "";
         cemeterySel.value = "";
+        clearPartialDate("dt1");
+        clearPartialDate("dt2");
         const posUnknownHiddenIds = ["agf-pos1-unknown", "agf-pos2-unknown", "agf-pos3-unknown"];
         posUnknownHiddenIds.forEach(function (id) {
             const hidden = document.getElementById(id);
@@ -1302,6 +2170,7 @@ if (!$isAuthorized) {
 
         closeAllCustomSelects();
         closeModal();
+        closePartialDateModal();
         closePhotoModal();
         dateUnknownButtons.forEach(function (button) {
             setUnknownState(button, false);
@@ -1430,17 +2299,25 @@ if (!$isAuthorized) {
     });
 
     openSettlementBtn.addEventListener("click", openModal);
+    openPartialDatesBtn.addEventListener("click", openPartialDateModal);
     closeModalNodes.forEach(function (node) {
         node.addEventListener("click", closeModal);
+    });
+    closePartialModalNodes.forEach(function (node) {
+        node.addEventListener("click", closePartialDateModal);
     });
     closePhotoModalNodes.forEach(function (node) {
         node.addEventListener("click", closePhotoModal);
     });
+    savePartialDatesBtn.addEventListener("click", savePartialDates);
 
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape") {
             if (settlementModal.classList.contains("is-open")) {
                 closeModal();
+            }
+            if (partialDateModal.classList.contains("is-open")) {
+                closePartialDateModal();
             }
             if (photoModal && photoModal.classList.contains("is-open")) {
                 closePhotoModal();
@@ -1621,10 +2498,99 @@ if (!$isAuthorized) {
     onlyPositiveInput(document.getElementById("agf-pos1"));
     onlyPositiveInput(document.getElementById("agf-pos2"));
     onlyPositiveInput(document.getElementById("agf-pos3"));
+    sanitizePartialInput(document.getElementById("agf-modal-dt1-day"), 2);
+    sanitizePartialInput(document.getElementById("agf-modal-dt1-month"), 2);
+    sanitizePartialInput(document.getElementById("agf-modal-dt1-year"), 4);
+    sanitizePartialInput(document.getElementById("agf-modal-dt2-day"), 2);
+    sanitizePartialInput(document.getElementById("agf-modal-dt2-month"), 2);
+    sanitizePartialInput(document.getElementById("agf-modal-dt2-year"), 4);
+
+    ["dt1", "dt2"].forEach(function (fieldName) {
+        const config = getPartialDateConfig(fieldName);
+        if (!config) {
+            return;
+        }
+
+        ["day", "month", "year"].forEach(function (part) {
+            const modalInput = config.modal[part];
+            const unknownCheckbox = config.unknown[part];
+            const defaultPlaceholder = part === "year" ? "РРРР" : (part === "month" ? "ММ" : "ДД");
+
+            if (unknownCheckbox) {
+                unknownCheckbox.addEventListener("change", function () {
+                    if (!modalInput) {
+                        return;
+                    }
+                    if (unknownCheckbox.checked) {
+                        modalInput.value = "";
+                        modalInput.disabled = true;
+                        modalInput.placeholder = "Невідомо";
+                    } else {
+                        modalInput.disabled = false;
+                        modalInput.placeholder = defaultPlaceholder;
+                    }
+                    setPartialHint("", false);
+                });
+            }
+
+            if (modalInput) {
+                modalInput.addEventListener("input", function () {
+                    setPartialHint("", false);
+                    if (unknownCheckbox && unknownCheckbox.checked && modalInput.value !== "") {
+                        unknownCheckbox.checked = false;
+                        modalInput.disabled = false;
+                        modalInput.placeholder = defaultPlaceholder;
+                    }
+
+                     const maxLength = Number(modalInput.getAttribute("maxlength") || modalInput.maxLength || 0);
+                     if (maxLength > 0 && modalInput.value.length >= maxLength) {
+                        const nextInput = getNextPartialModalInput(fieldName, part);
+                        if (nextInput) {
+                            nextInput.focus();
+                            nextInput.select();
+                        }
+                    }
+                });
+            }
+        });
+
+        if (config.input) {
+            syncStoredFullDate(fieldName);
+            config.input.addEventListener("input", function () {
+                syncStoredFullDate(fieldName);
+                if (config.input.value !== "") {
+                    clearPartialDate(fieldName);
+                }
+            });
+            config.input.addEventListener("change", function () {
+                syncStoredFullDate(fieldName);
+            });
+        }
+    });
+
+    partialDateClearButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            const fieldName = button.dataset.clearPartialDate || "";
+            if (!fieldName) {
+                return;
+            }
+            clearPartialDate(fieldName);
+            const config = getPartialDateConfig(fieldName);
+            if (config && config.input) {
+                clearInvalid(config.input);
+                if (!config.input.disabled) {
+                    config.input.focus();
+                }
+            }
+            saveDraft();
+        });
+    });
+
+    const hasQueryPrefill = <?= $hasQueryPrefill ? 'true' : 'false' ?>;
 
     if (isSubmitSuccess) {
         clearDraft();
-    } else {
+    } else if (!hasQueryPrefill) {
         const draft = loadDraft();
         if (draft) {
             applyDraft(draft);
@@ -1647,6 +2613,9 @@ if (!$isAuthorized) {
             saveDraft();
         });
     });
+
+    applyPartialDateState("dt1");
+    applyPartialDateState("dt2");
 
     const initialRegion = regionSel.value;
     const initialDistrict = districtSel.dataset.selected || "";

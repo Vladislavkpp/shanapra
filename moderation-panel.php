@@ -160,6 +160,89 @@ function modDateInputValue(?string $value): string
     return ($value === '' || $value === '0000-00-00') ? '' : $value;
 }
 
+function modNormalizePartialDatePart(string $value, int $maxLength, int $min, int $max): string
+{
+    $digits = preg_replace('/\D+/u', '', trim($value));
+    if ($digits === null || $digits === '') {
+        return '';
+    }
+
+    if (strlen($digits) > $maxLength) {
+        $digits = substr($digits, 0, $maxLength);
+    }
+
+    $number = (int)$digits;
+    if ($number < $min || $number > $max) {
+        return '';
+    }
+
+    return (string)$number;
+}
+
+function modHasPartialDate(array $formData, string $prefix): bool
+{
+    foreach (['day', 'month', 'year'] as $part) {
+        if (trim((string)($formData[$prefix . '_' . $part] ?? '')) !== '') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function modResetPartialDate(array &$formData, string $prefix): void
+{
+    foreach (['day', 'month', 'year'] as $part) {
+        $formData[$prefix . '_' . $part] = '';
+    }
+}
+
+function modBuildPartialDateMask(array $formData, string $prefix): string
+{
+    $segments = [];
+    foreach (['day', 'month', 'year'] as $part) {
+        $value = trim((string)($formData[$prefix . '_' . $part] ?? ''));
+        if ($value === '') {
+            $segments[] = '??';
+            continue;
+        }
+
+        if ($part === 'year') {
+            $segments[] = str_pad($value, 4, '0', STR_PAD_LEFT);
+            continue;
+        }
+
+        $segments[] = str_pad($value, 2, '0', STR_PAD_LEFT);
+    }
+
+    return implode('.', $segments);
+}
+
+function modDateIsUnknown(array $formData, string $prefix): bool
+{
+    $fullDate = trim((string)($formData[$prefix] ?? ''));
+    return ($fullDate === '' || $fullDate === '0000-00-00') && !modHasPartialDate($formData, $prefix);
+}
+
+function modBuildGraveDateRow(array $row): array
+{
+    return [
+        'dt1' => $row['dt1'] ?? '',
+        'dt1_year' => $row['dt1_year'] ?? '',
+        'dt1_month' => $row['dt1_month'] ?? '',
+        'dt1_day' => $row['dt1_day'] ?? '',
+        'dt2' => $row['dt2'] ?? '',
+        'dt2_year' => $row['dt2_year'] ?? '',
+        'dt2_month' => $row['dt2_month'] ?? '',
+        'dt2_day' => $row['dt2_day'] ?? '',
+    ];
+}
+
+function modFormatGraveDateRange(array $row): string
+{
+    return graveDateFormatRangeFromRow(modBuildGraveDateRow($row));
+}
+
 function modAuthorName(?string $fname, ?string $lname, int $idxadd): string
 {
     $fname = trim((string)$fname);
@@ -401,7 +484,7 @@ function modLoadCemeteryForEdit(mysqli $dblink, int $cemeteryId): ?array
 
 function modBuildGraveFormData(array $grave): array
 {
-    return [
+    $formData = [
         'region' => (string)($grave['region_id'] ?? ''),
         'district' => (string)($grave['district_id'] ?? ''),
         'town' => (string)($grave['town_id'] ?? ''),
@@ -411,14 +494,30 @@ function modBuildGraveFormData(array $grave): array
         'mname' => (string)($grave['mname'] ?? ''),
         'dt1' => modDateInputValue($grave['dt1'] ?? ''),
         'dt2' => modDateInputValue($grave['dt2'] ?? ''),
-        'pos1' => (string)($grave['pos1'] ?? ''),
-        'pos2' => (string)($grave['pos2'] ?? ''),
-        'pos3' => (string)($grave['pos3'] ?? ''),
+        'dt1_year' => graveDateNormalizePartValue($grave['dt1_year'] ?? ''),
+        'dt1_month' => graveDateNormalizePartValue($grave['dt1_month'] ?? ''),
+        'dt1_day' => graveDateNormalizePartValue($grave['dt1_day'] ?? ''),
+        'dt2_year' => graveDateNormalizePartValue($grave['dt2_year'] ?? ''),
+        'dt2_month' => graveDateNormalizePartValue($grave['dt2_month'] ?? ''),
+        'dt2_day' => graveDateNormalizePartValue($grave['dt2_day'] ?? ''),
+        'dt1_unknown' => '0',
+        'dt2_unknown' => '0',
+        'pos1' => modGravePosIsUnknown($grave['pos1'] ?? '') ? '' : (string)($grave['pos1'] ?? ''),
+        'pos2' => modGravePosIsUnknown($grave['pos2'] ?? '') ? '' : (string)($grave['pos2'] ?? ''),
+        'pos3' => modGravePosIsUnknown($grave['pos3'] ?? '') ? '' : (string)($grave['pos3'] ?? ''),
+        'pos1_unknown' => modGravePosIsUnknown($grave['pos1'] ?? '') ? '1' : '0',
+        'pos2_unknown' => modGravePosIsUnknown($grave['pos2'] ?? '') ? '1' : '0',
+        'pos3_unknown' => modGravePosIsUnknown($grave['pos3'] ?? '') ? '1' : '0',
         'photo1' => (string)($grave['photo1'] ?? ''),
         'photo2' => (string)($grave['photo2'] ?? ''),
         'photo3' => (string)($grave['photo3'] ?? ''),
         'moderation_note' => (string)($grave['moderation_note'] ?? ''),
     ];
+
+    $formData['dt1_unknown'] = modDateIsUnknown($formData, 'dt1') ? '1' : '0';
+    $formData['dt2_unknown'] = modDateIsUnknown($formData, 'dt2') ? '1' : '0';
+
+    return $formData;
 }
 
 function modBuildCemeteryFormData(array $cemetery): array
@@ -448,6 +547,21 @@ function modRenderImageCard(?string $path, string $title): string
 function modIsPositiveNumericString(string $value): bool
 {
     return preg_match('/^[1-9][0-9]*$/', trim($value)) === 1;
+}
+
+function modGravePosIsUnknown(?string $value): bool
+{
+    return trim((string)$value) === '0';
+}
+
+function modFormatGravePosValue(?string $value): string
+{
+    $value = trim((string)$value);
+    if ($value === '0') {
+        return 'Невідомо';
+    }
+
+    return $value !== '' ? $value : '-';
 }
 
 function modRenderUploadCard(string $inputId, string $inputName, string $title, string $accept, ?string $existingPath, string $emptyText): string
@@ -493,6 +607,174 @@ function modRenderUploadCard(string $inputId, string $inputName, string $title, 
     return ob_get_clean();
 }
 
+function modRenderGraveDateField(string $prefix, string $label, array $formData): string
+{
+    $hasPartial = modHasPartialDate($formData, $prefix);
+    $isUnknown = (($formData[$prefix . '_unknown'] ?? '0') === '1');
+    $safeDate = ($hasPartial || $isUnknown) ? '' : modEsc((string)($formData[$prefix] ?? ''));
+    $safeMask = $hasPartial ? modEsc(modBuildPartialDateMask($formData, $prefix)) : '';
+    $safeYear = modEsc((string)($formData[$prefix . '_year'] ?? ''));
+    $safeMonth = modEsc((string)($formData[$prefix . '_month'] ?? ''));
+    $safeDay = modEsc((string)($formData[$prefix . '_day'] ?? ''));
+    $safeUnknown = $isUnknown ? '1' : '0';
+    $safeLabel = modEsc($label);
+    $inputId = 'mod-grave-' . $prefix;
+
+    ob_start();
+    ?>
+    <label class="mod-field mod-field--date" data-mod-date-field="<?= modEsc($prefix) ?>">
+        <span><?= $safeLabel ?> *</span>
+        <div class="mod-date-field-stack">
+            <input
+                id="<?= modEsc($inputId) ?>"
+                class="mod-date-input<?= $hasPartial ? ' is-hidden' : '' ?>"
+                type="date"
+                name="<?= modEsc($prefix) ?>"
+                value="<?= $safeDate ?>"
+                <?= ($hasPartial || $isUnknown) ? ' disabled' : '' ?>
+                <?= ($hasPartial || $isUnknown) ? '' : ' required' ?>
+            >
+            <div class="mod-partial-date-shell<?= $hasPartial ? '' : ' is-hidden' ?>" data-mod-partial-display-shell="<?= modEsc($prefix) ?>">
+                <input
+                    type="text"
+                    value="<?= $safeMask ?>"
+                    class="mod-partial-date-display"
+                    placeholder="дд.мм.рррр"
+                    readonly
+                    tabindex="-1"
+                    data-mod-partial-display="<?= modEsc($prefix) ?>"
+                    aria-label="Часткова дата <?= mb_strtolower($label, 'UTF-8') ?>"
+                >
+                <button type="button" class="mod-partial-date-clear" data-mod-clear-partial-date="<?= modEsc($prefix) ?>" aria-label="Очистити часткову дату">×</button>
+            </div>
+        </div>
+        <input type="hidden" name="<?= modEsc($prefix) ?>_year" value="<?= $safeYear ?>" data-mod-partial-hidden="<?= modEsc($prefix) ?>-year">
+        <input type="hidden" name="<?= modEsc($prefix) ?>_month" value="<?= $safeMonth ?>" data-mod-partial-hidden="<?= modEsc($prefix) ?>-month">
+        <input type="hidden" name="<?= modEsc($prefix) ?>_day" value="<?= $safeDay ?>" data-mod-partial-hidden="<?= modEsc($prefix) ?>-day">
+        <input type="hidden" name="<?= modEsc($prefix) ?>_unknown" value="<?= $safeUnknown ?>" data-mod-date-unknown-hidden="<?= modEsc($prefix) ?>">
+        <div class="mod-date-status-note<?= $isUnknown ? '' : ' is-hidden' ?>" data-mod-date-unknown-note="<?= modEsc($prefix) ?>">Повну дату позначено як невідому.</div>
+    </label>
+    <?php
+    return ob_get_clean();
+}
+
+function modRenderGravePositionField(string $prefix, string $label, string $placeholder, array $formData): string
+{
+    $isUnknown = (($formData[$prefix . '_unknown'] ?? '0') === '1') || modGravePosIsUnknown($formData[$prefix] ?? '');
+    $safeValue = $isUnknown ? '' : modEsc((string)($formData[$prefix] ?? ''));
+    $safeLabel = modEsc($label);
+    $safePlaceholder = modEsc($placeholder);
+    $safeUnknownPlaceholder = modEsc('Невідомо');
+    $buttonLabel = $isUnknown ? 'Вказати значення' : 'Позначити як невідомо';
+    $inputId = 'mod-grave-' . $prefix;
+    $hiddenId = $inputId . '-unknown';
+
+    ob_start();
+    ?>
+    <label class="mod-field">
+        <span><?= $safeLabel ?> *</span>
+        <div class="mod-unknown-field-wrap">
+            <input
+                id="<?= modEsc($inputId) ?>"
+                type="text"
+                name="<?= modEsc($prefix) ?>"
+                value="<?= $safeValue ?>"
+                placeholder="<?= $safePlaceholder ?>"
+                inputmode="numeric"
+                pattern="[1-9][0-9]*"
+                data-positive-number="1"
+                <?= $isUnknown ? '' : ' required' ?>
+                <?= $isUnknown ? ' disabled' : '' ?>
+            >
+            <button
+                type="button"
+                class="mod-unknown-btn mod-unknown-btn--icon<?= $isUnknown ? ' is-active' : '' ?>"
+                data-text-unknown="<?= modEsc($inputId) ?>"
+                data-unknown-input="<?= modEsc($hiddenId) ?>"
+                data-unknown-placeholder="<?= $safeUnknownPlaceholder ?>"
+                data-label-off="Позначити як невідомо"
+                data-label-on="Вказати значення"
+                data-tooltip="<?= modEsc($buttonLabel) ?>"
+                aria-label="<?= modEsc($buttonLabel) ?>"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 8a3.5 3 0 0 1 3.5 -3h1a3.5 3 0 0 1 3.5 3a3 3 0 0 1 -2 3a3 4 0 0 0 -2 4" /><path d="M12 19l0 .01" /></svg>
+            </button>
+        </div>
+        <input type="hidden" id="<?= modEsc($hiddenId) ?>" name="<?= modEsc($prefix) ?>_unknown" value="<?= $isUnknown ? '1' : '0' ?>">
+    </label>
+    <?php
+    return ob_get_clean();
+}
+
+function modRenderGravePartialDateModal(): string
+{
+    ob_start();
+    ?>
+    <div class="mod-partial-trigger-row">
+        <button type="button" class="mod-partial-trigger-card" data-mod-open-partial-dates>
+            <span class="mod-partial-trigger-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M7 12a1 1 0 0 1 -1 1h-3a1 1 0 0 1 0 -2h3a1 1 0 0 1 1 1m6 -9v3a1 1 0 0 1 -2 0v-3a1 1 0 0 1 2 0m-6.693 1.893l2.2 2.2a1 1 0 0 1 -1.414 1.414l-2.2 -2.2a1 1 0 0 1 1.414 -1.414m12.8 0a1 1 0 0 1 0 1.414l-2.2 2.2a1 1 0 0 1 -1.414 -1.414l2.2 -2.2a1 1 0 0 1 1.414 0m-10.6 10.6a1 1 0 0 1 0 1.414l-2.2 2.2a1 1 0 1 1 -1.414 -1.414l2.2 -2.2a1 1 0 0 1 1.414 0m3.42 -4.49l.049 -.003l.098 .003l.097 .012l.097 .022l9.048 3.014c.845 .282 .928 1.445 .131 1.843l-3.702 1.851l-1.85 3.702c-.399 .797 -1.562 .714 -1.844 -.13l-3.003 -9.011l-.033 -.135l-.012 -.097v-.148l.012 -.097l.022 -.097l.03 -.094l.04 -.09l.05 -.084l.086 -.117l.067 -.07l.037 -.034l.076 -.06l.081 -.052l.087 -.043l.103 -.04l.135 -.033z"></path></svg>
+            </span>
+            <span class="mod-partial-trigger-copy">
+                <strong>Вказати частичні дати</strong>
+                <span>Якщо повна дата невідома, можна окремо задати день, місяць і рік або позначити дату як невідому.</span>
+            </span>
+        </button>
+    </div>
+    <div class="acm-modal mod-partial-date-modal" data-mod-partial-date-modal aria-hidden="true">
+        <div class="acm-modal__backdrop" data-mod-close-partial-modal></div>
+        <div class="acm-modal__card mod-partial-modal-card" role="dialog" aria-modal="true" aria-labelledby="mod-partial-date-title">
+            <h3 id="mod-partial-date-title" class="acm-modal__title">Вказати частичні дати</h3>
+            <p class="acm-modal__text">Заповніть лише відомі частини дати. Якщо повна дата невідома, позначте це окремим чекбоксом.</p>
+            <div class="mod-partial-modal-grid">
+                <section class="mod-partial-group" data-mod-partial-group="dt1">
+                    <h4 class="mod-partial-group-title">Дата народження</h4>
+                    <label class="mod-partial-check mod-partial-check--full">
+                        <input type="checkbox" data-mod-full-unknown="dt1">
+                        <span class="mod-partial-check-box" aria-hidden="true"></span>
+                        <span class="mod-partial-check-label">Позначити повну дату - невідомо</span>
+                    </label>
+                    <div class="mod-partial-input-row">
+                        <label class="mod-partial-input-box"><span>День</span><input type="text" inputmode="numeric" maxlength="2" placeholder="ДД" data-mod-modal-input="dt1-day"></label>
+                        <label class="mod-partial-input-box"><span>Місяць</span><input type="text" inputmode="numeric" maxlength="2" placeholder="ММ" data-mod-modal-input="dt1-month"></label>
+                        <label class="mod-partial-input-box"><span>Рік</span><input type="text" inputmode="numeric" maxlength="4" placeholder="РРРР" data-mod-modal-input="dt1-year"></label>
+                    </div>
+                    <div class="mod-partial-check-grid">
+                        <label class="mod-partial-check"><input type="checkbox" data-mod-modal-unknown="dt1-day"><span class="mod-partial-check-box" aria-hidden="true"></span><span class="mod-partial-check-label">Позначити день невідомо</span></label>
+                        <label class="mod-partial-check"><input type="checkbox" data-mod-modal-unknown="dt1-month"><span class="mod-partial-check-box" aria-hidden="true"></span><span class="mod-partial-check-label">Позначити місяць невідомо</span></label>
+                        <label class="mod-partial-check"><input type="checkbox" data-mod-modal-unknown="dt1-year"><span class="mod-partial-check-box" aria-hidden="true"></span><span class="mod-partial-check-label">Позначити рік невідомо</span></label>
+                    </div>
+                </section>
+                <section class="mod-partial-group" data-mod-partial-group="dt2">
+                    <h4 class="mod-partial-group-title">Дата смерті</h4>
+                    <label class="mod-partial-check mod-partial-check--full">
+                        <input type="checkbox" data-mod-full-unknown="dt2">
+                        <span class="mod-partial-check-box" aria-hidden="true"></span>
+                        <span class="mod-partial-check-label">Позначити повну дату - невідомо</span>
+                    </label>
+                    <div class="mod-partial-input-row">
+                        <label class="mod-partial-input-box"><span>День</span><input type="text" inputmode="numeric" maxlength="2" placeholder="ДД" data-mod-modal-input="dt2-day"></label>
+                        <label class="mod-partial-input-box"><span>Місяць</span><input type="text" inputmode="numeric" maxlength="2" placeholder="ММ" data-mod-modal-input="dt2-month"></label>
+                        <label class="mod-partial-input-box"><span>Рік</span><input type="text" inputmode="numeric" maxlength="4" placeholder="РРРР" data-mod-modal-input="dt2-year"></label>
+                    </div>
+                    <div class="mod-partial-check-grid">
+                        <label class="mod-partial-check"><input type="checkbox" data-mod-modal-unknown="dt2-day"><span class="mod-partial-check-box" aria-hidden="true"></span><span class="mod-partial-check-label">Позначити день невідомо</span></label>
+                        <label class="mod-partial-check"><input type="checkbox" data-mod-modal-unknown="dt2-month"><span class="mod-partial-check-box" aria-hidden="true"></span><span class="mod-partial-check-label">Позначити місяць невідомо</span></label>
+                        <label class="mod-partial-check"><input type="checkbox" data-mod-modal-unknown="dt2-year"><span class="mod-partial-check-box" aria-hidden="true"></span><span class="mod-partial-check-label">Позначити рік невідомо</span></label>
+                    </div>
+                </section>
+            </div>
+            <div class="acm-modal-hint" data-mod-partial-date-hint></div>
+            <div class="acm-modal__actions">
+                <button type="button" class="acm-btn acm-btn--ghost" data-mod-close-partial-modal>Скасувати</button>
+                <button type="button" class="acm-btn acm-btn--primary" data-mod-save-partial-dates>Зберегти</button>
+            </div>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
 function modRenderGraveEditForm(array $formData, int $graveId, string $tab, string $status, string $context = 'page'): string
 {
     $district = modEsc((string)($formData['district'] ?? ''));
@@ -518,9 +800,10 @@ function modRenderGraveEditForm(array $formData, int $graveId, string $tab, stri
                     <label class="mod-field"><span>По батькові</span><input type="text" name="mname" value="<?= modEsc((string)($formData['mname'] ?? '')) ?>"></label>
                 </div>
                 <div class="mod-entry-modal__grid mod-entry-modal__grid--two mod-entry-modal__grid--compact-top">
-                    <label class="mod-field"><span>Дата народження *</span><input type="date" name="dt1" value="<?= modEsc((string)($formData['dt1'] ?? '')) ?>" required></label>
-                    <label class="mod-field"><span>Дата смерті *</span><input type="date" name="dt2" value="<?= modEsc((string)($formData['dt2'] ?? '')) ?>" required></label>
+                    <?= modRenderGraveDateField('dt1', 'Дата народження', $formData) ?>
+                    <?= modRenderGraveDateField('dt2', 'Дата смерті', $formData) ?>
                 </div>
+                <?= modRenderGravePartialDateModal() ?>
             </section>
             <section class="mod-entry-modal__section">
                 <h4>Розташування</h4>
@@ -532,9 +815,9 @@ function modRenderGraveEditForm(array $formData, int $graveId, string $tab, stri
                 <div class="mod-entry-modal__grid mod-entry-modal__grid--two mod-entry-modal__grid--compact-top">
                     <label class="mod-field"><span>Кладовище *</span><select id="mod-grave-cemetery" name="idxkladb" data-role="cemetery" data-selected="<?= $cemetery ?>" required><?= modCemeteryOptions((string)($formData['district'] ?? ''), (string)($formData['idxkladb'] ?? '')) ?></select></label>
                     <div class="mod-entry-modal__grid mod-entry-modal__grid--three mod-entry-modal__grid-compact">
-                        <label class="mod-field"><span>Квартал *</span><input type="text" name="pos1" value="<?= modEsc((string)($formData['pos1'] ?? '')) ?>" inputmode="numeric" pattern="[1-9][0-9]*" data-positive-number="1" required></label>
-                        <label class="mod-field"><span>Ряд *</span><input type="text" name="pos2" value="<?= modEsc((string)($formData['pos2'] ?? '')) ?>" inputmode="numeric" pattern="[1-9][0-9]*" data-positive-number="1" required></label>
-                        <label class="mod-field"><span>Місце *</span><input type="text" name="pos3" value="<?= modEsc((string)($formData['pos3'] ?? '')) ?>" inputmode="numeric" pattern="[1-9][0-9]*" data-positive-number="1" required></label>
+                        <?= modRenderGravePositionField('pos1', 'Квартал', 'Вкажіть квартал', $formData) ?>
+                        <?= modRenderGravePositionField('pos2', 'Ряд', 'Вкажіть ряд', $formData) ?>
+                        <?= modRenderGravePositionField('pos3', 'Місце', 'Вкажіть місце', $formData) ?>
                     </div>
                 </div>
             </section>
@@ -573,9 +856,10 @@ function modRenderGraveEditForm(array $formData, int $graveId, string $tab, stri
                 <label class="mod-field"><span>По батькові</span><input type="text" name="mname" value="<?= modEsc((string)($formData['mname'] ?? '')) ?>"></label>
             </div>
             <div class="mod-form-row mod-form-row--two">
-                <label class="mod-field"><span>Дата народження *</span><input type="date" name="dt1" value="<?= modEsc((string)($formData['dt1'] ?? '')) ?>" required></label>
-                <label class="mod-field"><span>Дата смерті *</span><input type="date" name="dt2" value="<?= modEsc((string)($formData['dt2'] ?? '')) ?>" required></label>
+                <?= modRenderGraveDateField('dt1', 'Дата народження', $formData) ?>
+                <?= modRenderGraveDateField('dt2', 'Дата смерті', $formData) ?>
             </div>
+            <?= modRenderGravePartialDateModal() ?>
         </fieldset>
         <fieldset class="mod-form-section">
             <legend class="mod-form-section-title">Розташування</legend>
@@ -589,9 +873,9 @@ function modRenderGraveEditForm(array $formData, int $graveId, string $tab, stri
         <fieldset class="mod-form-section">
             <legend class="mod-form-section-title">Місце поховання</legend>
             <div class="mod-form-row mod-form-row--three">
-                <label class="mod-field"><span>Квартал *</span><input type="text" name="pos1" value="<?= modEsc((string)($formData['pos1'] ?? '')) ?>" inputmode="numeric" pattern="[1-9][0-9]*" data-positive-number="1" required></label>
-                <label class="mod-field"><span>Ряд *</span><input type="text" name="pos2" value="<?= modEsc((string)($formData['pos2'] ?? '')) ?>" inputmode="numeric" pattern="[1-9][0-9]*" data-positive-number="1" required></label>
-                <label class="mod-field"><span>Місце *</span><input type="text" name="pos3" value="<?= modEsc((string)($formData['pos3'] ?? '')) ?>" inputmode="numeric" pattern="[1-9][0-9]*" data-positive-number="1" required></label>
+                <?= modRenderGravePositionField('pos1', 'Квартал', 'Вкажіть квартал', $formData) ?>
+                <?= modRenderGravePositionField('pos2', 'Ряд', 'Вкажіть ряд', $formData) ?>
+                <?= modRenderGravePositionField('pos3', 'Місце', 'Вкажіть місце', $formData) ?>
             </div>
         </fieldset>
         <fieldset class="mod-form-section">
@@ -736,7 +1020,7 @@ function modLoadGraveCardRow(mysqli $dblink, int $graveId): ?array
     if ($graveId <= 0) {
         return null;
     }
-    $sql = "SELECT g.idx, g.fname, g.lname, g.mname, g.dt1, g.dt2, g.idtadd, g.idxadd, g.idxkladb, g.pos1, g.pos2, g.pos3, g.photo1, g.photo2, g.photo3, g.moderation_status, g.moderation_submitted_at, g.moderation_reviewed_at, g.moderation_reviewed_by, g.moderation_note, g.moderation_reject_reason, u.fname AS author_fname, u.lname AS author_lname, ur.fname AS reviewer_fname, ur.lname AS reviewer_lname, c.title AS cemetery_title, m.title AS town_name, d.title AS district_name, r.title AS region_name FROM grave g LEFT JOIN users u ON g.idxadd = u.idx LEFT JOIN users ur ON g.moderation_reviewed_by = ur.idx LEFT JOIN cemetery c ON g.idxkladb = c.idx LEFT JOIN misto m ON c.town = m.idx LEFT JOIN district d ON c.district = d.idx LEFT JOIN region r ON d.region = r.idx WHERE g.idx = $graveId LIMIT 1";
+    $sql = "SELECT g.idx, g.fname, g.lname, g.mname, g.dt1, g.dt1_year, g.dt1_month, g.dt1_day, g.dt2, g.dt2_year, g.dt2_month, g.dt2_day, g.idtadd, g.idxadd, g.idxkladb, g.pos1, g.pos2, g.pos3, g.photo1, g.photo2, g.photo3, g.moderation_status, g.moderation_submitted_at, g.moderation_reviewed_at, g.moderation_reviewed_by, g.moderation_note, g.moderation_reject_reason, u.fname AS author_fname, u.lname AS author_lname, ur.fname AS reviewer_fname, ur.lname AS reviewer_lname, c.title AS cemetery_title, m.title AS town_name, d.title AS district_name, r.title AS region_name FROM grave g LEFT JOIN users u ON g.idxadd = u.idx LEFT JOIN users ur ON g.moderation_reviewed_by = ur.idx LEFT JOIN cemetery c ON g.idxkladb = c.idx LEFT JOIN misto m ON c.town = m.idx LEFT JOIN district d ON c.district = d.idx LEFT JOIN region r ON d.region = r.idx WHERE g.idx = $graveId LIMIT 1";
     $res = mysqli_query($dblink, $sql);
     return $res ? (mysqli_fetch_assoc($res) ?: null) : null;
 }
@@ -756,9 +1040,9 @@ function modBuildGraveItemFromRow(array $row): array
     $idx = (int)($row['idx'] ?? 0);
     $title = trim(implode(' ', array_filter([trim((string)($row['lname'] ?? '')), trim((string)($row['fname'] ?? '')), trim((string)($row['mname'] ?? ''))])));
     $title = $title !== '' ? $title : 'Без ПІБ';
-    $pos1 = trim((string)($row['pos1'] ?? ''));
-    $pos2 = trim((string)($row['pos2'] ?? ''));
-    $pos3 = trim((string)($row['pos3'] ?? ''));
+    $pos1 = modFormatGravePosValue($row['pos1'] ?? '');
+    $pos2 = modFormatGravePosValue($row['pos2'] ?? '');
+    $pos3 = modFormatGravePosValue($row['pos3'] ?? '');
     $cemTitle = trim((string)($row['cemetery_title'] ?? ''));
     $town = trim((string)($row['town_name'] ?? ''));
     $district = trim((string)($row['district_name'] ?? ''));
@@ -783,7 +1067,7 @@ function modBuildGraveItemFromRow(array $row): array
         'id' => (string)$idx,
         'type' => 'grave',
         'title' => $title,
-        'dates' => modFormatDateRange($row['dt1'] ?? null, $row['dt2'] ?? null),
+        'dates' => modFormatGraveDateRange($row),
         'location' => !empty($locationParts) ? implode(', ', $locationParts) : 'Локація не вказана',
         'region' => $region !== '' ? $region : '-',
         'district' => $district !== '' ? $district : '-',
@@ -1032,7 +1316,7 @@ if (isset($_GET['ajax_pending_feed']) && (string)($_GET['ajax_pending_feed'] ?? 
     if ($sinceSql !== '') {
         $graveWhere .= " AND COALESCE(g.moderation_submitted_at, g.idtadd) > '" . mysqli_real_escape_string($dblink, $sinceSql) . "'";
     }
-    $graveFeedSql = "SELECT g.idx, g.fname, g.lname, g.mname, g.dt1, g.dt2, g.idtadd, g.idxadd, g.idxkladb, g.pos1, g.pos2, g.pos3, g.photo1, g.photo2, g.photo3, g.moderation_status, g.moderation_submitted_at, g.moderation_reviewed_at, g.moderation_reviewed_by, g.moderation_note, g.moderation_reject_reason, u.fname AS author_fname, u.lname AS author_lname, ur.fname AS reviewer_fname, ur.lname AS reviewer_lname, c.title AS cemetery_title, m.title AS town_name, d.title AS district_name, r.title AS region_name FROM grave g LEFT JOIN users u ON g.idxadd = u.idx LEFT JOIN users ur ON g.moderation_reviewed_by = ur.idx LEFT JOIN cemetery c ON g.idxkladb = c.idx LEFT JOIN misto m ON c.town = m.idx LEFT JOIN district d ON c.district = d.idx LEFT JOIN region r ON d.region = r.idx WHERE $graveWhere ORDER BY COALESCE(g.moderation_submitted_at, g.idtadd) ASC LIMIT 80";
+    $graveFeedSql = "SELECT g.idx, g.fname, g.lname, g.mname, g.dt1, g.dt1_year, g.dt1_month, g.dt1_day, g.dt2, g.dt2_year, g.dt2_month, g.dt2_day, g.idtadd, g.idxadd, g.idxkladb, g.pos1, g.pos2, g.pos3, g.photo1, g.photo2, g.photo3, g.moderation_status, g.moderation_submitted_at, g.moderation_reviewed_at, g.moderation_reviewed_by, g.moderation_note, g.moderation_reject_reason, u.fname AS author_fname, u.lname AS author_lname, ur.fname AS reviewer_fname, ur.lname AS reviewer_lname, c.title AS cemetery_title, m.title AS town_name, d.title AS district_name, r.title AS region_name FROM grave g LEFT JOIN users u ON g.idxadd = u.idx LEFT JOIN users ur ON g.moderation_reviewed_by = ur.idx LEFT JOIN cemetery c ON g.idxkladb = c.idx LEFT JOIN misto m ON c.town = m.idx LEFT JOIN district d ON c.district = d.idx LEFT JOIN region r ON d.region = r.idx WHERE $graveWhere ORDER BY COALESCE(g.moderation_submitted_at, g.idtadd) ASC LIMIT 80";
     $graveFeedRes = mysqli_query($dblink, $graveFeedSql);
     if ($graveFeedRes) {
         while ($row = mysqli_fetch_assoc($graveFeedRes)) {
@@ -1305,13 +1589,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'mname' => trim((string)($_POST['mname'] ?? '')),
             'dt1' => trim((string)($_POST['dt1'] ?? '')),
             'dt2' => trim((string)($_POST['dt2'] ?? '')),
+            'dt1_year' => modNormalizePartialDatePart((string)($_POST['dt1_year'] ?? ''), 4, 1, 9999),
+            'dt1_month' => modNormalizePartialDatePart((string)($_POST['dt1_month'] ?? ''), 2, 1, 12),
+            'dt1_day' => modNormalizePartialDatePart((string)($_POST['dt1_day'] ?? ''), 2, 1, 31),
+            'dt2_year' => modNormalizePartialDatePart((string)($_POST['dt2_year'] ?? ''), 4, 1, 9999),
+            'dt2_month' => modNormalizePartialDatePart((string)($_POST['dt2_month'] ?? ''), 2, 1, 12),
+            'dt2_day' => modNormalizePartialDatePart((string)($_POST['dt2_day'] ?? ''), 2, 1, 31),
+            'dt1_unknown' => (string)($_POST['dt1_unknown'] ?? '0'),
+            'dt2_unknown' => (string)($_POST['dt2_unknown'] ?? '0'),
+            'pos1_unknown' => (string)($_POST['pos1_unknown'] ?? '0'),
+            'pos2_unknown' => (string)($_POST['pos2_unknown'] ?? '0'),
+            'pos3_unknown' => (string)($_POST['pos3_unknown'] ?? '0'),
             'pos1' => trim((string)($_POST['pos1'] ?? '')),
             'pos2' => trim((string)($_POST['pos2'] ?? '')),
             'pos3' => trim((string)($_POST['pos3'] ?? '')),
         ];
+
+        foreach (['pos1', 'pos2', 'pos3'] as $field) {
+            if ($graveFormData[$field] === '0') {
+                $graveFormData[$field . '_unknown'] = '1';
+                $graveFormData[$field] = '';
+            }
+        }
+
+        if ($graveFormData['dt1'] !== '') {
+            modResetPartialDate($graveFormData, 'dt1');
+            $graveFormData['dt1_unknown'] = '0';
+        } elseif (modHasPartialDate($graveFormData, 'dt1')) {
+            $graveFormData['dt1_unknown'] = '0';
+        } elseif ($graveFormData['dt1_unknown'] === '1') {
+            modResetPartialDate($graveFormData, 'dt1');
+        }
+
+        if ($graveFormData['dt2'] !== '') {
+            modResetPartialDate($graveFormData, 'dt2');
+            $graveFormData['dt2_unknown'] = '0';
+        } elseif (modHasPartialDate($graveFormData, 'dt2')) {
+            $graveFormData['dt2_unknown'] = '0';
+        } elseif ($graveFormData['dt2_unknown'] === '1') {
+            modResetPartialDate($graveFormData, 'dt2');
+        }
+
         $graveEditRecord = modLoadGraveForEdit($dblink, $editId);
-        $requiredMissing = $editId <= 0 || !$graveEditRecord || (int)$graveFormData['region'] <= 0 || (int)$graveFormData['district'] <= 0 || (int)$graveFormData['town'] <= 0 || (int)$graveFormData['idxkladb'] <= 0 || $graveFormData['lname'] === '' || $graveFormData['fname'] === '' || $graveFormData['dt1'] === '' || $graveFormData['dt2'] === '' || $graveFormData['pos1'] === '' || $graveFormData['pos2'] === '' || $graveFormData['pos3'] === '';
-        $invalidBurialPosition = !modIsPositiveNumericString($graveFormData['pos1']) || !modIsPositiveNumericString($graveFormData['pos2']) || !modIsPositiveNumericString($graveFormData['pos3']);
+        $dt1HasPartial = modHasPartialDate($graveFormData, 'dt1');
+        $dt2HasPartial = modHasPartialDate($graveFormData, 'dt2');
+        $dt1Unknown = $graveFormData['dt1_unknown'] === '1';
+        $dt2Unknown = $graveFormData['dt2_unknown'] === '1';
+        $pos1Unknown = $graveFormData['pos1_unknown'] === '1';
+        $pos2Unknown = $graveFormData['pos2_unknown'] === '1';
+        $pos3Unknown = $graveFormData['pos3_unknown'] === '1';
+        $requiredMissing = $editId <= 0
+            || !$graveEditRecord
+            || (int)$graveFormData['region'] <= 0
+            || (int)$graveFormData['district'] <= 0
+            || (int)$graveFormData['town'] <= 0
+            || (int)$graveFormData['idxkladb'] <= 0
+            || $graveFormData['lname'] === ''
+            || $graveFormData['fname'] === ''
+            || (!$dt1Unknown && !$dt1HasPartial && $graveFormData['dt1'] === '')
+            || (!$dt2Unknown && !$dt2HasPartial && $graveFormData['dt2'] === '')
+            || (!$pos1Unknown && $graveFormData['pos1'] === '')
+            || (!$pos2Unknown && $graveFormData['pos2'] === '')
+            || (!$pos3Unknown && $graveFormData['pos3'] === '');
+        $invalidBurialPosition = (!$pos1Unknown && !modIsPositiveNumericString($graveFormData['pos1']))
+            || (!$pos2Unknown && !modIsPositiveNumericString($graveFormData['pos2']))
+            || (!$pos3Unknown && !modIsPositiveNumericString($graveFormData['pos3']));
         if ($requiredMissing) {
             $editMessageType = 'error';
             $editMessageText = $graveEditRecord ? 'Заповніть обов`язкові поля форми.' : 'Поховання не знайдено.';
@@ -1319,7 +1661,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $editMessageType = 'error';
             $editMessageText = 'Квартал, ряд і місце мають бути додатними числами без символів та без значення 0.';
         } else {
-            $stmt = mysqli_prepare($dblink, 'UPDATE grave SET lname = ?, fname = ?, mname = ?, dt1 = ?, dt2 = ?, idxkladb = ?, pos1 = ?, pos2 = ?, pos3 = ? WHERE idx = ? LIMIT 1');
+            $stmt = mysqli_prepare($dblink, 'UPDATE grave SET lname = ?, fname = ?, mname = ?, dt1 = ?, dt1_year = ?, dt1_month = ?, dt1_day = ?, dt2 = ?, dt2_year = ?, dt2_month = ?, dt2_day = ?, idxkladb = ?, pos1 = ?, pos2 = ?, pos3 = ? WHERE idx = ? LIMIT 1');
             if (!$stmt) {
                 $editMessageType = 'error';
                 $editMessageText = 'Помилка підготовки запиту: ' . mysqli_error($dblink);
@@ -1327,14 +1669,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $graveLname = $graveFormData['lname'];
                 $graveFname = $graveFormData['fname'];
                 $graveMname = $graveFormData['mname'];
-                $graveDt1 = $graveFormData['dt1'];
-                $graveDt2 = $graveFormData['dt2'];
+                $graveDt1 = ($dt1Unknown || $dt1HasPartial) ? '0000-00-00' : $graveFormData['dt1'];
+                $graveDt1Year = $dt1HasPartial ? (int)($graveFormData['dt1_year'] ?: 0) : 0;
+                $graveDt1Month = $dt1HasPartial ? (int)($graveFormData['dt1_month'] ?: 0) : 0;
+                $graveDt1Day = $dt1HasPartial ? (int)($graveFormData['dt1_day'] ?: 0) : 0;
+                $graveDt2 = ($dt2Unknown || $dt2HasPartial) ? '0000-00-00' : $graveFormData['dt2'];
+                $graveDt2Year = $dt2HasPartial ? (int)($graveFormData['dt2_year'] ?: 0) : 0;
+                $graveDt2Month = $dt2HasPartial ? (int)($graveFormData['dt2_month'] ?: 0) : 0;
+                $graveDt2Day = $dt2HasPartial ? (int)($graveFormData['dt2_day'] ?: 0) : 0;
                 $graveCemeteryId = (int)$graveFormData['idxkladb'];
-                $gravePos1 = $graveFormData['pos1'];
-                $gravePos2 = $graveFormData['pos2'];
-                $gravePos3 = $graveFormData['pos3'];
+                $gravePos1 = $pos1Unknown ? '0' : $graveFormData['pos1'];
+                $gravePos2 = $pos2Unknown ? '0' : $graveFormData['pos2'];
+                $gravePos3 = $pos3Unknown ? '0' : $graveFormData['pos3'];
                 $graveBindId = $editId;
-                mysqli_stmt_bind_param($stmt, 'sssssisssi', $graveLname, $graveFname, $graveMname, $graveDt1, $graveDt2, $graveCemeteryId, $gravePos1, $gravePos2, $gravePos3, $graveBindId);
+                mysqli_stmt_bind_param($stmt, 'ssssiiisiiiisssi', $graveLname, $graveFname, $graveMname, $graveDt1, $graveDt1Year, $graveDt1Month, $graveDt1Day, $graveDt2, $graveDt2Year, $graveDt2Month, $graveDt2Day, $graveCemeteryId, $gravePos1, $gravePos2, $gravePos3, $graveBindId);
                 $saved = mysqli_stmt_execute($stmt);
                 $stmtError = mysqli_stmt_error($stmt);
                 mysqli_stmt_close($stmt);
@@ -1479,65 +1827,14 @@ if ($isAjaxModal) {
     ]);
 }
 
-$graveSql = "SELECT g.idx, g.fname, g.lname, g.mname, g.dt1, g.dt2, g.idtadd, g.idxadd, g.idxkladb, g.pos1, g.pos2, g.pos3, g.photo1, g.photo2, g.photo3, g.moderation_status, g.moderation_submitted_at, g.moderation_reviewed_at, g.moderation_reviewed_by, g.moderation_note, g.moderation_reject_reason, u.fname AS author_fname, u.lname AS author_lname, ur.fname AS reviewer_fname, ur.lname AS reviewer_lname, c.title AS cemetery_title, m.title AS town_name, d.title AS district_name, r.title AS region_name FROM grave g LEFT JOIN users u ON g.idxadd = u.idx LEFT JOIN users ur ON g.moderation_reviewed_by = ur.idx LEFT JOIN cemetery c ON g.idxkladb = c.idx LEFT JOIN misto m ON c.town = m.idx LEFT JOIN district d ON c.district = d.idx LEFT JOIN region r ON d.region = r.idx ORDER BY COALESCE(g.moderation_submitted_at, g.idtadd) DESC LIMIT 200";
+$graveSql = "SELECT g.idx, g.fname, g.lname, g.mname, g.dt1, g.dt1_year, g.dt1_month, g.dt1_day, g.dt2, g.dt2_year, g.dt2_month, g.dt2_day, g.idtadd, g.idxadd, g.idxkladb, g.pos1, g.pos2, g.pos3, g.photo1, g.photo2, g.photo3, g.moderation_status, g.moderation_submitted_at, g.moderation_reviewed_at, g.moderation_reviewed_by, g.moderation_note, g.moderation_reject_reason, u.fname AS author_fname, u.lname AS author_lname, ur.fname AS reviewer_fname, ur.lname AS reviewer_lname, c.title AS cemetery_title, m.title AS town_name, d.title AS district_name, r.title AS region_name FROM grave g LEFT JOIN users u ON g.idxadd = u.idx LEFT JOIN users ur ON g.moderation_reviewed_by = ur.idx LEFT JOIN cemetery c ON g.idxkladb = c.idx LEFT JOIN misto m ON c.town = m.idx LEFT JOIN district d ON c.district = d.idx LEFT JOIN region r ON d.region = r.idx ORDER BY COALESCE(g.moderation_submitted_at, g.idtadd) DESC LIMIT 200";
 $graveRes = mysqli_query($dblink, $graveSql);
 if (!$graveRes) {
-    $graveRes = mysqli_query($dblink, "SELECT g.idx, g.fname, g.lname, g.mname, g.dt1, g.dt2, g.idtadd, g.idxadd, g.idxkladb, g.pos1, g.pos2, g.pos3, g.photo1, g.photo2, g.photo3, u.fname AS author_fname, u.lname AS author_lname, c.title AS cemetery_title, m.title AS town_name, d.title AS district_name, r.title AS region_name FROM grave g LEFT JOIN users u ON g.idxadd = u.idx LEFT JOIN cemetery c ON g.idxkladb = c.idx LEFT JOIN misto m ON c.town = m.idx LEFT JOIN district d ON c.district = d.idx LEFT JOIN region r ON d.region = r.idx ORDER BY g.idtadd DESC LIMIT 200");
+    $graveRes = mysqli_query($dblink, "SELECT g.idx, g.fname, g.lname, g.mname, g.dt1, g.dt1_year, g.dt1_month, g.dt1_day, g.dt2, g.dt2_year, g.dt2_month, g.dt2_day, g.idtadd, g.idxadd, g.idxkladb, g.pos1, g.pos2, g.pos3, g.photo1, g.photo2, g.photo3, u.fname AS author_fname, u.lname AS author_lname, c.title AS cemetery_title, m.title AS town_name, d.title AS district_name, r.title AS region_name FROM grave g LEFT JOIN users u ON g.idxadd = u.idx LEFT JOIN cemetery c ON g.idxkladb = c.idx LEFT JOIN misto m ON c.town = m.idx LEFT JOIN district d ON c.district = d.idx LEFT JOIN region r ON d.region = r.idx ORDER BY g.idtadd DESC LIMIT 200");
 }
 if ($graveRes) {
     while ($row = mysqli_fetch_assoc($graveRes)) {
-        $idx = (int)($row['idx'] ?? 0);
-        $title = trim(implode(' ', array_filter([trim((string)($row['lname'] ?? '')), trim((string)($row['fname'] ?? '')), trim((string)($row['mname'] ?? ''))])));
-        $title = $title !== '' ? $title : 'Без ПІБ';
-        $pos1 = trim((string)($row['pos1'] ?? ''));
-        $pos2 = trim((string)($row['pos2'] ?? ''));
-        $pos3 = trim((string)($row['pos3'] ?? ''));
-        $cemTitle = trim((string)($row['cemetery_title'] ?? ''));
-        $town = trim((string)($row['town_name'] ?? ''));
-        $district = trim((string)($row['district_name'] ?? ''));
-        $region = trim((string)($row['region_name'] ?? ''));
-        $locationParts = [];
-        if ($region !== '') { $locationParts[] = $region . ' обл.'; }
-        if ($district !== '') { $locationParts[] = $district . ' р-н'; }
-        if ($town !== '') { $locationParts[] = $town; }
-        $status = (string)($row['moderation_status'] ?? 'pending');
-        if (!isset($statusLabels[$status])) { $status = 'pending'; }
-        $submittedRaw = (string)($row['moderation_submitted_at'] ?? '');
-        if ($submittedRaw === '') { $submittedRaw = (string)($row['idtadd'] ?? ''); }
-        $reviewedRaw = trim((string)($row['moderation_reviewed_at'] ?? ''));
-        $actionRaw = ($status === 'pending' || $reviewedRaw === '' || $reviewedRaw === '0000-00-00 00:00:00')
-            ? $submittedRaw
-            : $reviewedRaw;
-        $previewPath = modResolveGravePreview($row, $idx);
-        $graveItems[] = [
-            'id' => (string)$idx,
-            'type' => 'grave',
-            'title' => $title,
-            'dates' => modFormatDateRange($row['dt1'] ?? null, $row['dt2'] ?? null),
-            'location' => !empty($locationParts) ? implode(', ', $locationParts) : 'Локація не вказана',
-            'region' => $region !== '' ? $region : '-',
-            'district' => $district !== '' ? $district : '-',
-            'town' => $town !== '' ? $town : '-',
-            'cemetery' => $cemTitle !== '' ? $cemTitle : '-',
-            'pos1' => $pos1 !== '' ? $pos1 : '-',
-            'pos2' => $pos2 !== '' ? $pos2 : '-',
-            'pos3' => $pos3 !== '' ? $pos3 : '-',
-            'address' => '-',
-            'moderation_note' => trim((string)($row['moderation_note'] ?? '')),
-            'reject_reason' => trim((string)($row['moderation_reject_reason'] ?? '')),
-            'author' => modAuthorName($row['author_fname'] ?? null, $row['author_lname'] ?? null, (int)($row['idxadd'] ?? 0)),
-            'reviewer' => modAuthorName($row['reviewer_fname'] ?? null, $row['reviewer_lname'] ?? null, (int)($row['moderation_reviewed_by'] ?? 0)),
-            'submitted_iso' => $submittedRaw,
-            'action_iso' => $actionRaw,
-            'status' => $status,
-            'has_photo' => $previewPath !== '',
-            'preview_path' => $previewPath,
-            'photo1' => modResolvedFilePath($row['photo1'] ?? ''),
-            'photo2' => modResolvedFilePath($row['photo2'] ?? ''),
-            'photo3' => modResolvedFilePath($row['photo3'] ?? ''),
-            'scheme' => '',
-            'edit_url' => modBuildPanelUrl('grave', $status, 'edit', 'grave', $idx),
-        ];
+        $graveItems[] = modBuildGraveItemFromRow($row);
     }
 }
 
@@ -1630,6 +1927,19 @@ $dashboardCounts = [
 foreach ($items as $item) {
     $statusKey = isset($statusLabels[$item['status']]) ? $item['status'] : 'pending';
     $dashboardCounts[$statusKey]++;
+}
+
+$dashboardPayloadItems = [];
+foreach ($items as $item) {
+    $dashboardPayloadItems[] = modBuildItemPayload($item, $statusLabels, $typeLabels);
+}
+
+if (isset($_GET['ajax_dashboard_cards']) && (string)($_GET['ajax_dashboard_cards'] ?? '') === '1') {
+    modJsonResponse([
+        'success' => true,
+        'items' => $dashboardPayloadItems,
+        'counts' => $dashboardCounts,
+    ]);
 }
 
 $dashboardCardsHtml = '';
@@ -1817,7 +2127,7 @@ View_Add(Page_Up('Панель модерації'));
 View_Add(Menu_Up());
 View_Add('<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">');
 View_Add('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>');
-View_Add('<link rel="stylesheet" href="/assets/css/moderation-panel.css?v=37">');
+View_Add('<link rel="stylesheet" href="/assets/css/moderation-panel.css?v=38">');
 View_Add('<link rel="stylesheet" href="/assets/css/datepicker.css?v=2">');
 
 ob_start();
@@ -2008,7 +2318,10 @@ ob_start();
 
                         <div class="mod-dashboard-grid">
                             <div class="mod-feed">
-                                <div class="mod-entry-list" id="modEntryList"><?= $dashboardCardsHtml !== '' ? $dashboardCardsHtml : '<div class="mod-empty">Наразі немає записів для модерації.</div>' ?></div>
+                                <div class="mod-entry-list" id="modEntryList" aria-live="polite">
+                                    <div class="mod-entry-list__loading" id="modEntryListLoading">Завантаження карток...</div>
+                                    <noscript><?= $dashboardCardsHtml !== '' ? $dashboardCardsHtml : '<div class="mod-empty">Наразі немає записів для модерації.</div>' ?></noscript>
+                                </div>
                                 <p class="mod-empty" id="modEmpty" hidden>Немає записів за вибраними фільтрами.</p>
                             </div>
                             <aside class="mod-activity-panel">
@@ -2230,7 +2543,7 @@ ob_start();
         </div>
     </div>
 </div>
-<script src="/assets/js/moderation-panel-mock.js?v=36" defer></script>
+<script src="/assets/js/moderation-panel-mock.js?v=37" defer></script>
 <?php
 $pageHtml = ob_get_clean();
 

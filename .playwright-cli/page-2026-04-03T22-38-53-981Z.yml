@@ -1,0 +1,211 @@
+- generic [ref=e2]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "Логотип Shana ІПС Шана Інформаційно Пошукова Система" [ref=e6] [cursor=pointer]:
+        - /url: /app
+        - img "Логотип Shana" [ref=e8]
+        - generic [ref=e9]:
+          - strong [ref=e10]: ІПС Шана
+          - generic [ref=e11]: Інформаційно Пошукова Система
+      - navigation "Головна навігація" [ref=e12]:
+        - link "Головна" [ref=e13] [cursor=pointer]:
+          - /url: /app
+        - generic [ref=e14]: Послуги
+        - link "Церкви" [ref=e15] [cursor=pointer]:
+          - /url: /in-dev.php?from=/church.php
+        - link "Наші клієнти" [ref=e16] [cursor=pointer]:
+          - /url: /in-dev.php?from=/clients.php
+        - link "Додати поховання" [ref=e17] [cursor=pointer]:
+          - /url: /app/add-grave
+      - generic [ref=e18]:
+        - link "Підтримка" [ref=e19] [cursor=pointer]:
+          - /url: /messenger.php?type=3
+        - link "Увійти" [ref=e20] [cursor=pointer]:
+          - /url: /auth.php
+  - main [ref=e24]:
+    - navigation "SPA navigation" [ref=e25]:
+      - link "Головна" [ref=e26] [cursor=pointer]:
+        - /url: /app
+      - link "Пошук поховань" [ref=e27] [cursor=pointer]:
+        - /url: /app/search
+      - link "Кладовища" [ref=e28] [cursor=pointer]:
+        - /url: /app/cemeteries
+      - link "Додати поховання" [ref=e29] [cursor=pointer]:
+        - /url: /app/add-grave
+      - link "Додати кладовище" [ref=e30] [cursor=pointer]:
+        - /url: /app/add-cemetery
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - paragraph [ref=e33]: ІНФОРМАЦІЙНО ПОШУКОВА СИСТЕМА
+        - heading "Платформа пам'яті та пошуку поховань" [level=1] [ref=e34]
+        - paragraph [ref=e35]: ІПС «Шана» допомагає швидко знайти дані про поховання, кладовища та пов'язані картки. Платформа забезпечує швидкий доступ до інформації, зручну навігацію та простий пошук необхідних даних.
+        - generic [ref=e36]:
+          - link "Шукати поховання" [ref=e37] [cursor=pointer]:
+            - /url: /app/search
+            - img [ref=e38]
+            - generic [ref=e43]: Шукати поховання
+          - link "Шукати кладовища" [ref=e44] [cursor=pointer]:
+            - /url: /app/cemeteries
+            - img [ref=e45]
+            - generic [ref=e49]: Шукати кладовища
+          - link "Додати поховання" [ref=e50] [cursor=pointer]:
+            - /url: /app/add-grave
+            - img [ref=e51]
+            - generic [ref=e52]: Додати поховання
+        - generic [ref=e53]:
+          - heading "Потрібна допомога з пошуком?" [level=2] [ref=e54]
+          - paragraph [ref=e55]: Якщо бачите неточність у даних або потрібна консультація, напишіть нам у підтримку чи відкрийте контакти.
+          - generic [ref=e56]:
+            - link "Повідомити баг" [ref=e57] [cursor=pointer]:
+              - /url: /messenger.php?type=3
+            - link "Контакти" [ref=e58] [cursor=pointer]:
+              - /url: /contacts.php
+            - link "SPA дорожня карта" [ref=e59] [cursor=pointer]:
+              - /url: /app/preview/roadmap
+      - complementary [ref=e60]:
+        - tablist "Тип пошуку" [ref=e61]:
+          - button "Пошук поховання" [ref=e62] [cursor=pointer]
+          - button "Пошук кладовища" [ref=e63] [cursor=pointer]
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - generic [ref=e67]:
+              - generic [ref=e68]:
+                - generic [ref=e69]: Прізвище
+                - textbox "Прізвище" [ref=e70]
+              - generic [ref=e71]:
+                - generic [ref=e72]: Ім'я
+                - textbox "Ім'я" [ref=e73]
+              - generic [ref=e74]:
+                - generic [ref=e75]: По батькові
+                - textbox "По батькові" [ref=e76]
+            - generic [ref=e77]:
+              - generic [ref=e78]:
+                - generic [ref=e79]: Дата народження
+                - textbox "Дата народження" [ref=e80]
+              - generic [ref=e81]:
+                - generic [ref=e82]: Дата смерті
+                - textbox "Дата смерті" [ref=e83]
+          - button "Пошук" [ref=e84] [cursor=pointer]:
+            - img [ref=e85]
+            - generic [ref=e88]: Пошук
+    - generic [ref=e89]:
+      - article [ref=e90]:
+        - generic [ref=e91]: Карток поховань
+        - generic [ref=e92]: ...
+        - paragraph [ref=e93]: Загальна кількість поховань у базі даних системи.
+      - article [ref=e94]:
+        - generic [ref=e95]: Кладовищ у базі
+        - generic [ref=e96]: ...
+        - paragraph [ref=e97]: Кількість карток кладовищ, доступних для пошуку та перегляду.
+      - article [ref=e98]:
+        - generic [ref=e99]: Користувачів системи
+        - generic [ref=e100]: ...
+        - paragraph [ref=e101]: Зареєстровані користувачі, які працюють з платформою.
+      - article [ref=e102]:
+        - generic [ref=e103]: Додано за 30 днів
+        - generic [ref=e104]: ...
+        - paragraph [ref=e105]: Нові картки поховань, які були додані за останній місяць.
+    - generic [ref=e106]:
+      - heading "Ключові розділи платформи" [level=2] [ref=e108]
+      - generic [ref=e109]:
+        - link "Пошук поховань Гнучкі фільтри по ПІБ, датах та додаткових параметрах. Відкрити розділ" [ref=e110] [cursor=pointer]:
+          - /url: /app/search
+          - heading "Пошук поховань" [level=3] [ref=e111]
+          - paragraph [ref=e112]: Гнучкі фільтри по ПІБ, датах та додаткових параметрах.
+          - generic [ref=e113]:
+            - text: Відкрити розділ
+            - img [ref=e114]
+        - link "База даних кладовищ Перегляд карток кладовищ із геоданими, схемами та зв'язаними похованнями. Перейти до списку" [ref=e117] [cursor=pointer]:
+          - /url: /app/cemeteries
+          - heading "База даних кладовищ" [level=3] [ref=e118]
+          - paragraph [ref=e119]: Перегляд карток кладовищ із геоданими, схемами та зв'язаними похованнями.
+          - generic [ref=e120]:
+            - text: Перейти до списку
+            - img [ref=e121]
+        - link "Додавання поховання Форма внесення картки з підтримкою фото та структурованих даних. Додати нову картку" [ref=e124] [cursor=pointer]:
+          - /url: /app/add-grave
+          - heading "Додавання поховання" [level=3] [ref=e125]
+          - paragraph [ref=e126]: Форма внесення картки з підтримкою фото та структурованих даних.
+          - generic [ref=e127]:
+            - text: Додати нову картку
+            - img [ref=e128]
+        - link "Додавання кладовища Створення нових кладовищ з координатами і прив'язкою до локації. Створити кладовище" [ref=e131] [cursor=pointer]:
+          - /url: /app/add-cemetery
+          - heading "Додавання кладовища" [level=3] [ref=e132]
+          - paragraph [ref=e133]: Створення нових кладовищ з координатами і прив'язкою до локації.
+          - generic [ref=e134]:
+            - text: Створити кладовище
+            - img [ref=e135]
+    - generic [ref=e138]:
+      - generic [ref=e139]:
+        - heading "Повідомити про проблему" [level=2] [ref=e140]
+        - paragraph [ref=e141]: Помітили баг, помилку в даних або маєте пропозицію щодо функціоналу? Відправте звернення в підтримку або зв'яжіться з нами через контактний розділ.
+        - generic [ref=e142]:
+          - generic [ref=e143]: Відповідь протягом 24 годин
+          - generic [ref=e144]: Консультації щодо пошуку й додавання даних
+      - generic [ref=e145]:
+        - link "Повідомити баг" [ref=e146] [cursor=pointer]:
+          - /url: /messenger.php?type=3
+        - link "Контакти" [ref=e147] [cursor=pointer]:
+          - /url: /contacts.php
+        - link "FAQ" [ref=e148] [cursor=pointer]:
+          - /url: /app/faq
+  - contentinfo [ref=e149]:
+    - generic [ref=e150]:
+      - generic [ref=e151]:
+        - generic [ref=e152]:
+          - link "Shana logo ІПС Шана Shanapra.com" [ref=e153] [cursor=pointer]:
+            - /url: /app
+            - img "Shana logo" [ref=e155]
+            - generic [ref=e156]:
+              - strong [ref=e157]: ІПС Шана
+              - generic [ref=e158]: Shanapra.com
+          - paragraph [ref=e159]: "Інформаційно-пошукова система пам'яті: пошук поховань і збереження пам'яті"
+        - group [ref=e160]:
+          - generic "Розділи":
+            - heading "Розділи" [level=2]
+          - list [ref=e161]:
+            - listitem [ref=e162]:
+              - link "Головна" [ref=e163] [cursor=pointer]:
+                - /url: /app
+            - listitem [ref=e164]:
+              - link "Додати поховання" [ref=e165] [cursor=pointer]:
+                - /url: /app/add-grave
+            - listitem [ref=e166]:
+              - link "Послуги" [ref=e167] [cursor=pointer]:
+                - /url: /clean-cemeteries.php
+            - listitem [ref=e168]:
+              - link "FAQ" [ref=e169] [cursor=pointer]:
+                - /url: /app/faq
+        - group [ref=e170]:
+          - generic "Інформація":
+            - heading "Інформація" [level=2]
+          - list [ref=e171]:
+            - listitem [ref=e172]:
+              - link "Про нас" [ref=e173] [cursor=pointer]:
+                - /url: /about_us.php
+            - listitem [ref=e174]:
+              - link "Контакти" [ref=e175] [cursor=pointer]:
+                - /url: /contacts.php
+            - listitem [ref=e176]:
+              - link "Конфіденційність" [ref=e177] [cursor=pointer]:
+                - /url: /in-dev.php?from=/privacy
+            - listitem [ref=e178]:
+              - link "Авторське право" [ref=e179] [cursor=pointer]:
+                - /url: /in-dev.php?from=/copyright
+        - generic [ref=e180]:
+          - heading "Підтримка" [level=2] [ref=e181]
+          - paragraph [ref=e182]:
+            - text: "Технічна підтримка:"
+            - link "Написати в чат підтримки" [ref=e183] [cursor=pointer]:
+              - /url: /messenger.php?type=3
+          - generic [ref=e184]:
+            - generic [ref=e185]: 24/7 Онлайн
+            - generic [ref=e186]: Безпечний доступ
+      - generic [ref=e187]:
+        - paragraph [ref=e188]: © 2014-2026 shanapra.com. Всі права захищені.
+        - generic [ref=e189]:
+          - link "Посилання" [ref=e190] [cursor=pointer]:
+            - /url: /in-dev.php?from=/links
+          - link "Нормативно-правова інформація" [ref=e191] [cursor=pointer]:
+            - /url: /in-dev.php?from=/npinfo
